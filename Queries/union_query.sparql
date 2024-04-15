@@ -1,0 +1,13 @@
+PREFIX pkmn: <http://www.ex.org/#>
+
+SELECT ?poke1
+WHERE {
+  {
+    ?poke1 pkmn:hasType 'steel' .
+    ?poke1 pkmn:hasType 'bug'.
+  }
+  UNION
+  {
+    ?poke1 pkmn:hasType 'bug'
+  }
+}

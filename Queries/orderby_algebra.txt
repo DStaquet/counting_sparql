@@ -1,0 +1,17 @@
+SelectQuery(
+    p = Project(
+        p = OrderBy(
+            p = BGP(
+                triples = [(rdflib.term.Variable('x'), rdflib.term.URIRef('http://xmlns.com/foaf/0.1/name'), rdflib.term.Variable('name'))]
+                _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('name')}
+                )
+            expr = [OrderCondition_{'expr': rdflib.term.Variable('name'), 'order': None, '_vars': {rdflib.term.Variable('name')}}]
+            _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('name')}
+            )
+        PV = [rdflib.term.Variable('name')]
+        _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('name')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('name')]
+    _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('name')}
+    )

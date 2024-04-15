@@ -1,0 +1,25 @@
+SelectQuery(
+    p = Project(
+        p = Join(
+            p1 = BGP(
+                triples = [(rdflib.term.Variable('g'), rdflib.term.URIRef('http://purl.org/dc/elements/1.1/publisher'), rdflib.term.Variable('who'))]
+                _vars = {rdflib.term.Variable('g'), rdflib.term.Variable('who')}
+                )
+            p2 = Graph(
+                term = g
+                p = BGP(
+                    triples = [(rdflib.term.Variable('x'), rdflib.term.URIRef('http://xmlns.com/foaf/0.1/mbox'), rdflib.term.Variable('mbox'))]
+                    _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('mbox')}
+                    )
+                _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('g'), rdflib.term.Variable('mbox')}
+                )
+            lazy = True
+            _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('g'), rdflib.term.Variable('mbox'), rdflib.term.Variable('who')}
+            )
+        PV = [rdflib.term.Variable('who'), rdflib.term.Variable('g'), rdflib.term.Variable('mbox')]
+        _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('g'), rdflib.term.Variable('mbox'), rdflib.term.Variable('who')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('who'), rdflib.term.Variable('g'), rdflib.term.Variable('mbox')]
+    _vars = {rdflib.term.Variable('x'), rdflib.term.Variable('g'), rdflib.term.Variable('mbox'), rdflib.term.Variable('who')}
+    )

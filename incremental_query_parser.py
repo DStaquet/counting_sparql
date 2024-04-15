@@ -1,0 +1,176 @@
+"""
+import rdflib.plugins.sparql.sparql as ssparql
+
+import rdflib.query as rdfquery
+from rdflib.plugins.sparql import algebra
+import rdflib.plugin as plugin
+from rdflib.plugins.sparql import parser
+import sys, requests
+from typing import (
+    Union,
+    Type,
+)"""
+
+import rdflib.graph as graph
+from rdflib.plugins.sparql import algebra
+from rdflib.plugins.sparql import parser
+from rdflib.plugins.sparql.sparql import QueryContext
+from rdflib.plugins.sparql.sparql import Query
+
+import sys, requests
+
+from eval_incremental import VALUES
+from eval_incremental.eval_incremental import (
+    constructTablesRec,
+)
+from eval_incremental import delta_inserter
+from eval_incremental.eval_incremental import evalIncrPart
+
+from pandas import DataFrame
+
+from eval_incremental import (
+    temp_eval_incremental_query1,
+    temp_eval_incremental_query2,
+    temp_eval_incremental_query3,
+    temp_eval_incremental_query4,
+)
+
+
+def insertData(g: graph.Graph, query: Query) -> None:
+    delta_inserter.parseFirstDelta(query.algebra, g)
+
+
+def insertParseQuery(
+    query: str, data: str | None = None
+) -> None:
+
+    g = graph.Graph()
+    if data == None:
+        g.parse(
+            "http://fragments.dbpedia.org/", format="ttl"
+        )
+    else:
+        g.parse(data=data)
+
+    query_tree = parser.parseQuery(str(query))
+    q_query_object = algebra.translateQuery(query_tree)
+    # algebra.pprintAlgebra(q_query_object)
+
+    constructTablesRec(q_query_object.algebra)
+    output: DataFrame = evalIncrPart(
+        QueryContext(g), q_query_object.algebra, True
+    )
+    print(output)
+    # insertData(g, q_query_object)
+    # output = g.query(query)  # type: ignore[arg-type]
+
+    """for triple in output.bindings:
+        print(triple)"""
+
+
+def queryParser(query: str, data: str) -> None:
+    g = graph.Graph()
+    g.parse(data=data)
+
+    query_tree = parser.parseQuery(str(query))
+    q_query_object = algebra.translateQuery(query_tree)
+    # algebra.pprintAlgebra(q_query_object)
+
+    increm_bool: bool = True
+
+    # Query 1 - Incremental
+    query = readQueryFile(
+        "./Queries/berlin_benchmark/query1.sparql"
+    )
+    query_tree = parser.parseQuery(str(query))
+    q_query_object = algebra.translateQuery(query_tree)
+    constructTablesRec(q_query_object.algebra)
+    result: DataFrame = (
+        temp_eval_incremental_query1.evalIncrPart(
+            QueryContext(g),
+            q_query_object.algebra,
+            increm_bool,
+        )
+    )
+    print(result)
+
+    # Query 2 - Incremental
+    query = readQueryFile(
+        "./Queries/berlin_benchmark/query2.sparql"
+    )
+    query_tree = parser.parseQuery(str(query))
+    q_query_object = algebra.translateQuery(query_tree)
+    constructTablesRec(q_query_object.algebra)
+    result: DataFrame = (
+        temp_eval_incremental_query2.evalIncrPart(
+            QueryContext(g),
+            q_query_object.algebra,
+            increm_bool,
+        )
+    )
+    print(result)
+
+    # Query 3 - Incremental
+    query = readQueryFile(
+        "./Queries/berlin_benchmark/query3.sparql"
+    )
+    query_tree = parser.parseQuery(str(query))
+    q_query_object = algebra.translateQuery(query_tree)
+    constructTablesRec(q_query_object.algebra)
+    result: DataFrame = (
+        temp_eval_incremental_query3.evalIncrPart(
+            QueryContext(g),
+            q_query_object.algebra,
+            increm_bool,
+        )
+    )
+    print(result)
+
+    # Query 4 - Incremental
+    query = readQueryFile(
+        "./Queries/berlin_benchmark/query4.sparql"
+    )
+    query_tree = parser.parseQuery(str(query))
+    q_query_object = algebra.translateQuery(query_tree)
+    # algebra.pprintAlgebra(q_query_object)
+    constructTablesRec(q_query_object.algebra)
+    result: DataFrame = (
+        temp_eval_incremental_query4.evalIncrPart(
+            QueryContext(g),
+            q_query_object.algebra,
+            increm_bool,
+        )
+    )
+    print(result)
+
+
+def readQueryFile(filename: str) -> str:
+    """Read query file.
+
+    Args:
+        filename (str): filename to be read.
+    """
+
+    with open(filename, "r") as file:
+        return file.read()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(
+            "Usage: python query_parser.py <queryfile.sparql>"
+        )
+        exit(1)
+    query = readQueryFile(sys.argv[1])
+
+    # data = requests.get("http://localhost:3000/")
+    # print(data.text)
+
+    VALUES["INSERT_CHECK"] = True
+
+    with open("./data/dataset.nt", "r") as datafile:
+        read_nt_data: str = datafile.read()
+
+    # insertParseQuery(query, read_ttl_data)
+
+    queryParser(query, read_nt_data)

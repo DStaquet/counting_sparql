@@ -1,0 +1,20 @@
+SelectQuery(
+    p = Project(
+        p = Minus(
+            p1 = BGP(
+                triples = [(rdflib.term.Variable('s'), rdflib.term.Variable('p'), rdflib.term.Variable('o'))]
+                _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p')}
+                )
+            p2 = BGP(
+                triples = [(rdflib.term.URIRef('http://example/a'), rdflib.term.URIRef('http://example/b'), rdflib.term.URIRef('http://example/c'))]
+                _vars = set()
+                )
+            _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p')}
+            )
+        PV = [rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p')]
+        _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p')]
+    _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p')}
+    )

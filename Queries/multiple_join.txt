@@ -1,0 +1,57 @@
+SelectQuery(
+    p = Project(
+        p = Join(
+            p1 = Join(
+                p1 = Union(
+                    p1 = Union(
+                        p1 = BGP(
+                            triples = [(rdflib.term.Variable('s1'), rdflib.term.Variable('p1'), rdflib.term.Variable('o1'))]
+                            _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1')}
+                            )
+                        p2 = BGP(
+                            triples = [(rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1'))]
+                            _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1')}
+                            )
+                        _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1')}
+                        )
+                    p2 = BGP(
+                        triples = [(rdflib.term.Variable('o1'), rdflib.term.Variable('p1'), rdflib.term.Variable('s1'))]
+                        _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1')}
+                        )
+                    _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1')}
+                    )
+                p2 = Union(
+                    p1 = BGP(
+                        triples = [(rdflib.term.Variable('s2'), rdflib.term.Variable('p2'), rdflib.term.Variable('o2'))]
+                        _vars = {rdflib.term.Variable('o2'), rdflib.term.Variable('p2'), rdflib.term.Variable('s2')}
+                        )
+                    p2 = BGP(
+                        triples = [(rdflib.term.Variable('p2'), rdflib.term.Variable('s2'), rdflib.term.Variable('o2'))]
+                        _vars = {rdflib.term.Variable('o2'), rdflib.term.Variable('p2'), rdflib.term.Variable('s2')}
+                        )
+                    _vars = {rdflib.term.Variable('o2'), rdflib.term.Variable('p2'), rdflib.term.Variable('s2')}
+                    )
+                lazy = True
+                _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('s2'), rdflib.term.Variable('o1'), rdflib.term.Variable('o2'), rdflib.term.Variable('p2')}
+                )
+            p2 = Union(
+                p1 = BGP(
+                    triples = [(rdflib.term.Variable('s3'), rdflib.term.Variable('p3'), rdflib.term.Variable('o3'))]
+                    _vars = {rdflib.term.Variable('o3'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3')}
+                    )
+                p2 = BGP(
+                    triples = [(rdflib.term.Variable('p3'), rdflib.term.Variable('s3'), rdflib.term.Variable('o3'))]
+                    _vars = {rdflib.term.Variable('o3'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3')}
+                    )
+                _vars = {rdflib.term.Variable('o3'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3')}
+                )
+            lazy = False
+            _vars = {rdflib.term.Variable('s2'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3'), rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1'), rdflib.term.Variable('o3'), rdflib.term.Variable('o2'), rdflib.term.Variable('p2')}
+            )
+        PV = [rdflib.term.Variable('s2'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3'), rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1'), rdflib.term.Variable('o3'), rdflib.term.Variable('o2'), rdflib.term.Variable('p2')]
+        _vars = {rdflib.term.Variable('s2'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3'), rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1'), rdflib.term.Variable('o3'), rdflib.term.Variable('o2'), rdflib.term.Variable('p2')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('s2'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3'), rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1'), rdflib.term.Variable('o3'), rdflib.term.Variable('o2'), rdflib.term.Variable('p2')]
+    _vars = {rdflib.term.Variable('s2'), rdflib.term.Variable('p3'), rdflib.term.Variable('s3'), rdflib.term.Variable('p1'), rdflib.term.Variable('s1'), rdflib.term.Variable('o1'), rdflib.term.Variable('o3'), rdflib.term.Variable('o2'), rdflib.term.Variable('p2')}
+    )

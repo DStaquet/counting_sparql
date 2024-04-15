@@ -1,0 +1,7 @@
+PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?birthName
+{
+    VALUES ?s { <http://dbpedia.org/page/John_Lennon> <https://dbpedia.org/page/Paul_McCartney>} .
+    ?s dbo:birthName ?birthName .
+}

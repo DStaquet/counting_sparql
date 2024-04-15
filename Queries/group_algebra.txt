@@ -1,0 +1,31 @@
+SelectQuery(
+    p = Project(
+        p = Extend(
+            p = Extend(
+                p = AggregateJoin(
+                    A = [Aggregate_Avg_{'distinct': [], 'vars': rdflib.term.Variable('y'), 'res': rdflib.term.Variable('__agg_1__'), '_vars': {rdflib.term.Variable('__agg_1__'), rdflib.term.Variable('y')}}, Aggregate_Count_{'distinct': [], 'vars': rdflib.term.Variable('a'), 'res': rdflib.term.Variable('__agg_2__'), '_vars': {rdflib.term.Variable('__agg_2__'), rdflib.term.Variable('a')}}]
+                    p = Group(
+                        p = BGP(
+                            triples = [(rdflib.term.Variable('a'), rdflib.term.URIRef('http://example.org/x'), rdflib.term.Variable('x')), (rdflib.term.Variable('a'), rdflib.term.URIRef('http://example.org/y'), rdflib.term.Variable('y'))]
+                            _vars = {rdflib.term.Variable('y'), rdflib.term.Variable('x'), rdflib.term.Variable('a')}
+                            )
+                        expr = [rdflib.term.Variable('x')]
+                        _vars = {rdflib.term.Variable('y'), rdflib.term.Variable('x'), rdflib.term.Variable('a')}
+                        )
+                    _vars = {rdflib.term.Variable('a'), rdflib.term.Variable('__agg_2__'), rdflib.term.Variable('__agg_1__'), rdflib.term.Variable('y'), rdflib.term.Variable('x')}
+                    )
+                expr = __agg_1__
+                var = avg
+                _vars = {rdflib.term.Variable('a'), rdflib.term.Variable('avg'), rdflib.term.Variable('__agg_2__'), rdflib.term.Variable('__agg_1__'), rdflib.term.Variable('y'), rdflib.term.Variable('x')}
+                )
+            expr = __agg_2__
+            var = count
+            _vars = {rdflib.term.Variable('a'), rdflib.term.Variable('avg'), rdflib.term.Variable('__agg_2__'), rdflib.term.Variable('__agg_1__'), rdflib.term.Variable('y'), rdflib.term.Variable('count'), rdflib.term.Variable('x')}
+            )
+        PV = [rdflib.term.Variable('avg'), rdflib.term.Variable('count')]
+        _vars = {rdflib.term.Variable('y'), rdflib.term.Variable('a'), rdflib.term.Variable('avg'), rdflib.term.Variable('__agg_2__'), rdflib.term.Variable('__agg_1__'), rdflib.term.Variable('x'), rdflib.term.Variable('count')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('avg'), rdflib.term.Variable('count')]
+    _vars = {rdflib.term.Variable('y'), rdflib.term.Variable('a'), rdflib.term.Variable('avg'), rdflib.term.Variable('__agg_2__'), rdflib.term.Variable('__agg_1__'), rdflib.term.Variable('x'), rdflib.term.Variable('count')}
+    )

@@ -1,0 +1,28 @@
+SelectQuery(
+    p = Project(
+        p = Join(
+            p1 = BGP(
+                triples = [(rdflib.term.Variable('s'), rdflib.term.URIRef('http://xmlns.com/foaf/0.1/page'), rdflib.term.Variable('page'))]
+                _vars = {rdflib.term.Variable('page'), rdflib.term.Variable('s')}
+                )
+            p2 = ToMultiSet(
+                p = Project(
+                    p = BGP(
+                        triples = [(rdflib.term.Variable('s'), rdflib.term.URIRef('http://xmlns.com/foaf/0.1/name'), rdflib.term.Variable('name'))]
+                        _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('name')}
+                        )
+                    PV = [rdflib.term.Variable('s'), rdflib.term.Variable('name')]
+                    _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('name')}
+                    )
+                _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('name')}
+                )
+            lazy = True
+            _vars = {rdflib.term.Variable('page'), rdflib.term.Variable('s'), rdflib.term.Variable('name')}
+            )
+        PV = [rdflib.term.Variable('name'), rdflib.term.Variable('page')]
+        _vars = {rdflib.term.Variable('page'), rdflib.term.Variable('s'), rdflib.term.Variable('name')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('name'), rdflib.term.Variable('page')]
+    _vars = {rdflib.term.Variable('page'), rdflib.term.Variable('s'), rdflib.term.Variable('name')}
+    )

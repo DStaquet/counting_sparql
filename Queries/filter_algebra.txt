@@ -1,0 +1,22 @@
+SelectQuery(
+    p = Project(
+        p = Filter(
+            expr = RelationalExpression(
+                expr = s
+                op = =
+                other = o
+                _vars = set()
+                )
+            p = BGP(
+                triples = [(rdflib.term.Variable('s'), rdflib.term.Variable('p'), rdflib.term.Variable('o'))]
+                _vars = {rdflib.term.Variable('p'), rdflib.term.Variable('o'), rdflib.term.Variable('s')}
+                )
+            _vars = {rdflib.term.Variable('p'), rdflib.term.Variable('o'), rdflib.term.Variable('s')}
+            )
+        PV = [rdflib.term.Variable('p'), rdflib.term.Variable('o'), rdflib.term.Variable('s')]
+        _vars = {rdflib.term.Variable('p'), rdflib.term.Variable('o'), rdflib.term.Variable('s')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('p'), rdflib.term.Variable('o'), rdflib.term.Variable('s')]
+    _vars = {rdflib.term.Variable('p'), rdflib.term.Variable('o'), rdflib.term.Variable('s')}
+    )

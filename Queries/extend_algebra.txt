@@ -1,0 +1,18 @@
+SelectQuery(
+    p = Project(
+        p = Extend(
+            p = BGP(
+                triples = [(rdflib.term.Variable('s'), rdflib.term.Variable('p'), rdflib.term.Variable('o'))]
+                _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('p'), rdflib.term.Variable('o')}
+                )
+            expr = s
+            var = count
+            _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('count'), rdflib.term.Variable('p'), rdflib.term.Variable('o')}
+            )
+        PV = [rdflib.term.Variable('count')]
+        _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p'), rdflib.term.Variable('count')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('count')]
+    _vars = {rdflib.term.Variable('s'), rdflib.term.Variable('o'), rdflib.term.Variable('p'), rdflib.term.Variable('count')}
+    )

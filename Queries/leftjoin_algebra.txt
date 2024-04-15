@@ -1,0 +1,23 @@
+SelectQuery(
+    p = Project(
+        p = LeftJoin(
+            p1 = BGP(
+                triples = [(rdflib.term.Variable('s'), rdflib.term.Variable('p'), rdflib.term.Variable('o'))]
+                _vars = {rdflib.term.Variable('o'), rdflib.term.Variable('p'), rdflib.term.Variable('s')}
+                )
+            p2 = BGP(
+                triples = [(rdflib.term.Variable('s'), rdflib.term.Variable('p1'), rdflib.term.Variable('o1'))]
+                _vars = {rdflib.term.Variable('o1'), rdflib.term.Variable('p1'), rdflib.term.Variable('s')}
+                )
+            expr = TrueFilter(
+                _vars = set()
+                )
+            _vars = {rdflib.term.Variable('o'), rdflib.term.Variable('o1'), rdflib.term.Variable('s'), rdflib.term.Variable('p1'), rdflib.term.Variable('p')}
+            )
+        PV = [rdflib.term.Variable('o1'), rdflib.term.Variable('o'), rdflib.term.Variable('s'), rdflib.term.Variable('p1'), rdflib.term.Variable('p')]
+        _vars = {rdflib.term.Variable('o'), rdflib.term.Variable('o1'), rdflib.term.Variable('s'), rdflib.term.Variable('p1'), rdflib.term.Variable('p')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('o1'), rdflib.term.Variable('o'), rdflib.term.Variable('s'), rdflib.term.Variable('p1'), rdflib.term.Variable('p')]
+    _vars = {rdflib.term.Variable('o'), rdflib.term.Variable('o1'), rdflib.term.Variable('s'), rdflib.term.Variable('p1'), rdflib.term.Variable('p')}
+    )

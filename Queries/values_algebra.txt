@@ -1,0 +1,24 @@
+SelectQuery(
+    p = Project(
+        p = Join(
+            p1 = ToMultiSet(
+                p = values(
+                    res = [{rdflib.term.Variable('s'): rdflib.term.URIRef('http://dbpedia.org/page/John_Lennon')}, {rdflib.term.Variable('s'): rdflib.term.URIRef('https://dbpedia.org/page/Paul_McCartney')}]
+                    _vars = set()
+                    )
+                _vars = set()
+                )
+            p2 = BGP(
+                triples = [(rdflib.term.Variable('s'), rdflib.term.URIRef('http://dbpedia.org/ontology/birthName'), rdflib.term.Variable('birthName'))]
+                _vars = {rdflib.term.Variable('birthName'), rdflib.term.Variable('s')}
+                )
+            lazy = True
+            _vars = {rdflib.term.Variable('birthName'), rdflib.term.Variable('s')}
+            )
+        PV = [rdflib.term.Variable('birthName')]
+        _vars = {rdflib.term.Variable('birthName'), rdflib.term.Variable('s')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('birthName')]
+    _vars = {rdflib.term.Variable('birthName'), rdflib.term.Variable('s')}
+    )
