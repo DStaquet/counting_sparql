@@ -8,18 +8,18 @@ WHERE {
  { 
  ?product rdfs:label ?label .
  ?product rdf:type bsbm-inst:ProductType6 .
- ?product bsbm:productFeature bsbm-inst:ProductFeature203 .
-	?product bsbm:productFeature bsbm-inst:ProductFeature19 .
+ ?product bsbm:productFeature bsbm-inst:ProductFeature32 .
+	?product bsbm:productFeature bsbm-inst:ProductFeature36 .
  ?product bsbm:productPropertyTextual1 ?propertyTextual .
 	?product bsbm:productPropertyNumeric1 ?p1 .
-	FILTER ( ?p1 > 115 )
+	FILTER ( ?p1 > 117 )
  } UNION {
  ?product rdfs:label ?label .
  ?product rdf:type bsbm-inst:ProductType6 .
- ?product bsbm:productFeature bsbm-inst:ProductFeature203 .
-	?product bsbm:productFeature bsbm-inst:ProductFeature29 .
+ ?product bsbm:productFeature bsbm-inst:ProductFeature32 .
+	?product bsbm:productFeature bsbm-inst:ProductFeature184 .
  ?product bsbm:productPropertyTextual1 ?propertyTextual .
 	?product bsbm:productPropertyNumeric2 ?p2 .
-	FILTER ( ?p2> 385 ) 
+	FILTER ( ?p2> 121 ) 
  } 
 }

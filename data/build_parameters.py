@@ -1,7 +1,10 @@
 from rdflib.graph import Graph
 import random, os
 
-from build_updates import construct_to_delete_tuples
+from build_updates import (
+    construct_to_delete_tuples,
+    construct_to_update_tuples,
+)
 
 
 def get_producer(g: Graph, product_str: str) -> str:
@@ -228,12 +231,12 @@ def del_files_in_dir(dir_path: str):
 
 if __name__ == "__main__":
     # Read dataset
-    size = 1000
+    size = 10000
     with open(f"./data/dataset{size}.ttl", "r") as datafile:
         data = datafile.read()
 
     g: Graph = Graph()
-    g.parse(data=data, format="ttl")
+    g.parse(data=data)
 
     # Get a random sample of 100 triples
     sample: list[int] = random.sample(
@@ -257,6 +260,11 @@ if __name__ == "__main__":
     for type in ["small", "medium", "large"]:
         with open(
             f"./Queries/berlin_benchmark/{size}/{type}_updates.csv",
+            "w",
+        ) as f:
+            pass
+        with open(
+            f"./Queries/berlin_benchmark/{size}/{type}_deletes.csv",
             "w",
         ) as f:
             pass
@@ -310,35 +318,77 @@ if __name__ == "__main__":
         ) as file:
             file.write(new_query)
 
-    for j in random.sample(sample, int(0.2 * len(sample))):
+    for j in random.sample(sample, int(0.1 * len(sample))):
         producer = get_producer(g, f"Product{j}").split(
             "/"
         )[-1]
-        construct_to_delete_tuples(
+        delete_features: list[tuple[str, str]] = (  # type: ignore
+            construct_to_delete_tuples(
+                f"Product{j}",
+                producer,
+                f"./Queries/berlin_benchmark/{size}/small_deletes.csv",
+                g,
+            )
+        )
+    for j in random.sample(range(1, size + 1), 2):
+        producer = get_producer(
+            g, f"Product{size + j}"
+        ).split("/")[-1]
+        construct_to_update_tuples(
             f"Product{j}",
             producer,
             f"./Queries/berlin_benchmark/{size}/small_updates.csv",
             g,
+            5,
+            delete_features,
+        )
+
+    for j in random.sample(sample, int(0.2 * len(sample))):
+        producer = get_producer(g, f"Product{j}").split(
+            "/"
+        )[-1]
+        delete_features = construct_to_delete_tuples(  # type: ignore
+            f"Product{j}",
+            producer,
+            f"./Queries/berlin_benchmark/{size}/medium_deletes.csv",
+            g,
+        )
+    for j in random.sample(
+        range(1, size + 1), int(0.01 * size)
+    ):
+        producer = get_producer(
+            g, f"Product{size + j}"
+        ).split("/")[-1]
+        construct_to_update_tuples(
+            f"Product{j}",
+            producer,
+            f"./Queries/berlin_benchmark/{size}/medium_updates.csv",
+            g,
+            10,
+            delete_features,
         )
 
     for j in random.sample(sample, int(0.4 * len(sample))):
         producer = get_producer(g, f"Product{j}").split(
             "/"
         )[-1]
-        construct_to_delete_tuples(
+        delete_features = construct_to_delete_tuples(  # type: ignore
             f"Product{j}",
             producer,
-            f"./Queries/berlin_benchmark/{size}/medium_updates.csv",
+            f"./Queries/berlin_benchmark/{size}/large_deletes.csv",
             g,
         )
-
-    for j in random.sample(sample, int(0.8 * len(sample))):
-        producer = get_producer(g, f"Product{j}").split(
-            "/"
-        )[-1]
-        construct_to_delete_tuples(
+    for j in random.sample(
+        range(1, size + 1), int(0.1 * size)
+    ):
+        producer = get_producer(
+            g, f"Product{size + j}"
+        ).split("/")[-1]
+        construct_to_update_tuples(
             f"Product{j}",
             producer,
             f"./Queries/berlin_benchmark/{size}/large_updates.csv",
             g,
+            25,
+            delete_features,
         )

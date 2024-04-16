@@ -35,7 +35,6 @@ from eval_incremental import (
     temp_eval_incremental_query4,
 )
 
-
 def insertData(g: graph.Graph, query: Query) -> None:
     delta_inserter.parseFirstDelta(query.algebra, g)
 
@@ -185,5 +184,5 @@ if __name__ == "__main__":
 
     for sample in samples:
         print(f"Sample: Product{sample}")
-        queryParser(size, True, g, sample)
+        queryParser(size, False, g, sample)
         print("\n")
