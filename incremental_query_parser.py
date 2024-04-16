@@ -17,7 +17,7 @@ from rdflib.plugins.sparql import parser
 from rdflib.plugins.sparql.sparql import QueryContext
 from rdflib.plugins.sparql.sparql import Query
 
-import sys, requests
+import sys
 
 from eval_incremental import VALUES
 from eval_incremental.eval_incremental import (
@@ -68,19 +68,17 @@ def insertParseQuery(
         print(triple)"""
 
 
-def queryParser(query: str, data: str) -> None:
+def queryParser(data: str, size: int) -> None:
     g = graph.Graph()
     g.parse(data=data)
 
-    query_tree = parser.parseQuery(str(query))
-    q_query_object = algebra.translateQuery(query_tree)
-    # algebra.pprintAlgebra(q_query_object)
+    increm_bool: bool = False
 
-    increm_bool: bool = True
+    query_abbrev: str = "8"
 
     # Query 1 - Incremental
     query = readQueryFile(
-        "./Queries/berlin_benchmark/query1.sparql"
+        f"./Queries/berlin_benchmark/{str(size)}/query1_benchmark/query1_{query_abbrev}.sparql"
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
@@ -96,7 +94,7 @@ def queryParser(query: str, data: str) -> None:
 
     # Query 2 - Incremental
     query = readQueryFile(
-        "./Queries/berlin_benchmark/query2.sparql"
+        f"./Queries/berlin_benchmark/{str(size)}/query2_benchmark/query2_{query_abbrev}.sparql"
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
@@ -112,7 +110,7 @@ def queryParser(query: str, data: str) -> None:
 
     # Query 3 - Incremental
     query = readQueryFile(
-        "./Queries/berlin_benchmark/query3.sparql"
+        f"./Queries/berlin_benchmark/{str(size)}/query3_benchmark/query3_{query_abbrev}.sparql"
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
@@ -128,7 +126,7 @@ def queryParser(query: str, data: str) -> None:
 
     # Query 4 - Incremental
     query = readQueryFile(
-        "./Queries/berlin_benchmark/query4.sparql"
+        f"./Queries/berlin_benchmark/{str(size)}/query4_benchmark/query4_{query_abbrev}.sparql"
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
@@ -156,21 +154,21 @@ def readQueryFile(filename: str) -> str:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    """if len(sys.argv) < 2:
         print(
             "Usage: python query_parser.py <queryfile.sparql>"
         )
-        exit(1)
-    query = readQueryFile(sys.argv[1])
+        exit(1)"""
+    # query = readQueryFile(sys.argv[1])
 
     # data = requests.get("http://localhost:3000/")
     # print(data.text)
 
-    VALUES["INSERT_CHECK"] = True
+    size: int = 100
 
-    with open("./data/dataset.nt", "r") as datafile:
+    with open(f"./data/dataset{size}.nt", "r") as datafile:
         read_nt_data: str = datafile.read()
 
     # insertParseQuery(query, read_ttl_data)
 
-    queryParser(query, read_nt_data)
+    queryParser(read_nt_data, size)

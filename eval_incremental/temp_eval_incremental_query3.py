@@ -294,12 +294,13 @@ def evalIncrFilter(
         )
         filter_handle = duckdb_conn.sql(filter_query)
         filter_results: DataFrame = filter_handle.df()
-        filter_insert_query: str = (
-            SQL_Constructor.insert_query(
-                part, filter_results
+        if not filter_results.empty:
+            filter_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, filter_results
+                )
             )
-        )
-        duckdb_conn.sql(filter_insert_query)
+            duckdb_conn.sql(filter_insert_query)
 
 
 def drop_rebuild_BGP_table(part: CompValue) -> None:
