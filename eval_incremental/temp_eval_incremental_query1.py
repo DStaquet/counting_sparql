@@ -324,12 +324,13 @@ def evalIncremBGP(
         )
         bgp_results_handle = duckdb_conn.sql(bgp_query)
         bgp_results: DataFrame = bgp_results_handle.df()
-        bgp_insert_query: str = (
-            SQL_Constructor.bgp_insert_query(
-                part, bgp_results
+        if not bgp_results.empty:
+            bgp_insert_query: str = (
+                SQL_Constructor.bgp_insert_query(
+                    part, bgp_results
+                )
             )
-        )
-        duckdb_conn.sql(bgp_insert_query)
+            duckdb_conn.sql(bgp_insert_query)
 
 
 def evalIncrPart(

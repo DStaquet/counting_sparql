@@ -115,11 +115,11 @@ if __name__ == "__main__":
     size = 100
 
     set_up_nu_table()
-    exit()
+
     drop_tables()
 
     insert_rdf_into_graph(read_ttl_data, g)
     make_tables(
-        f"./Queries/berlin_benchmark/{size}/small_updates.csv",
-        f"./Queries/berlin_benchmark/{size}/small_deletes.csv",
+        f"./Queries/berlin_benchmark/{size}/medium_updates.csv",
+        f"./Queries/berlin_benchmark/{size}/medium_deletes.csv",
     )
