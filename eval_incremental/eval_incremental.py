@@ -55,6 +55,15 @@ if TYPE_CHECKING:
 from eval_incremental import VALUES
 
 
+def drop_all_tables(part) -> None:
+    drop_query, drop_delta_query, drop_nu_query = (
+        SQL_Constructor.drop_all_tables(part)
+    )
+    duckdb_conn.sql(drop_query)
+    duckdb_conn.sql(drop_delta_query)
+    duckdb_conn.sql(drop_nu_query)
+
+
 def construct_tables(part) -> None:
     delta_table_drop_query: str = (
         SQL_Constructor.drop_delta_table(part)
@@ -238,6 +247,17 @@ def evalIncrServiceQuery(ctx: QueryContext, part) -> None:
 # TODO: make incremental
 def evalIncrDescribeQuery(ctx: QueryContext, part) -> None:
     pass
+
+
+def dropTablesRec(part) -> None:
+    if part == None:
+        return
+    if "p" in part or part.name == "BGP":
+        dropTablesRec(part.p)
+    elif "p1" in part and "p2" in part:
+        dropTablesRec(part.p1)
+        dropTablesRec(part.p2)
+    drop_all_tables(part)
 
 
 def constructTablesRec(part) -> None:

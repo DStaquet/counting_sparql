@@ -17,11 +17,11 @@ from rdflib.plugins.sparql import parser
 from rdflib.plugins.sparql.sparql import QueryContext
 from rdflib.plugins.sparql.sparql import Query
 
-import sys
+import sys, os
 
 from eval_incremental import VALUES
 from eval_incremental.eval_incremental import (
-    constructTablesRec,
+    constructTablesRec, dropTablesRec
 )
 from eval_incremental import delta_inserter
 from eval_incremental.eval_incremental import evalIncrPart
@@ -68,13 +68,7 @@ def insertParseQuery(
         print(triple)"""
 
 
-def queryParser(data: str, size: int) -> None:
-    g = graph.Graph()
-    g.parse(data=data)
-
-    increm_bool: bool = True
-
-    query_abbrev: str = "8"
+def queryParser(size: int, increm_bool: bool, g: graph.Graph, query_abbrev: str) -> None:
 
     # Query 1 - Incremental
     query = readQueryFile(
@@ -82,6 +76,9 @@ def queryParser(data: str, size: int) -> None:
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
+    # algebra.pprintAlgebra(q_query_object)
+    if not increm_bool:
+        dropTablesRec(q_query_object.algebra)
     constructTablesRec(q_query_object.algebra)
     result: DataFrame = (
         temp_eval_incremental_query1.evalIncrPart(
@@ -90,7 +87,7 @@ def queryParser(data: str, size: int) -> None:
             increm_bool,
         )
     )
-    print(result)
+    print("Result query 1:\n", result, "\n")
 
     # Query 2 - Incremental
     query = readQueryFile(
@@ -98,6 +95,9 @@ def queryParser(data: str, size: int) -> None:
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
+    # algebra.pprintAlgebra(q_query_object)
+    if not increm_bool:
+        dropTablesRec(q_query_object.algebra)
     constructTablesRec(q_query_object.algebra)
     result: DataFrame = (
         temp_eval_incremental_query2.evalIncrPart(
@@ -106,7 +106,7 @@ def queryParser(data: str, size: int) -> None:
             increm_bool,
         )
     )
-    print(result)
+    print("Result query 2:\n", result, "\n")
 
     # Query 3 - Incremental
     query = readQueryFile(
@@ -114,6 +114,8 @@ def queryParser(data: str, size: int) -> None:
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
+    if not increm_bool:
+        dropTablesRec(q_query_object.algebra)
     constructTablesRec(q_query_object.algebra)
     result: DataFrame = (
         temp_eval_incremental_query3.evalIncrPart(
@@ -122,7 +124,7 @@ def queryParser(data: str, size: int) -> None:
             increm_bool,
         )
     )
-    print(result)
+    print("Result query 3:\n", result, "\n")
 
     # Query 4 - Incremental
     query = readQueryFile(
@@ -131,6 +133,8 @@ def queryParser(data: str, size: int) -> None:
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
+    if not increm_bool:
+        dropTablesRec(q_query_object.algebra)
     constructTablesRec(q_query_object.algebra)
     result: DataFrame = (
         temp_eval_incremental_query4.evalIncrPart(
@@ -139,7 +143,7 @@ def queryParser(data: str, size: int) -> None:
             increm_bool,
         )
     )
-    print(result)
+    print("Result query 4:\n", result, "\n")
 
 
 def readQueryFile(filename: str) -> str:
@@ -171,4 +175,15 @@ if __name__ == "__main__":
 
     # insertParseQuery(query, read_ttl_data)
 
-    queryParser(read_nt_data, size)
+    g = graph.Graph()
+    g.parse(data=read_nt_data)
+
+    samples: list[str] = []
+    for file in os.listdir(f"./Queries/berlin_benchmark/{size}/query1_benchmark/"):
+        if file.endswith(".sparql"):
+            samples.append(file.split("_")[1].split(".")[0])
+
+    for sample in samples:
+        print(f"Sample: Product{sample}")
+        queryParser(size, True, g, sample)
+        print("\n")

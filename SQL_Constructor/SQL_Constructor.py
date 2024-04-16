@@ -7,6 +7,31 @@ from rdflib.term import Variable
 from pandas import DataFrame
 
 
+def drop_all_tables(part) -> tuple[str, str, str]:
+    drop_query: str = (
+        """
+    DROP TABLE IF EXISTS """
+        + __encode_table_name(part)
+        + """;"""
+    )
+
+    drop_delta_query: str = (
+        """
+    DROP TABLE IF EXISTS delta_"""
+        + __encode_table_name(part)
+        + """;"""
+    )
+
+    drop_nu_query: str = (
+        """
+    DROP TABLE IF EXISTS nu_"""
+        + __encode_table_name(part)
+        + """;"""
+    )
+
+    return drop_query, drop_delta_query, drop_nu_query
+
+
 def get_table_name(part: CompValue) -> str:
     return __encode_table_name(part)
 

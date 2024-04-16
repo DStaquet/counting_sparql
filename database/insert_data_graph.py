@@ -76,15 +76,15 @@ def insert_nu_table() -> str:
 
 def drop_tables() -> None:
     duckdb_conn = duckdb.connect("./database/k_values.db")
-    duckdb_conn.execute("DROP TABLE G;")
-    duckdb_conn.execute("DROP TABLE delta_G;")
-    duckdb_conn.execute("DROP TABLE nu_G;")
+    duckdb_conn.execute("DROP TABLE IF EXISTS G;")
+    duckdb_conn.execute("DROP TABLE IF EXISTS delta_G;")
+    duckdb_conn.execute("DROP TABLE IF EXISTS nu_G;")
     duckdb_conn.close()
 
 
 if __name__ == "__main__":
 
-    with open("./data/dataset1000.ttl") as datafile:
+    with open("./data/dataset100.nt") as datafile:
         read_ttl_data: str = datafile.read()
 
     g: Graph = Graph()
@@ -94,5 +94,5 @@ if __name__ == "__main__":
 
     insert_rdf_into_graph(read_ttl_data, g)
     make_tables(
-        "./Queries/berlin_benchmark/1000/small_updates.csv"
+        "./Queries/berlin_benchmark/100/small_updates.csv"
     )

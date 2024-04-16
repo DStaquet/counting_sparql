@@ -19,26 +19,10 @@ def evalIncrSelectQuery(
 ) -> Any:
     evalIncrPart(ctx, part.p, increm)
     if increm:
-        select_delta_query: str = (
-            "SELECT * FROM delta_"
+        select_query: str = (
+            "SELECT * FROM nu_"
             + get_table_name(part.p)
             + ";"
-        )
-        select_delta_handle = duckdb_conn.sql(
-            select_delta_query
-        )
-        select_delta_results: DataFrame = (
-            select_delta_handle.df()
-        )
-        select_delta_insert_query: str = (
-            SQL_Constructor.insert_delta_query(
-                part, select_delta_results, "delta_"
-            )
-        )
-        duckdb_conn.sql(select_delta_insert_query)
-        insert_increm_nu_table(part, use_PV=True)
-        select_query: str = (
-            "SELECT * FROM nu_" + get_table_name(part) + ";"
         )
         select_handle = duckdb_conn.sql(select_query)
         select_results: DataFrame = select_handle.df()
@@ -49,13 +33,6 @@ def evalIncrSelectQuery(
         # Put into database
         select_handle = duckdb_conn.sql(select_query)
         select_results: DataFrame = select_handle.df()
-        if not select_results.empty:
-            select_insert_query: str = (
-                SQL_Constructor.insert_query(
-                    part, select_results
-                )
-            )
-            duckdb_conn.sql(select_insert_query)
     return select_results
 
 
@@ -132,7 +109,6 @@ def evalIncrProject(
         )
         if not project_delta_results.empty:
             duckdb_conn.sql(project_delta_insert_query)
-            insert_increm_nu_table(part, use_PV=True)
 
         project_delta_query: str = (
             "SELECT "
@@ -156,7 +132,8 @@ def evalIncrProject(
         )
         if not project_delta_results.empty:
             duckdb_conn.sql(project_delta_insert_query)
-            insert_increm_nu_table(part, use_PV=True)
+
+        insert_increm_nu_table(part, use_PV=True)
     else:
         project_table_name: str = get_table_name(part.p.p1)
         project_get_query1: str = (
@@ -612,7 +589,6 @@ def evalIncrMinus(
                 )
             )
             duckdb_conn.sql(minus_delta_insert_query)
-            insert_increm_nu_table(part)
 
         # Second delta rules of the minus
         minus_delta_query: str = (
@@ -635,7 +611,8 @@ def evalIncrMinus(
                 )
             )
             duckdb_conn.sql(minus_delta_insert_query)
-            insert_increm_nu_table(part)
+
+        insert_increm_nu_table(part)
     else:
         minus_query: str = (
             "select r1.*, r2.testVar from "

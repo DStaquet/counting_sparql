@@ -131,7 +131,7 @@ def evalIncrProject(
                 )
             )
             duckdb_conn.sql(project_delta_insert_query)
-            insert_increm_nu_table(part, use_PV=True)
+        insert_increm_nu_table(part, use_PV=True)
     else:
         project_table_name: str = get_table_name(part.p)
         project_get_query: str = (
@@ -264,7 +264,7 @@ def evalIncrFilter(
                 )
             )
             duckdb_conn.sql(filter_insert_query)
-            insert_increm_nu_table(part)
+        insert_increm_nu_table(part)
 
     else:
         filter_query: str = (
@@ -281,12 +281,13 @@ def evalIncrFilter(
         )
         filter_handle = duckdb_conn.sql(filter_query)
         filter_results: DataFrame = filter_handle.df()
-        filter_insert_query: str = (
-            SQL_Constructor.insert_query(
-                part, filter_results
+        if not filter_results.empty:
+            filter_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, filter_results
+                )
             )
-        )
-        duckdb_conn.sql(filter_insert_query)
+            duckdb_conn.sql(filter_insert_query)
 
 
 def evalIncremBGP(
