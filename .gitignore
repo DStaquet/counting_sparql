@@ -163,4 +163,6 @@ cython_debug/
 *.db
 
 # As to not put too much data on git
-data/*
+data/*.csv
+data/*.ttl
+data/*.nt
