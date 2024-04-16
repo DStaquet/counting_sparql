@@ -194,12 +194,15 @@ if __name__ == "__main__":
             samples.append(file.split("_")[1].split(".")[0])
 
     
-    for data_size in [100, 1000, 10000]:
+    f = open("./measurements/results.csv", "w")
+    f.write("Data size,Delta size,Sample,Incremental,Query1,Query2,Query3,Query4\n")
+
+    for data_size in [5000, 1000, 100]:
         if data_size == 100:
             extension = "nt"
         else:
             extension = "ttl"
-        with open(f"./data/dataset{size}.{extension}", "r") as datafile:
+        with open(f"./data/dataset{data_size}.{extension}", "r") as datafile:
             read_nt_data: str = datafile.read()
 
         g = graph.Graph()
@@ -215,7 +218,7 @@ if __name__ == "__main__":
                 f"./Queries/berlin_benchmark/{data_size}/{delta_size}_deletes.csv",
             )
 
-            print("Incremental")
+            # print("Incremental")
 
             for sample in samples:
                 query1_time: float = 0
@@ -227,21 +230,24 @@ if __name__ == "__main__":
                 query2_time: float = 0
                 query3_time: float = 0
                 query4_time: float = 0
-                print(f"Sample: Product{sample}")
-                for _ in range(10):
+                # print(f"Sample: Product{sample}")
+                for _ in range(1):
                     queryParser(size, True, g, sample)
-                print(query1_time, query2_time, query3_time, query4_time)
+                # print(query1_time, query2_time, query3_time, query4_time)
+                f.write(f"{data_size},{delta_size},Product{sample},True,{query1_time},{query2_time},{query3_time},{query4_time}\n")
 
             insert_data_graph.set_up_nu_table()
 
-            print("Non-Incremental")
+            # print("Non-Incremental")
             for sample in samples:
                 query1_time: float = 0
                 query2_time: float = 0
                 query3_time: float = 0
                 query4_time: float = 0
-                print(f"Sample: Product{sample}")
-                for _ in range(10):
+                #print(f"Sample: Product{sample}")
+                for _ in range(1):
                     queryParser(size, False, g, sample)
-                print(query1_time, query2_time, query3_time, query4_time)
+                #print(query1_time, query2_time, query3_time, query4_time)
+                f.write(f"{data_size},{delta_size},Product{sample},False,{query1_time},{query2_time},{query3_time},{query4_time}\n")
         print("\n\n\n")
+    f.close()

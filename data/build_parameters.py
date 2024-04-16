@@ -231,7 +231,7 @@ def del_files_in_dir(dir_path: str):
 
 if __name__ == "__main__":
     # Read dataset
-    size = 10000
+    size = 5000
     with open(f"./data/dataset{size}.ttl", "r") as datafile:
         data = datafile.read()
 
