@@ -19,7 +19,7 @@ def evalIncrSelectQuery(
 ) -> Any:
     evalIncrPart(ctx, part.p, increm)
     if increm:
-        select_delta_query: str = (
+        """select_delta_query: str = (
             "SELECT * FROM delta_"
             + get_table_name(part.p)
             + ";"
@@ -36,9 +36,11 @@ def evalIncrSelectQuery(
             )
         )
         duckdb_conn.sql(select_delta_insert_query)
-        insert_increm_nu_table(part, use_PV=True)
+        insert_increm_nu_table(part, use_PV=True)"""
         select_query: str = (
-            "SELECT * FROM nu_" + get_table_name(part) + ";"
+            "SELECT * FROM nu_"
+            + get_table_name(part.p)
+            + ";"
         )
         select_handle = duckdb_conn.sql(select_query)
         select_results: DataFrame = select_handle.df()
@@ -49,12 +51,12 @@ def evalIncrSelectQuery(
         # Put into database
         select_handle = duckdb_conn.sql(select_query)
         select_results: DataFrame = select_handle.df()
-        select_insert_query: str = (
+        """select_insert_query: str = (
             SQL_Constructor.insert_query(
                 part, select_results
             )
         )
-        duckdb_conn.sql(select_insert_query)
+        duckdb_conn.sql(select_insert_query)"""
     return select_results
 
 
@@ -122,13 +124,14 @@ def evalIncrProject(
         project_delta_results: DataFrame = (
             project_delta_handle.df()
         )
-        project_delta_insert_query: str = (
-            SQL_Constructor.insert_delta_query(
-                part, project_delta_results, "delta_"
+        if not project_delta_results.empty:
+            project_delta_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part, project_delta_results, "delta_"
+                )
             )
-        )
-        duckdb_conn.sql(project_delta_insert_query)
-        insert_increm_nu_table(part, use_PV=True)
+            duckdb_conn.sql(project_delta_insert_query)
+            insert_increm_nu_table(part, use_PV=True)
     else:
         project_table_name: str = get_table_name(part.p)
         project_get_query: str = (
@@ -140,14 +143,14 @@ def evalIncrProject(
         )
         project_handle = duckdb_conn.sql(project_get_query)
         project_results: DataFrame = project_handle.df()
-
-        project_insert_query: str = (
-            SQL_Constructor.insert_query(
-                part, project_results
+        if not project_results.empty:
+            project_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, project_results
+                )
             )
-        )
 
-        duckdb_conn.sql(project_insert_query)
+            duckdb_conn.sql(project_insert_query)
 
 
 def evalIncrUnion(
@@ -254,13 +257,14 @@ def evalIncrFilter(
         filter_query += ";"
         filter_handle = duckdb_conn.sql(filter_query)
         filter_results: DataFrame = filter_handle.df()
-        filter_insert_query: str = (
-            SQL_Constructor.insert_delta_query(
-                part, filter_results, "delta_"
+        if not filter_results.empty:
+            filter_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part, filter_results, "delta_"
+                )
             )
-        )
-        duckdb_conn.sql(filter_insert_query)
-        insert_increm_nu_table(part)
+            duckdb_conn.sql(filter_insert_query)
+            insert_increm_nu_table(part)
 
     else:
         filter_query: str = (

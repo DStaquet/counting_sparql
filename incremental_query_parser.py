@@ -72,7 +72,7 @@ def queryParser(data: str, size: int) -> None:
     g = graph.Graph()
     g.parse(data=data)
 
-    increm_bool: bool = False
+    increm_bool: bool = True
 
     query_abbrev: str = "8"
 
