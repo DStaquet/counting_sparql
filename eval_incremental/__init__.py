@@ -1,6 +1,7 @@
 import duckdb
 
-duckdb_conn = duckdb.connect("./database/k_values.db")
+# duckdb_conn = duckdb.connect("./database/k_values.db")
+duckdb_conn = duckdb.connect()
 
 VALUES: dict[str, bool] = {"INSERT_CHECK": False}
 """

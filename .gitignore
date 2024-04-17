@@ -170,6 +170,7 @@ data/*.ttl
 # VS code
 .vscode/
 Queries/berlin_benchmark/backups/*
+output/debug_results.txt
 
 # Plots
 *.png

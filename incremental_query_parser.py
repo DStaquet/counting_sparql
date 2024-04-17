@@ -26,7 +26,7 @@ from eval_incremental.eval_incremental import (
     constructTablesRec,
     dropTablesRec,
 )
-from eval_incremental import delta_inserter
+from eval_incremental import delta_inserter, duckdb_conn
 from eval_incremental.eval_incremental import evalIncrPart
 
 from pandas import DataFrame
@@ -287,13 +287,14 @@ if __name__ == "__main__":
                 f"Calculating - Data size: {data_size}, Delta size: {delta_size}"
             )
 
-            insert_data_graph.drop_tables()
+            insert_data_graph.drop_tables(duckdb_conn)
             insert_data_graph.insert_rdf_into_graph(
-                read_nt_data, g
+                read_nt_data, g, duckdb_conn
             )
             insert_data_graph.make_tables(
                 f"./Queries/berlin_benchmark/{data_size}/{delta_size}_updates.csv",
                 f"./Queries/berlin_benchmark/{data_size}/{delta_size}_deletes.csv",
+                duckdb_conn,
             )
 
             # print("Incremental")
@@ -329,7 +330,7 @@ if __name__ == "__main__":
                     f"{data_size},{delta_size},Product{sample},True,{query1_time},{query2_time},{query3_time},{query4_time}\n"
                 )
 
-            insert_data_graph.set_up_nu_table()
+            insert_data_graph.set_up_nu_table(duckdb_conn)
 
             # print("Non-Incremental")
             with open(output_file, "a") as tf:
