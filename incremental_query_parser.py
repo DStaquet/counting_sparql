@@ -265,12 +265,8 @@ if __name__ == "__main__":
     )
 
     for data_size in [100, 1000, 5000]:
-        if data_size == 100:
-            extension = "nt"
-        else:
-            extension = "ttl"
         with open(
-            f"./data/dataset{data_size}.{extension}", "r"
+            f"./data/dataset{data_size}.ttl", "r"
         ) as datafile:
             read_nt_data: str = datafile.read()
 
@@ -319,7 +315,7 @@ if __name__ == "__main__":
                 query2_time: float = 0
                 query3_time: float = 0
                 query4_time: float = 0
-                print(f"Sample: Product{sample}")
+                # print(f"Sample: Product{sample}")
                 for _ in range(10):
                     queryParser(
                         data_size,
@@ -349,7 +345,7 @@ if __name__ == "__main__":
                 query2_time: float = 0
                 query3_time: float = 0
                 query4_time: float = 0
-                print(f"Sample: Product{sample}")
+                # print(f"Sample: Product{sample}")
                 for _ in range(10):
                     queryParser(
                         data_size,

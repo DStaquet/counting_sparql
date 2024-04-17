@@ -7,11 +7,11 @@ SELECT ?product ?label
 WHERE {{
  ?product rdfs:label ?label .
  ?product a bsbm-inst:ProductType16 .
-	?product bsbm:productFeature bsbm-inst:ProductFeature735 .
+	?product bsbm:productFeature bsbm-inst:ProductFeature125 .
 	?product bsbm:productPropertyNumeric1 ?p1 .
-	FILTER ( ?p1 > 76 ) 
+	FILTER ( ?p1 > 271 ) 
 	?product bsbm:productPropertyNumeric3 ?p3 .
-	FILTER (?p3 < 255 )}
+	FILTER (?p3 < 455 )}
  MINUS { 
- ?product bsbm:productFeature bsbm-inst:ProductFeature728 .}
+ ?product bsbm:productFeature bsbm-inst:ProductFeature137 .}
 }

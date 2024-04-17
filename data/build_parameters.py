@@ -231,184 +231,195 @@ def del_files_in_dir(dir_path: str):
 
 if __name__ == "__main__":
     # Read dataset
-    size = 100
-    with open(f"./data/dataset{size}.nt", "r") as datafile:
-        data = datafile.read()
-
-    g: Graph = Graph()
-    g.parse(data=data)
-
-    # Get a random sample of 100 triples
-    sample: list[int] = random.sample(
-        range(1, size + 1), 10
-    )
-
-    # Delete all previous instances
-    del_files_in_dir(
-        "./Queries/berlin_benchmark/query1_benchmark/"
-    )
-    del_files_in_dir(
-        "./Queries/berlin_benchmark/query2_benchmark/"
-    )
-    del_files_in_dir(
-        "./Queries/berlin_benchmark/query3_benchmark/"
-    )
-    del_files_in_dir(
-        "./Queries/berlin_benchmark/query4_benchmark/"
-    )
-
-    for type_size in ["small", "medium", "large"]:
+    sizes = [100, 1000, 5000]
+    for size in sizes:
         with open(
-            f"./Queries/berlin_benchmark/{size}/{type_size}_updates.csv",
-            "w",
-        ) as f:
-            pass
-        with open(
-            f"./Queries/berlin_benchmark/{size}/{type_size}_deletes.csv",
-            "w",
-        ) as f:
-            pass
-        with open(
-            f"./Queries/berlin_benchmark/{size}/relevant_products_{type_size}.txt",
-            "w",
-        ) as f:
-            pass
+            f"./data/dataset{size}.ttl", "r"
+        ) as datafile:
+            data = datafile.read()
 
-    for i in sample:
-        producer = get_producer(g, f"Product{i}").split(
-            "/"
-        )[-1]
-        if producer == "":
-            print("No producer found.", f"Product{i}")
+        g: Graph = Graph()
+        g.parse(data=data)
 
-        feature_list = get_features_product(
-            g, f"Product{i}", producer
+        # Get a random sample of 100 triples
+        sample: list[int] = random.sample(
+            range(1, size + 1), 10
         )
 
-        product_types = get_producttypes_product(
-            g, f"Product{i}", producer
+        # Delete all previous instances
+        del_files_in_dir(
+            f"./Queries/berlin_benchmark/{size}/query1_benchmark/"
+        )
+        del_files_in_dir(
+            f"./Queries/berlin_benchmark/{size}/query2_benchmark/"
+        )
+        del_files_in_dir(
+            f"./Queries/berlin_benchmark/{size}/query3_benchmark/"
+        )
+        del_files_in_dir(
+            f"./Queries/berlin_benchmark/{size}/query4_benchmark/"
         )
 
-        new_query = build_query1(
-            feature_list, product_types
-        )
-        with open(
-            f"./Queries/berlin_benchmark/query1_benchmark/query1_{i}.sparql",
-            "w",
-        ) as file:
-            file.write(new_query)
+        for type_size in ["small", "medium", "large"]:
+            with open(
+                f"./Queries/berlin_benchmark/{size}/{type_size}_updates.csv",
+                "w",
+            ) as f:
+                pass
+            with open(
+                f"./Queries/berlin_benchmark/{size}/{type_size}_deletes.csv",
+                "w",
+            ) as f:
+                pass
+            with open(
+                f"./Queries/berlin_benchmark/{size}/relevant_products_{type_size}.txt",
+                "w",
+            ) as f:
+                pass
 
-        new_query = build_query2(f"Product{i}", producer)
-        with open(
-            f"./Queries/berlin_benchmark/query2_benchmark/query2_{i}.sparql",
-            "w",
-        ) as file:
-            file.write(new_query)
+        for i in sample:
+            producer = get_producer(g, f"Product{i}").split(
+                "/"
+            )[-1]
+            if producer == "":
+                print("No producer found.", f"Product{i}")
 
-        new_query = build_query3(
-            product_types, feature_list
-        )
-        with open(
-            f"./Queries/berlin_benchmark/query3_benchmark/query3_{i}.sparql",
-            "w",
-        ) as file:
-            file.write(new_query)
+            feature_list = get_features_product(
+                g, f"Product{i}", producer
+            )
 
-        new_query = build_query4(
-            product_types, feature_list
-        )
-        with open(
-            f"./Queries/berlin_benchmark/query4_benchmark/query4_{i}.sparql",
-            "w",
-        ) as file:
-            file.write(new_query)
+            product_types = get_producttypes_product(
+                g, f"Product{i}", producer
+            )
 
-    for j in random.sample(sample, int(0.1 * len(sample))):
-        with open(
-            f"./Queries/berlin_benchmark/{size}/relevant_products_small.txt",
-            "a",
-        ) as tf:
-            tf.write(f"{j}\n")
-        producer = get_producer(g, f"Product{j}").split(
-            "/"
-        )[-1]
-        delete_features: list[tuple[str, str]] = (  # type: ignore
-            construct_to_delete_tuples(
+            new_query = build_query1(
+                feature_list, product_types
+            )
+            with open(
+                f"./Queries/berlin_benchmark/{size}/query1_benchmark/query1_{i}.sparql",
+                "w",
+            ) as file:
+                file.write(new_query)
+
+            new_query = build_query2(
+                f"Product{i}", producer
+            )
+            with open(
+                f"./Queries/berlin_benchmark/{size}/query2_benchmark/query2_{i}.sparql",
+                "w",
+            ) as file:
+                file.write(new_query)
+
+            new_query = build_query3(
+                product_types, feature_list
+            )
+            with open(
+                f"./Queries/berlin_benchmark/{size}/query3_benchmark/query3_{i}.sparql",
+                "w",
+            ) as file:
+                file.write(new_query)
+
+            new_query = build_query4(
+                product_types, feature_list
+            )
+            with open(
+                f"./Queries/berlin_benchmark/{size}/query4_benchmark/query4_{i}.sparql",
+                "w",
+            ) as file:
+                file.write(new_query)
+
+        for j in random.sample(
+            sample, int(0.1 * len(sample))
+        ):
+            with open(
+                f"./Queries/berlin_benchmark/{size}/relevant_products_small.txt",
+                "a",
+            ) as tf:
+                tf.write(f"{j}\n")
+            producer = get_producer(g, f"Product{j}").split(
+                "/"
+            )[-1]
+            delete_features: list[tuple[str, str]] = (  # type: ignore
+                construct_to_delete_tuples(
+                    f"Product{j}",
+                    producer,
+                    f"./Queries/berlin_benchmark/{size}/small_deletes.csv",
+                    g,
+                )
+            )
+        for j in random.sample(range(1, size + 1), 2):
+            producer = get_producer(g, f"Product{j}").split(
+                "/"
+            )[-1]
+            construct_to_update_tuples(
+                f"Product{size + j}",
+                producer,
+                f"./Queries/berlin_benchmark/{size}/small_updates.csv",
+                g,
+                5,
+                delete_features,
+            )
+
+        for j in random.sample(
+            sample, int(0.2 * len(sample))
+        ):
+            with open(
+                f"./Queries/berlin_benchmark/{size}/relevant_products_medium.txt",
+                "a",
+            ) as tf:
+                tf.write(f"{j}\n")
+            producer = get_producer(g, f"Product{j}").split(
+                "/"
+            )[-1]
+            delete_features = construct_to_delete_tuples(  # type: ignore
                 f"Product{j}",
                 producer,
-                f"./Queries/berlin_benchmark/{size}/small_deletes.csv",
+                f"./Queries/berlin_benchmark/{size}/medium_deletes.csv",
                 g,
             )
-        )
-    for j in random.sample(range(1, size + 1), 2):
-        producer = get_producer(g, f"Product{j}").split(
-            "/"
-        )[-1]
-        construct_to_update_tuples(
-            f"Product{size + j}",
-            producer,
-            f"./Queries/berlin_benchmark/{size}/small_updates.csv",
-            g,
-            5,
-            delete_features,
-        )
+        for j in random.sample(
+            range(1, size + 1), int(0.01 * size)
+        ):
+            producer = get_producer(g, f"Product{j}").split(
+                "/"
+            )[-1]
+            construct_to_update_tuples(
+                f"Product{size + j}",
+                producer,
+                f"./Queries/berlin_benchmark/{size}/medium_updates.csv",
+                g,
+                10,
+                delete_features,
+            )
 
-    for j in random.sample(sample, int(0.2 * len(sample))):
-        with open(
-            f"./Queries/berlin_benchmark/{size}/relevant_products_medium.txt",
-            "a",
-        ) as tf:
-            tf.write(f"{j}\n")
-        producer = get_producer(g, f"Product{j}").split(
-            "/"
-        )[-1]
-        delete_features = construct_to_delete_tuples(  # type: ignore
-            f"Product{j}",
-            producer,
-            f"./Queries/berlin_benchmark/{size}/medium_deletes.csv",
-            g,
-        )
-    for j in random.sample(
-        range(1, size + 1), int(0.01 * size)
-    ):
-        producer = get_producer(g, f"Product{j}").split(
-            "/"
-        )[-1]
-        construct_to_update_tuples(
-            f"Product{size + j}",
-            producer,
-            f"./Queries/berlin_benchmark/{size}/medium_updates.csv",
-            g,
-            10,
-            delete_features,
-        )
-
-    for j in random.sample(sample, int(0.4 * len(sample))):
-        with open(
-            f"./Queries/berlin_benchmark/{size}/relevant_products_large.txt",
-            "a",
-        ) as tf:
-            tf.write(f"{j}\n")
-        producer = get_producer(g, f"Product{j}").split(
-            "/"
-        )[-1]
-        delete_features = construct_to_delete_tuples(  # type: ignore
-            f"Product{j}",
-            producer,
-            f"./Queries/berlin_benchmark/{size}/large_deletes.csv",
-            g,
-        )
-    for j in random.sample(
-        range(1, size + 1), int(0.1 * size)
-    ):
-        producer = get_producer(g, f"Product{j}").split(
-            "/"
-        )[-1]
-        construct_to_update_tuples(
-            f"Product{size + j}",
-            producer,
-            f"./Queries/berlin_benchmark/{size}/large_updates.csv",
-            g,
-            25,
-            delete_features,
-        )
+        for j in random.sample(
+            sample, int(0.4 * len(sample))
+        ):
+            with open(
+                f"./Queries/berlin_benchmark/{size}/relevant_products_large.txt",
+                "a",
+            ) as tf:
+                tf.write(f"{j}\n")
+            producer = get_producer(g, f"Product{j}").split(
+                "/"
+            )[-1]
+            delete_features = construct_to_delete_tuples(  # type: ignore
+                f"Product{j}",
+                producer,
+                f"./Queries/berlin_benchmark/{size}/large_deletes.csv",
+                g,
+            )
+        for j in random.sample(
+            range(1, size + 1), int(0.1 * size)
+        ):
+            producer = get_producer(g, f"Product{j}").split(
+                "/"
+            )[-1]
+            construct_to_update_tuples(
+                f"Product{size + j}",
+                producer,
+                f"./Queries/berlin_benchmark/{size}/large_updates.csv",
+                g,
+                25,
+                delete_features,
+            )

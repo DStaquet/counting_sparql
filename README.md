@@ -10,6 +10,18 @@ Prerequisites
 
 - Set up the data
     - This script uses the data generated using the Berlin SPARQL Benchmark (BSBM) dataset. The source code to generate the data can be downloaded from the following link: https://sourceforge.net/projects/bsbmtools/
+    1) The data is generated using the following commands:
+        ```bash
+        $ ./generate -pc 100 -s ttl -fn dataset100
+        $ ./generate -pc 1000 -s ttl -fn dataset1000
+        $ ./generate -pc 5000 -s ttl -fn dataset5000
+        ```
+    2) Put these datasets in the `data/` directory
+    3) After this run the following command to generate the queries and delta updates
+    ```
+    python build_parameters.py
+    ```
+    4) The user is now able to run the experiment
 
 How to run the experiment
 -------------------------

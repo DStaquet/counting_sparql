@@ -164,7 +164,8 @@ cython_debug/
 
 # As to not put too much data on git
 data/*.csv
-data/dataset10000.ttl
+data/*.nt
+data/*.ttl
 
 # VS code
 .vscode/
