@@ -164,8 +164,13 @@ cython_debug/
 
 # As to not put too much data on git
 data/*.csv
-data/*.ttl
-data/*.nt
+data/dataset10000.ttl
 
 # VS code
 .vscode/
+Queries/berlin_benchmark/backups/*
+
+# Plots
+*.png
+
+.gitignore

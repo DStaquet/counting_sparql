@@ -231,8 +231,8 @@ def del_files_in_dir(dir_path: str):
 
 if __name__ == "__main__":
     # Read dataset
-    size = 5000
-    with open(f"./data/dataset{size}.ttl", "r") as datafile:
+    size = 100
+    with open(f"./data/dataset{size}.nt", "r") as datafile:
         data = datafile.read()
 
     g: Graph = Graph()
@@ -257,14 +257,19 @@ if __name__ == "__main__":
         "./Queries/berlin_benchmark/query4_benchmark/"
     )
 
-    for type in ["small", "medium", "large"]:
+    for type_size in ["small", "medium", "large"]:
         with open(
-            f"./Queries/berlin_benchmark/{size}/{type}_updates.csv",
+            f"./Queries/berlin_benchmark/{size}/{type_size}_updates.csv",
             "w",
         ) as f:
             pass
         with open(
-            f"./Queries/berlin_benchmark/{size}/{type}_deletes.csv",
+            f"./Queries/berlin_benchmark/{size}/{type_size}_deletes.csv",
+            "w",
+        ) as f:
+            pass
+        with open(
+            f"./Queries/berlin_benchmark/{size}/relevant_products_{type_size}.txt",
             "w",
         ) as f:
             pass
@@ -319,6 +324,11 @@ if __name__ == "__main__":
             file.write(new_query)
 
     for j in random.sample(sample, int(0.1 * len(sample))):
+        with open(
+            f"./Queries/berlin_benchmark/{size}/relevant_products_small.txt",
+            "a",
+        ) as tf:
+            tf.write(f"{j}\n")
         producer = get_producer(g, f"Product{j}").split(
             "/"
         )[-1]
@@ -331,11 +341,11 @@ if __name__ == "__main__":
             )
         )
     for j in random.sample(range(1, size + 1), 2):
-        producer = get_producer(
-            g, f"Product{size + j}"
-        ).split("/")[-1]
+        producer = get_producer(g, f"Product{j}").split(
+            "/"
+        )[-1]
         construct_to_update_tuples(
-            f"Product{j}",
+            f"Product{size + j}",
             producer,
             f"./Queries/berlin_benchmark/{size}/small_updates.csv",
             g,
@@ -344,6 +354,11 @@ if __name__ == "__main__":
         )
 
     for j in random.sample(sample, int(0.2 * len(sample))):
+        with open(
+            f"./Queries/berlin_benchmark/{size}/relevant_products_medium.txt",
+            "a",
+        ) as tf:
+            tf.write(f"{j}\n")
         producer = get_producer(g, f"Product{j}").split(
             "/"
         )[-1]
@@ -356,11 +371,11 @@ if __name__ == "__main__":
     for j in random.sample(
         range(1, size + 1), int(0.01 * size)
     ):
-        producer = get_producer(
-            g, f"Product{size + j}"
-        ).split("/")[-1]
+        producer = get_producer(g, f"Product{j}").split(
+            "/"
+        )[-1]
         construct_to_update_tuples(
-            f"Product{j}",
+            f"Product{size + j}",
             producer,
             f"./Queries/berlin_benchmark/{size}/medium_updates.csv",
             g,
@@ -369,6 +384,11 @@ if __name__ == "__main__":
         )
 
     for j in random.sample(sample, int(0.4 * len(sample))):
+        with open(
+            f"./Queries/berlin_benchmark/{size}/relevant_products_large.txt",
+            "a",
+        ) as tf:
+            tf.write(f"{j}\n")
         producer = get_producer(g, f"Product{j}").split(
             "/"
         )[-1]
@@ -381,11 +401,11 @@ if __name__ == "__main__":
     for j in random.sample(
         range(1, size + 1), int(0.1 * size)
     ):
-        producer = get_producer(
-            g, f"Product{size + j}"
-        ).split("/")[-1]
+        producer = get_producer(g, f"Product{j}").split(
+            "/"
+        )[-1]
         construct_to_update_tuples(
-            f"Product{j}",
+            f"Product{size + j}",
             producer,
             f"./Queries/berlin_benchmark/{size}/large_updates.csv",
             g,
