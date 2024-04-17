@@ -1,4 +1,4 @@
-Incremental view maintenance in counting algorithm through SPARQL
+Incremental view maintenance for SPARQL through the counting algorithm
 ===============================================================
 
 Prerequisites
