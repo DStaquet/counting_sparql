@@ -1,16 +1,3 @@
-"""
-import rdflib.plugins.sparql.sparql as ssparql
-
-import rdflib.query as rdfquery
-from rdflib.plugins.sparql import algebra
-import rdflib.plugin as plugin
-from rdflib.plugins.sparql import parser
-import sys, requests
-from typing import (
-    Union,
-    Type,
-)"""
-
 from time import time
 
 import rdflib.graph as graph
@@ -21,7 +8,6 @@ from rdflib.plugins.sparql.sparql import Query
 
 import sys, os
 
-from eval_incremental import VALUES
 from eval_incremental.eval_incremental import (
     constructTablesRec,
     dropTablesRec,
@@ -45,21 +31,43 @@ def insertData(g: graph.Graph, query: Query) -> None:
     delta_inserter.parseFirstDelta(query.algebra, g)
 
 
+def buildGraphFromData(
+    data: str | None,
+    url: str | None = None,
+    format: str | None = None,
+) -> graph.Graph:
+    """Build th graph from given data or url.
+
+    Args:
+        data (str | None): Given data
+        url (str | None, optional): Given URL. Defaults to None.
+        format (str | None, optional): Given format if applicable. Defaults to None.
+
+    Returns:
+        graph.Graph: The parsed graph
+    """
+    g = graph.Graph()
+    if data == None:
+        if format == None:
+            g.parse(url)
+        else:
+            g.parse(url, format=format)
+    else:
+        if format == None:
+            g.parse(data=data)
+        else:
+            g.parse(data=data, format=format)
+    return g
+
+
 def insertParseQuery(
     query: str, data: str | None = None
 ) -> None:
 
-    g = graph.Graph()
-    if data == None:
-        g.parse(
-            "http://fragments.dbpedia.org/", format="ttl"
-        )
-    else:
-        g.parse(data=data)
+    g = buildGraphFromData(data)
 
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
-    # algebra.pprintAlgebra(q_query_object)
 
     constructTablesRec(q_query_object.algebra)
     output: DataFrame = evalIncrPart(
@@ -250,21 +258,18 @@ def check_relevancy(
             return False
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python query_parser.py <output_dir>")
-        exit(1)
-    else:
-        output_file: str = sys.argv[1]
-        f = open(output_file, "w")
-        f.close()
-
+def test_queryParser(
+    sizes: list[int], delta_sizes: list[str]
+):
     f = open("./measurements/results.csv", "w")
     f.write(
         "Data size,Delta size,Sample,Incremental,Query1,Query2,Query3,Query4\n"
     )
-
-    for data_size in [100, 1000, 5000]:
+    global query1_time
+    global query2_time
+    global query3_time
+    global query4_time
+    for data_size in sizes:
         with open(
             f"./data/dataset{data_size}.ttl", "r"
         ) as datafile:
@@ -279,17 +284,16 @@ if __name__ == "__main__":
                     file.split("_")[1].split(".")[0]
                 )
 
-        g = graph.Graph()
-        g.parse(data=read_nt_data)
+        g: graph.Graph = buildGraphFromData(read_nt_data)
 
-        for delta_size in ["small", "medium", "large"]:
+        for delta_size in delta_sizes:
             print(
                 f"Calculating - Data size: {data_size}, Delta size: {delta_size}"
             )
 
             insert_data_graph.drop_tables(duckdb_conn)
             insert_data_graph.insert_rdf_into_graph(
-                read_nt_data, g, duckdb_conn
+                g, duckdb_conn
             )
             insert_data_graph.make_tables(
                 f"./Queries/berlin_benchmark/{data_size}/{delta_size}_updates.csv",
@@ -307,15 +311,15 @@ if __name__ == "__main__":
                     delta_size, data_size, sample
                 ):
                     continue
-                query1_time: float = 0
-                query2_time: float = 0
-                query3_time: float = 0
-                query4_time: float = 0
+                query1_time = 0
+                query2_time = 0
+                query3_time = 0
+                query4_time = 0
                 queryParser(data_size, False, g, sample)
-                query1_time: float = 0
-                query2_time: float = 0
-                query3_time: float = 0
-                query4_time: float = 0
+                query1_time = 0
+                query2_time = 0
+                query3_time = 0
+                query4_time = 0
                 # print(f"Sample: Product{sample}")
                 for _ in range(10):
                     queryParser(
@@ -342,10 +346,10 @@ if __name__ == "__main__":
                     delta_size, data_size, sample
                 ):
                     continue
-                query1_time: float = 0
-                query2_time: float = 0
-                query3_time: float = 0
-                query4_time: float = 0
+                query1_time = 0
+                query2_time = 0
+                query3_time = 0
+                query4_time = 0
                 # print(f"Sample: Product{sample}")
                 for _ in range(10):
                     queryParser(
@@ -361,3 +365,21 @@ if __name__ == "__main__":
                 )
         print("\n")
     f.close()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python query_parser.py <output_dir>")
+        exit(1)
+    else:
+        output_file: str = sys.argv[1]
+        f = open(output_file, "w")
+        f.close()
+
+    query1_time: float = 0
+    query2_time: float = 0
+    query3_time: float = 0
+    query4_time: float = 0
+    test_queryParser(
+        [100, 1000, 5000], ["small", "medium", "large"]
+    )

@@ -1,25 +1,42 @@
 import duckdb
 from rdflib.graph import Graph
 
+from SQL_Constructor import SQL_initialize_queries
+
 import csv
 
 
-def create_table() -> str:
-    create_str = "CREATE TABLE IF NOT EXISTS G (s TEXT, p TEXT, o TEXT, k_count INT);"
-    return create_str
+def create_table(
+    duckdb_conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """Create a graph table G in the database"""
+    duckdb_conn.execute(
+        SQL_initialize_queries.create_table()
+    )
 
 
 def create_delta_table() -> str:
+    """Creates the query to create the delta table
+
+    Returns:
+        str: Query to create the delta table
+    """
     create_str = "CREATE TABLE IF NOT EXISTS delta_G (s TEXT, p TEXT, o TEXT, k_count INT);"
     return create_str
 
 
 def create_nu_table() -> str:
+    """Creates the query to create the nu table"""
     create_str = "CREATE TABLE IF NOT EXISTS nu_G (s TEXT, p TEXT, o TEXT, k_count INT);"
     return create_str
 
 
-def insert_table(rdf_data: str, g: Graph) -> str:
+def insert_table(g: Graph) -> None:
+    """Inserts the values into the G table.
+
+    Args:
+        g (Graph): The graph object.
+    """
     rdf_input_data = ""
     known_tuples: dict[tuple[str, str, str], int] = dict()
     for s, p, o in g:
@@ -30,21 +47,32 @@ def insert_table(rdf_data: str, g: Graph) -> str:
     for s, p, o in known_tuples:
         rdf_input_data += f"('{s}', '{p}', '{o}', {known_tuples[(s, p, o)]}),\n"
     insert_str = f"INSERT INTO G VALUES {rdf_input_data};"
-    return insert_str
+    duckdb_conn.execute(insert_str)
 
 
 def insert_rdf_into_graph(
-    rdf_data: str, g: Graph, duckdb_conn
+    g: Graph, duckdb_conn: duckdb.DuckDBPyConnection
 ) -> None:
-    create_table_str = create_table()
-    insert_str = insert_table(rdf_data, g)
-    duckdb_conn.execute(create_table_str)
-    duckdb_conn.execute(insert_str)
+    """Inserts the RDF data into the graph table.
+
+    Args:
+        g (Graph): Graph with the data
+        duckdb_conn (duckdb.DuckDBPyConnection): Connection to the database
+    """
+    create_table(duckdb_conn)
+    insert_table(g)
 
 
 def make_tables(
     update_file: str, delete_file: str, duckdb_conn
 ) -> None:
+    """Constructs the delta and nu tables.
+
+    Args:
+        update_file (str): Updates file
+        delete_file (str): File with deletions
+        duckdb_conn (_type_): connection to the database
+    """
     create_delta_table_str = create_delta_table()
     create_nu_table_str = create_nu_table()
     duckdb_conn.execute(create_delta_table_str)
@@ -62,10 +90,18 @@ def make_tables(
     duckdb_conn.execute(insert_nu_table())
 
 
-# TODO simulate updates
 def simulate_delta_data(
     update_file: str, delete_or_update: int
 ) -> str:
+    """Simulates the delta data based upon deletions or updates in the file.
+
+    Args:
+        update_file (str): File with the updates
+        delete_or_update (int): Integer 1 for update, -1 for delete
+
+    Returns:
+        str: The query to insert the delta data
+    """
     query: str = (
         "insert into delta_G (s, p, o, k_count) VALUES "
     )
@@ -78,23 +114,24 @@ def simulate_delta_data(
     return query
 
 
-# TODO: correctly update simulations
 def insert_nu_table() -> str:
+    """Returns query to insert into nu table"""
     return "insert into nu_G (s, p, o, k_count) select r1.s, r1.p, r1.o, coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count from G as r1 FULL OUTER JOIN delta_G as r2 ON r1.s = r2.s and r1.p = r2.p and r1.o = r2.o where (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0;"
 
 
 def set_up_nu_table(duckdb_conn) -> None:
+    """Puts the data from the nu table into the G table"""
     drop_G = "DROP TABLE IF EXISTS G;"
     duckdb_conn.execute(drop_G)
 
-    create_table_str = create_table()
-    duckdb_conn.execute(create_table_str)
+    create_table(duckdb_conn)
 
     insert_nu_in_g = "INSERT INTO G SELECT * FROM nu_G;"
     duckdb_conn.execute(insert_nu_in_g)
 
 
 def drop_tables(duckdb_conn) -> None:
+    """Drops the tables in the database"""
     duckdb_conn.execute("DROP TABLE IF EXISTS G;")
     duckdb_conn.execute("DROP TABLE IF EXISTS delta_G;")
     duckdb_conn.execute("DROP TABLE IF EXISTS nu_G;")
@@ -116,7 +153,7 @@ if __name__ == "__main__":
 
     drop_tables(duckdb_conn)
 
-    insert_rdf_into_graph(read_ttl_data, g, duckdb_conn)
+    insert_rdf_into_graph(g, duckdb_conn)
     make_tables(
         f"./Queries/berlin_benchmark/{size}/medium_updates.csv",
         f"./Queries/berlin_benchmark/{size}/medium_deletes.csv",

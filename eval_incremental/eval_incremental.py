@@ -1,89 +1,437 @@
-from typing import (
-    Any,
-    List,
-    Generator,
-    Union,
-    TYPE_CHECKING,
-    Iterable,
-    Deque,
-    Mapping,
-)
-import collections
-from rdflib.term import Identifier, Variable, URIRef
-from rdflib.plugins.sparql import parser
-from rdflib.plugins.sparql.parserutils import value
-from rdflib.plugins.sparql.aggregates import Aggregator
-
-from pyparsing import ParseException
-import json as j
+from eval_incremental import duckdb_conn
 
 from pandas import DataFrame
 
-from rdflib.plugins.sparql.sparql import (
-    QueryContext,
-    AlreadyBound,
-    FrozenBindings,
-    FrozenDict,
-    SPARQLError,
-)
+from rdflib.plugins.sparql.sparql import QueryContext
+from rdflib.plugins.sparql.parserutils import CompValue
 
-from rdflib.plugins.sparql.evalutils import (
-    _ebv,
-    _join,
-    _eval,
-    _minus,
-    _val,
-    _fillTemplate,
-)
-from rdflib.graph import Graph
-
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
-
-import itertools
-import re
-
+from typing import Any
+from SQL_Constructor.SQL_Constructor import get_table_name
 from SQL_Constructor import SQL_Constructor
 
-from eval_incremental import duckdb_conn
+from rdflib.term import Identifier
 
 _Triple = tuple[Identifier, Identifier, Identifier]
 
-if TYPE_CHECKING:
-    from rdflib.paths import Path
 
-from eval_incremental import VALUES
+def evalIncrSelectQuery(
+    ctx: QueryContext, part: CompValue, increm: bool
+) -> Any:
+    """Returns the result of the select query.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+
+    Returns:
+        Any: Results of the select query.
+    """
+    evalIncrPart(ctx, part.p, increm)
+    if increm:
+        select_query: str = (
+            "SELECT * FROM nu_"
+            + get_table_name(part.p)
+            + ";"
+        )
+        select_handle = duckdb_conn.sql(select_query)
+        select_results: DataFrame = select_handle.df()
+    else:
+        select_query: str = (
+            "SELECT * FROM " + get_table_name(part.p) + ";"
+        )
+        # Put into database
+        select_handle = duckdb_conn.sql(select_query)
+        select_results: DataFrame = select_handle.df()
+    return select_results
 
 
-def drop_all_tables(part) -> None:
-    drop_query, drop_delta_query, drop_nu_query = (
-        SQL_Constructor.drop_all_tables(part)
+def evalIncrDistinct(
+    ctx: QueryContext, part: CompValue, increm: bool
+) -> None:
+    """Evaluate the distinct part of the query.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+    """
+    evalIncrPart(ctx, part.p, increm)
+    if increm:
+        distinct_delta_query: str = (
+            "SELECT DISTINCT "
+            + ", ".join(var for var in part.p.PV)
+            + ", k_count FROM delta_"
+            + get_table_name(part.p)
+            + ";"
+        )
+        distinct_delta_handle = duckdb_conn.sql(
+            distinct_delta_query
+        )
+        distinct_delta_results: DataFrame = (
+            distinct_delta_handle.df()
+        )
+        distinct_delta_insert_query: str = (
+            SQL_Constructor.insert_delta_query(
+                part, distinct_delta_results, "delta_"
+            )
+        )
+        duckdb_conn.sql(distinct_delta_insert_query)
+        insert_increm_nu_table(part, use_PV=True)
+    else:
+        distinct_table_name: str = get_table_name(part.p)
+        distinct_get_query: str = (
+            "SELECT DISTINCT "
+            + ", ".join(var for var in part.p.PV)
+            + ", k_count FROM "
+            + distinct_table_name
+            + ";"
+        )
+        distinct_handle = duckdb_conn.sql(
+            distinct_get_query
+        )
+        distinct_results: DataFrame = distinct_handle.df()
+        distinct_insert_query: str = (
+            SQL_Constructor.insert_query(
+                part, distinct_results
+            )
+        )
+        duckdb_conn.execute(distinct_insert_query)
+
+
+def evalIncrProject(
+    ctx: QueryContext, part: CompValue, increm: bool
+) -> None:
+    """Evaluate the project part of the query.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+    """
+    evalIncrPart(ctx, part.p, increm)
+    if increm:
+        project_delta_query: str = (
+            "SELECT "
+            + ", ".join(var for var in part.PV)
+            + ", SUM(k_count) as k_count FROM delta_"
+            + get_table_name(part.p.p1)
+            + " GROUP BY "
+            + ", ".join(var for var in part.PV)
+            + ";"
+        )
+        project_delta_handle = duckdb_conn.sql(
+            project_delta_query
+        )
+        project_delta_results: DataFrame = (
+            project_delta_handle.df()
+        )
+        project_delta_insert_query: str = (
+            SQL_Constructor.insert_delta_query(
+                part, project_delta_results, "delta_"
+            )
+        )
+        if not project_delta_results.empty:
+            duckdb_conn.sql(project_delta_insert_query)
+
+        project_delta_query: str = (
+            "SELECT "
+            + ", ".join(var for var in part.PV)
+            + ", SUM(k_count) as k_count FROM delta_"
+            + get_table_name(part.p.p2)
+            + " GROUP BY "
+            + ", ".join(var for var in part.PV)
+            + ";"
+        )
+        project_delta_handle = duckdb_conn.sql(
+            project_delta_query
+        )
+        project_delta_results: DataFrame = (
+            project_delta_handle.df()
+        )
+        project_delta_insert_query: str = (
+            SQL_Constructor.insert_delta_query(
+                part, project_delta_results, "delta_"
+            )
+        )
+        if not project_delta_results.empty:
+            duckdb_conn.sql(project_delta_insert_query)
+
+        insert_increm_nu_table(part, use_PV=True)
+    else:
+        project_table_name: str = get_table_name(part.p.p1)
+        project_get_query1: str = (
+            "SELECT "
+            + ",".join(var for var in sorted(part.PV))
+            + ", SUM(k_count) as k_count FROM "
+            + project_table_name
+            + " GROUP BY "
+            + ",".join(var for var in sorted(part.PV))
+            + ";"
+        )
+        project_handle = duckdb_conn.sql(project_get_query1)
+        project_results: DataFrame = project_handle.df()
+        if not project_results.empty:
+            project_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, project_results
+                )
+            )
+
+            duckdb_conn.sql(project_insert_query)
+
+        project_table_name: str = get_table_name(part.p.p2)
+        project_get_query2: str = (
+            "SELECT "
+            + ",".join(var for var in sorted(part.PV))
+            + ", SUM(k_count) as k_count FROM "
+            + project_table_name
+            + " GROUP BY "
+            + ",".join(var for var in sorted(part.PV))
+            + ";"
+        )
+        project_handle = duckdb_conn.sql(project_get_query2)
+        project_results: DataFrame = project_handle.df()
+        if not project_results.empty:
+            project_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, project_results
+                )
+            )
+            duckdb_conn.sql(project_insert_query)
+
+
+def evalIncrUnion(
+    ctx: QueryContext, part: CompValue, increm: bool
+) -> None:
+    """Evaluate the union part of the query.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+    """
+    evalIncrPart(ctx, part.p1, increm)
+    evalIncrPart(ctx, part.p2, increm)
+    if increm:
+        # Get both parts
+        first_union_delta, second_union_delta = (
+            SQL_Constructor.delta_union_table_query(
+                part, part.p1._vars, part.p2._vars
+            )
+        )
+        first_union_delta = first_union_delta.replace(
+            "FULL JOIN", "LEFT JOIN"
+        )
+        second_union_delta = second_union_delta.replace(
+            "FULL JOIN", "RIGHT JOIN"
+        )
+        first_union_delta_handle = duckdb_conn.sql(
+            first_union_delta
+        )
+        first_union_delta_results: DataFrame = (
+            first_union_delta_handle.df()
+        )
+        if not first_union_delta_results.empty:
+            first_union_delta_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part,
+                    first_union_delta_results,
+                    "delta_",
+                )
+            )
+            duckdb_conn.sql(first_union_delta_insert_query)
+        second_union_delta_handle = duckdb_conn.sql(
+            second_union_delta
+        )
+        second_union_delta_results: DataFrame = (
+            second_union_delta_handle.df()
+        )
+        if not second_union_delta_results.empty:
+            second_union_delta_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part,
+                    second_union_delta_results,
+                    "delta_",
+                )
+            )
+            duckdb_conn.sql(second_union_delta_insert_query)
+        if (
+            not first_union_delta_results.empty
+            or not second_union_delta_results.empty
+        ):
+            insert_increm_nu_table(part, union_bool=True)
+    else:
+        pass
+        """union_table_query: str = (
+            SQL_Constructor.union_table_query(
+                part, part.p1._vars, part.p2._vars
+            )
+        )
+
+        union_handle = duckdb_conn.sql(union_table_query)
+        union_results: DataFrame = union_handle.df()
+
+        union_insert_query: str = (
+            SQL_Constructor.insert_query(
+                part, union_results
+            )
+        )
+        duckdb_conn.execute(union_insert_query)"""
+
+
+def insert_increm_nu_table(
+    part: CompValue,
+    use_PV: bool = False,
+    union_bool: bool = False,
+) -> None:
+    """Insert the nu table with the incremental contents.
+
+    Args:
+        part (CompValue): Current part of the algebra.
+        use_PV (bool, optional): Check if to see if the PV tag is used. Defaults to False.
+        union_bool (bool, optional): Check to see if a union is used. Defaults to False.
+    """
+    if use_PV:
+        if part.PV is None:
+            part.PV = part.p.PV
+        variables = part.PV
+    else:
+        variables = part._vars
+    drop_table_query: str = (
+        "DROP TABLE IF EXISTS nu_"
+        + get_table_name(part)
+        + ";"
     )
-    duckdb_conn.sql(drop_query)
-    duckdb_conn.sql(drop_delta_query)
-    duckdb_conn.sql(drop_nu_query)
-
-
-def construct_tables(part) -> None:
-    delta_table_drop_query: str = (
-        SQL_Constructor.drop_delta_table(part)
+    duckdb_conn.execute(drop_table_query)
+    create_table_query: str = (
+        f"CREATE TABLE IF NOT EXISTS nu_"
+        + get_table_name(part)
+        + " (\n"
+        + SQL_Constructor.get_create_vars(variables)
+        + "\tPRIMARY KEY ("
+        + ",".join(
+            var for var in variables if var != "k_count"
+        )
+        + ")\n"
+        + ");"
     )
-    table_query, table_delta, table_nu = (
-        SQL_Constructor.make_tables(part, part._vars)
+    duckdb_conn.execute(create_table_query)
+    nu_query: str = (
+        "INSERT INTO nu_"
+        + get_table_name(part)
+        + "  ("
+        + ", ".join(
+            var
+            for var in sorted(variables)
+            if var != "k_count"
+        )
+        + ", k_count) select "
     )
-    duckdb_conn.sql(table_query)
-    duckdb_conn.sql(delta_table_drop_query)
-    duckdb_conn.sql(table_delta)
-    duckdb_conn.sql(table_nu)
+    nu_query += ", ".join(
+        "(CASE WHEN r1."
+        + var
+        + " NOT NULL THEN r1."
+        + var
+        + " ELSE r2."
+        + var
+        + " END) as "
+        + var
+        for var in sorted(variables)
+        if var != "k_count"
+    )
+    if union_bool:
+        nu_query += ", (CASE WHEN r1.k_count IS NULL THEN r2.k_count ELSE r1.k_count END) as k_count"
+    else:
+        nu_query += ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count"
+    nu_query += (
+        " from "
+        + get_table_name(part)
+        + " AS r1 FULL OUTER JOIN delta_"
+        + get_table_name(part)
+        + " AS r2 ON "
+        + " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in sorted(variables)
+            if var != "k_count"
+        )
+        + " WHERE (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0"
+        + ";"
+    )
+    duckdb_conn.execute(nu_query)
 
 
-# TODO: Implement join incrementally
+def evalIncrFilter(
+    ctx: QueryContext, part: CompValue, increm: bool
+) -> None:
+    """Evaluate the filter part of the query.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+    """
+    evalIncrPart(ctx, part.p, increm)
+    if increm:
+        filter_query: str = (
+            "SELECT * FROM delta_" + get_table_name(part.p)
+        )
+        filter_query += " WHERE CAST("
+        filter_query += part.expr.expr
+        filter_query += " AS INT) "
+        filter_query += part.expr.op
+        filter_query += " "
+        filter_query += part.expr.other
+        filter_query += ";"
+        filter_handle = duckdb_conn.sql(filter_query)
+        filter_results: DataFrame = filter_handle.df()
+        filter_insert_query: str = (
+            SQL_Constructor.insert_delta_query(
+                part, filter_results, "delta_"
+            )
+        )
+        if not filter_results.empty:
+            duckdb_conn.sql(filter_insert_query)
+            insert_increm_nu_table(part)
+
+    else:
+        filter_query: str = (
+            "SELECT * FROM " + get_table_name(part.p)
+        )
+        filter_query += (
+            " WHERE CAST("
+            + part.expr.expr
+            + " AS INT) "
+            + part.expr.op
+            + " "
+            + part.expr.other
+            + ";"
+        )
+        filter_handle = duckdb_conn.sql(filter_query)
+        filter_results: DataFrame = filter_handle.df()
+        if not filter_results.empty:
+            filter_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, filter_results
+                )
+            )
+            duckdb_conn.sql(filter_insert_query)
+
+
 def evalIncremBGP(
     ctx: QueryContext,
     triples: list[_Triple],
-    part,
+    part: CompValue,
     increm: bool,
 ) -> None:
+    """Evaluate the BGP part of the query.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        triples (list[_Triple]): Triple patterns
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+    """
     if increm:
         delta_queries: list[str] = list()
         for tripe_index in range(len(triples)):
@@ -92,198 +440,293 @@ def evalIncremBGP(
                     part, tripe_index + 1
                 )
             )
-    bgp_query: str = SQL_Constructor.bgp_table_query(part)
-    bgp_results_handle = duckdb_conn.sql(bgp_query)
-    bgp_results: DataFrame = bgp_results_handle.df()
-    bgp_insert_query: str = (
-        SQL_Constructor.bgp_insert_query(part, bgp_results)
-    )
-    duckdb_conn.sql(bgp_insert_query)
-
-
-# TODO: Implement selection incrementally
-def evalIncrFilter(ctx: QueryContext, part) -> None:
-    pass
-
-
-def evalIncrLazyJoin(ctx: QueryContext, join) -> None:
-    pass
-
-
-# TODO: Implement join incrementally
-def evalIncrJoin(ctx: QueryContext, join) -> None:
-    pass
-
-
-# TODO: Implement left join incrementally
-def evalIncrLeftJoin(ctx: QueryContext, join) -> None:
-    pass
-
-
-# TODO: implement incremental graph part
-def evalIncrGraph(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: implement incremental union part
-def evalIncrUnion(
-    ctx: QueryContext, union, increm: bool
-) -> None:
-    evalIncrPart(ctx, union.p1, increm)
-    evalIncrPart(ctx, union.p2, increm)
-    union_table_query: str = (
-        SQL_Constructor.union_table_query(
-            union, union.p1._vars, union.p2._vars
+            bgp_delta_query = duckdb_conn.sql(
+                delta_queries[len(delta_queries) - 1]
+            )
+            bgp_delta_results: DataFrame = (
+                bgp_delta_query.df()
+            )
+            if not bgp_delta_results.empty:
+                bgp_delta_insert_query: str = (
+                    SQL_Constructor.insert_delta_query(
+                        part, bgp_delta_results, "delta_"
+                    )
+                )
+                duckdb_conn.sql(bgp_delta_insert_query)
+        insert_increm_nu_table(part)
+    else:
+        bgp_query: str = SQL_Constructor.bgp_table_query(
+            part
         )
-    )
-    union_handle = duckdb_conn.sql(union_table_query)
-    union_results: DataFrame = union_handle.df()
-    union_insert_query: str = SQL_Constructor.insert_query(
-        union, union_results
-    )
-    duckdb_conn.sql(union_insert_query)
+        bgp_results_handle = duckdb_conn.sql(bgp_query)
+        bgp_results: DataFrame = bgp_results_handle.df()
+        if not bgp_results.empty:
+            bgp_insert_query: str = (
+                SQL_Constructor.bgp_insert_query(
+                    part, bgp_results
+                )
+            )
+            duckdb_conn.sql(bgp_insert_query)
 
 
-# TODO: make incremental
-def evalIncrValues(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrMultiset(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrExtend(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrMinus(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrProject(
-    ctx: QueryContext, part, increm: bool
+def evalLeftJoin(
+    ctx: QueryContext, part: CompValue, increm: bool
 ) -> None:
-    evalIncrPart(ctx, part.p, increm)
-    project_table_name: str = (
-        SQL_Constructor.project_table_query(part)
-    )
-    project_handle = duckdb_conn.sql(project_table_name)
-    project_results: DataFrame = project_handle.df()
-    project_insert_query: str = (
-        SQL_Constructor.insert_query(part, project_results)
-    )
-    duckdb_conn.sql(project_insert_query)
+    """Evaluate the left join part of the query.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+    """
+    evalIncrPart(ctx, part.p1, increm)
+    evalIncrPart(ctx, part.p2, increm)
+    if increm:
+        # First delta rules of the left join
+        leftjoin_delta_query: str = ""
+        leftjoin_delta_query += "SELECT "
+        leftjoin_delta_query += ", ".join(
+            var for var in part.p1._vars if var != "k_count"
+        )
+        leftjoin_delta_query += ", "
+        leftjoin_delta_query += ", ".join(
+            var for var in part.p2._vars if var != "k_count"
+        )
+        leftjoin_delta_query += ", r1.k_count as k_count"
+        leftjoin_delta_query += " FROM delta_"
+        leftjoin_delta_query += get_table_name(part.p1)
+        leftjoin_delta_query += " AS r1 LEFT OUTER JOIN "
+        leftjoin_delta_query += get_table_name(part.p2)
+        leftjoin_delta_query += " AS r2"
+        leftjoin_delta_query += " ON "
+        if (
+            part.p1._vars.intersection(part.p2._vars)
+            != set()
+        ):
+            leftjoin_delta_query += " AND ".join(
+                f"r1.{var} = r2.{var}"
+                for var in part.p1._vars.intersection(
+                    part.p2._vars
+                )
+            )
+        else:
+            leftjoin_delta_query += (
+                "1 = 1 WHERE r1.k_count < 0"
+            )
+        leftjoin_delta_query += ";"
+
+        leftjoin_delta_handle = duckdb_conn.sql(
+            leftjoin_delta_query
+        )
+        leftjoin_delta_results: DataFrame = (
+            leftjoin_delta_handle.df()
+        )
+        if not leftjoin_delta_results.empty:
+            leftjoin_delta_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part, leftjoin_delta_results, "delta_"
+                )
+            )
+            duckdb_conn.sql(leftjoin_delta_insert_query)
+            insert_increm_nu_table(part)
+
+        # Second delta rules of the left join
+        leftjoin_delta_query: str = ""
+        leftjoin_delta_query += "SELECT "
+        leftjoin_delta_query += ", ".join(
+            var for var in part.p1._vars if var != "k_count"
+        )
+        leftjoin_delta_query += ", "
+        leftjoin_delta_query += ", ".join(
+            var for var in part.p2._vars if var != "k_count"
+        )
+        leftjoin_delta_query += ", r2.k_count as k_count"
+        leftjoin_delta_query += " FROM nu_"
+        leftjoin_delta_query += get_table_name(part.p1)
+        leftjoin_delta_query += (
+            " AS r1 LEFT OUTER JOIN delta_"
+        )
+        leftjoin_delta_query += get_table_name(part.p2)
+        leftjoin_delta_query += " AS r2"
+        leftjoin_delta_query += " ON "
+        if (
+            part.p1._vars.intersection(part.p2._vars)
+            != set()
+        ):
+            leftjoin_delta_query += " AND ".join(
+                f"r1.{var} = r2.{var}"
+                for var in part.p1._vars.intersection(
+                    part.p2._vars
+                )
+            )
+        else:
+            leftjoin_delta_query += (
+                "1 = 1 WHERE r2.k_count < 0"
+            )
+        leftjoin_delta_query += ";"
+
+        leftjoin_delta_handle = duckdb_conn.sql(
+            leftjoin_delta_query
+        )
+        leftjoin_delta_results: DataFrame = (
+            leftjoin_delta_handle.df()
+        )
+        if not leftjoin_delta_results.empty:
+            leftjoin_delta_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part, leftjoin_delta_results, "delta_"
+                )
+            )
+            duckdb_conn.sql(leftjoin_delta_insert_query)
+            insert_increm_nu_table(part)
+    else:
+        leftjoin_query: str = ""
+        leftjoin_query += "SELECT "
+        leftjoin_query += ", ".join(
+            var for var in part.p1._vars if var != "k_count"
+        )
+        leftjoin_query += ", "
+        leftjoin_query += ", ".join(
+            var for var in part.p2._vars if var != "k_count"
+        )
+        leftjoin_query += ", r1.k_count as k_count"
+        leftjoin_query += " FROM "
+        leftjoin_query += get_table_name(part.p1)
+        leftjoin_query += " AS r1 LEFT OUTER JOIN "
+        leftjoin_query += get_table_name(part.p2)
+        leftjoin_query += " AS r2"
+        leftjoin_query += " ON "
+        if (
+            part.p1._vars.intersection(part.p2._vars)
+            != set()
+        ):
+            leftjoin_query += " AND ".join(
+                f"r1.{var} = r2.{var}"
+                for var in part.p1._vars.intersection(
+                    part.p2._vars
+                )
+            )
+        else:
+            leftjoin_query += "1 = 1"
+        leftjoin_query += ";"
+
+        leftjoin_handle = duckdb_conn.sql(leftjoin_query)
+        leftjoin_results: DataFrame = leftjoin_handle.df()
+
+        if not leftjoin_results.empty:
+            leftjoin_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, leftjoin_results
+                )
+            )
+            duckdb_conn.sql(leftjoin_insert_query)
 
 
-# TODO: make incremental
-def evalIncrSlice(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrDistinct(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrReduced(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrOrderBy(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrGroup(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrAggregateJoin(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-# TODO: write SQL query that returns the final result
-def evalIncrSelectQuery(
-    ctx: QueryContext, part, increm: bool
-) -> Any:
-    result = evalIncrPart(ctx, part.p, increm)
-    select_query: str = SQL_Constructor.select_query(part)
-    select_handle = duckdb_conn.sql(select_query)
-    select_results: DataFrame = select_handle.df()
-    return select_results
-
-
-# TODO: make incremental
-def evalIncrAskQuery(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental
-def evalIncrConstructQuery(ctx: QueryContext, part) -> None:
-    pass
-
-
-# TODO: make incremental?
-def _buildQueryStringForServiceCall(
-    ctx: QueryContext, part
+def evalIncrMinus(
+    ctx: QueryContext, part: CompValue, increm: bool
 ) -> None:
-    pass
+    """Evaluate the minus part of the query.
 
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool): Check if incremental evaluation is used.
+    """
+    evalIncrPart(ctx, part.p1, increm)
+    evalIncrPart(ctx, part.p2, increm)
+    if increm:
+        # First delta rules of the minus
+        minus_delta_query: str = (
+            "SELECT r1.*, r2.testVar FROM delta_"
+            + get_table_name(part.p1)
+            + " as r1 LEFT JOIN "
+            + get_table_name(part.p2)
+            + " as r2 ON r1.product = r2.product WHERE r2.testVar IS NULL;"
+        )
+        minus_delta_handle = duckdb_conn.sql(
+            minus_delta_query
+        )
+        minus_delta_results: DataFrame = (
+            minus_delta_handle.df()
+        )
+        if not minus_delta_results.empty:
+            minus_delta_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part, minus_delta_results, "delta_"
+                )
+            )
+            duckdb_conn.sql(minus_delta_insert_query)
 
-# TODO: make incremental
-def evalIncrServiceQuery(ctx: QueryContext, part) -> None:
-    pass
+        # Second delta rules of the minus
+        minus_delta_query: str = (
+            "SELECT r1.*, r2.testVar FROM nu_"
+            + get_table_name(part.p1)
+            + " as r1 LEFT JOIN delta_"
+            + get_table_name(part.p2)
+            + " as r2 ON r1.product = r2.product WHERE r2.testVar IS NULL;"
+        )
+        minus_delta_handle = duckdb_conn.sql(
+            minus_delta_query
+        )
+        minus_delta_results: DataFrame = (
+            minus_delta_handle.df()
+        )
+        if not minus_delta_results.empty:
+            minus_delta_insert_query: str = (
+                SQL_Constructor.insert_delta_query(
+                    part, minus_delta_results, "delta_"
+                )
+            )
+            duckdb_conn.sql(minus_delta_insert_query)
 
-
-# TODO: make incremental
-def evalIncrDescribeQuery(ctx: QueryContext, part) -> None:
-    pass
-
-
-def dropTablesRec(part) -> None:
-    if part == None:
-        return
-    if "p" in part or part.name == "BGP":
-        dropTablesRec(part.p)
-    elif "p1" in part and "p2" in part:
-        dropTablesRec(part.p1)
-        dropTablesRec(part.p2)
-    drop_all_tables(part)
-
-
-def constructTablesRec(part) -> None:
-    if part == None:
-        return
-    if "p" in part or part.name == "BGP":
-        constructTablesRec(part.p)
-    elif "p1" in part and "p2" in part:
-        constructTablesRec(part.p1)
-        constructTablesRec(part.p2)
-    construct_tables(part)
+        insert_increm_nu_table(part)
+    else:
+        minus_query: str = (
+            "select r1.*, r2.testVar from "
+            + get_table_name(part.p1)
+            + " as r1 LEFT JOIN "
+            + get_table_name(part.p2)
+            + " as r2 ON r1.product = r2.product WHERE r2.testVar IS NULL;"
+        )
+        minus_handle = duckdb_conn.sql(minus_query)
+        minus_results: DataFrame = minus_handle.df()
+        if not minus_results.empty:
+            minus_insert_query: str = (
+                SQL_Constructor.insert_query(
+                    part, minus_results
+                )
+            )
+            duckdb_conn.sql(minus_insert_query)
 
 
 def evalIncrPart(
-    ctx: QueryContext, part, increm: bool = False
+    ctx: QueryContext, part: CompValue, increm: bool = False
 ) -> Any:
+    """Call the next evaluation part in the algebra.
+
+    Args:
+        ctx (QueryContext): Context of the query
+        part (CompValue): Current part of the algebra.
+        increm (bool, optional): Check if incremental. Defaults to False.
+
+    Raises:
+        NotImplementedError: Part of a query is not implemented.
+
+    Returns:
+        Any: Results of query.
+    """
     try:
         if part.name == "BGP":
             evalIncremBGP(ctx, part.triples, part, increm)
             return
         elif part.name == "Filter":
-            pass
+            evalIncrFilter(ctx, part, increm)
+            return
         elif part.name == "Join":
             pass
         elif part.name == "LeftJoin":
-            pass
+            evalLeftJoin(ctx, part, increm)
+            return
         elif part.name == "Graph":
             pass
         elif part.name == "Union":
@@ -294,7 +737,8 @@ def evalIncrPart(
         elif part.name == "Extend":
             pass
         elif part.name == "Minus":
-            pass
+            evalIncrMinus(ctx, part, increm)
+            return
 
         elif part.name == "Project":
             evalIncrProject(ctx, part, increm)
@@ -302,7 +746,8 @@ def evalIncrPart(
         elif part.name == "Slice":
             pass
         elif part.name == "Distinct":
-            pass
+            evalIncrDistinct(ctx, part, increm)
+            return
         elif part.name == "Reduced":
             pass
 
