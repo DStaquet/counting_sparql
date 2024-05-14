@@ -28,6 +28,7 @@ from database import insert_data_graph
 
 
 def insertData(g: graph.Graph, query: Query) -> None:
+    """Inserts the data in the delta."""
     delta_inserter.parseFirstDelta(query.algebra, g)
 
 
@@ -63,6 +64,12 @@ def buildGraphFromData(
 def insertParseQuery(
     query: str, data: str | None = None
 ) -> None:
+    """Inserts and parses the query.
+
+    Args:
+        query (str): The query to be parsed.
+        data (str | None, optional): Data to parse on. Defaults to None.
+    """
 
     g = buildGraphFromData(data)
 
@@ -88,6 +95,15 @@ def queryParser(
     query_abbrev: str,
     output_file: str | None = None,
 ) -> None:
+    """Parses the query.
+
+    Args:
+        size (int): Size of the data.
+        increm_bool (bool): Incremental boolean.
+        g (graph.Graph): Graph data.
+        query_abbrev (str): Which query to parse.
+        output_file (str | None, optional): File to write output to. Defaults to None.
+    """
 
     # Query 1 - Incremental
     start_time = time()
@@ -245,6 +261,16 @@ def readQueryFile(filename: str) -> str:
 def check_relevancy(
     delta_size: str, data_size: int, sample: str
 ) -> bool:
+    """Checks if the sample is relevant.
+
+    Args:
+        delta_size (str): Size of the delta.
+        data_size (int): Size of the data.
+        sample (str): Used sample.
+
+    Returns:
+        bool: True if the sample is relevant, False otherwise.
+    """
     with open(
         f"./Queries/berlin_benchmark/{data_size}/relevant_products_{delta_size}.txt",
         "r",
@@ -261,6 +287,13 @@ def check_relevancy(
 def test_queryParser(
     sizes: list[int], delta_sizes: list[str]
 ):
+    """Test the query parser multiple times using different sizes and delta sizes
+    with four different predefined queries.
+
+    Args:
+        sizes (list[int]): List of sizes.
+        delta_sizes (list[str]): List of delta sizes.
+    """
     f = open("./measurements/results.csv", "w")
     f.write(
         "Data size,Delta size,Sample,Incremental,Query1,Query2,Query3,Query4\n"

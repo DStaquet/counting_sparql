@@ -37,6 +37,12 @@ def return_filled_in_triples(
 
 
 def parseFirstDelta(part: CompValue, g: Graph) -> None:
+    """Parse the first delta of the query
+
+    Args:
+        part (CompValue): Part of the algebra
+        g (Graph): _description_
+    """
     if part.name == "BGP":
         ctx: QueryContext = QueryContext(g)
         triples = sorted(

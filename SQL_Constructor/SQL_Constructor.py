@@ -7,7 +7,17 @@ from rdflib.term import Variable
 from pandas import DataFrame
 
 
-def drop_all_tables(part) -> tuple[str, str, str]:
+def drop_all_tables(
+    part: CompValue,
+) -> tuple[str, str, str]:
+    """Queries to drop all the tables
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        tuple[str, str, str]: The drop queries for the table, delta table, and nu table.
+    """
     drop_query: str = (
         """
     DROP TABLE IF EXISTS """
@@ -41,6 +51,14 @@ def get_create_vars(variables: set) -> str:
 
 
 def __create_vars(variables: set) -> str:
+    """Creates the variable part in the string for the query.
+
+    Args:
+        variables (set): Given variables
+
+    Returns:
+        str: Query string for the variables
+    """
     var_str: str = ""
     for var in sorted(variables):
         if var == "k_count":
@@ -50,7 +68,15 @@ def __create_vars(variables: set) -> str:
     return var_str
 
 
-def __encode_table_name(part) -> str:
+def __encode_table_name(part: CompValue) -> str:
+    """Encodes the table name to a usable string for SQL.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Encoded table name
+    """
     return_str: str = ""
     if part.name == "BGP":
         for triple in sorted(part.triples):
@@ -103,6 +129,14 @@ def __encode_table_name(part) -> str:
 
 
 def values_var(res: list) -> str:
+    """Creates the values part in the string for the query.
+
+    Args:
+        res (list): Given list of results
+
+    Returns:
+        str: Values part of the query
+    """
     known_vars: set = set()
     var_str: str = ""
     for elem in res:
@@ -127,8 +161,17 @@ def drop_delta_table(part: CompValue) -> str:
 
 
 def make_tables(
-    part, variables: set
+    part: CompValue, variables: set
 ) -> tuple[str, str, str]:
+    """Construct the queries to create the tables for the given part of the algebra.
+
+    Args:
+        part (CompValue): Current part of the algebra
+        variables (set): Variables in the part
+
+    Returns:
+        tuple[str, str, str]: Query strings for the table, delta table, and nu table.
+    """
 
     if part.name == "BGP":
         # BGP old table
@@ -305,6 +348,16 @@ def add_on_conflict_insert_clause(
     solution_mapping: FrozenBindings,
     sorted_variables: list,
 ) -> str:
+    """Add the ON CONFLICT clause to the insert query.
+
+    Args:
+        tbl_name (str): Name of the table
+        solution_mapping (FrozenBindings): Solution mappings.
+        sorted_variables (list): List of sorted variables.
+
+    Returns:
+        str: On conflict insert clause.
+    """
     update_clause = "ON CONFLICT DO\nUPDATE\nSET k_count = k_count + 1\nWHERE "
     count: int = 0
     for var in sorted_variables:
@@ -331,6 +384,15 @@ def construct_bgp_insert(
     part: CompValue,
     filled_in_triples: list[tuple[str, str, str]],
 ) -> str:
+    """Constructs the insert query for the BGP part of the algebra.
+
+    Args:
+        part (CompValue): Current part of the algebra
+        filled_in_triples (list[tuple[str, str, str]]): Triples to insert
+
+    Returns:
+        str: Query string for the BGP insert query.
+    """
     insert_str: str = (
         "INSERT INTO "
         + __encode_table_name(part)
@@ -357,6 +419,15 @@ def construct_bgp_insert(
 def bgp_delta_table_query(
     part: CompValue, triple_count: int
 ) -> str:
+    """Create the delta table query for the BGP part of the algebra.
+
+    Args:
+        part (CompValue): Current part of the algebra
+        triple_count (int): Number of triples in the BGP
+
+    Returns:
+        str: _description_
+    """
     bgp_delta_table_name = "delta_" + __encode_table_name(
         part
     )

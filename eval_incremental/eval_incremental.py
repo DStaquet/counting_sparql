@@ -14,6 +14,54 @@ from rdflib.term import Identifier
 _Triple = tuple[Identifier, Identifier, Identifier]
 
 
+def drop_all_tables(part) -> None:
+    """Drops all tables in the database."""
+    drop_query, drop_delta_query, drop_nu_query = (
+        SQL_Constructor.drop_all_tables(part)
+    )
+    duckdb_conn.sql(drop_query)
+    duckdb_conn.sql(drop_delta_query)
+    duckdb_conn.sql(drop_nu_query)
+
+
+def construct_tables(part) -> None:
+    """Drops the delta table and constructs the tables in the database."""
+    delta_table_drop_query: str = (
+        SQL_Constructor.drop_delta_table(part)
+    )
+    table_query, table_delta, table_nu = (
+        SQL_Constructor.make_tables(part, part._vars)
+    )
+    duckdb_conn.sql(table_query)
+    duckdb_conn.sql(delta_table_drop_query)
+    duckdb_conn.sql(table_delta)
+    duckdb_conn.sql(table_nu)
+
+
+def dropTablesRec(part) -> None:
+    """Drops the tables in the database recursively."""
+    if part == None:
+        return
+    if "p" in part or part.name == "BGP":
+        dropTablesRec(part.p)
+    elif "p1" in part and "p2" in part:
+        dropTablesRec(part.p1)
+        dropTablesRec(part.p2)
+    drop_all_tables(part)
+
+
+def constructTablesRec(part) -> None:
+    """Constructs the tables in the database recursively."""
+    if part == None:
+        return
+    if "p" in part or part.name == "BGP":
+        constructTablesRec(part.p)
+    elif "p1" in part and "p2" in part:
+        constructTablesRec(part.p1)
+        constructTablesRec(part.p2)
+    construct_tables(part)
+
+
 def evalIncrSelectQuery(
     ctx: QueryContext, part: CompValue, increm: bool
 ) -> Any:
