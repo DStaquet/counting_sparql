@@ -78,6 +78,7 @@ def __encode_table_name(part: CompValue) -> str:
         str: Encoded table name
     """
     return_str: str = ""
+
     if part.name == "BGP":
         for triple in sorted(part.triples):
             return_str += str(triple)
@@ -86,45 +87,83 @@ def __encode_table_name(part: CompValue) -> str:
         return (
             part.name
             + "_"
-            + "".join(
-                ltr for ltr in return_str if ltr.isalnum()
+            + str(
+                abs(
+                    hash(
+                        (
+                            "".join(
+                                ltr
+                                for ltr in return_str
+                                if ltr.isalnum()
+                            )
+                        )
+                    )
+                )
             )
         )
     elif part.name == "values":
         return (
             part.name
             + "_"
-            + "".join(
-                x for x in part.__str__() if x.isalnum()
+            + str(
+                abs(
+                    hash(
+                        (
+                            "".join(
+                                x
+                                for x in part.__str__()
+                                if x.isalnum()
+                            )
+                        )
+                    )
+                )
             )
         )
     elif "PV" in part:
         for var in sorted(part.PV):
             return_str += str(type(var)) + str(var)
-        return_str = (
-            part.name
-            + "_"
-            + "".join(x for x in return_str if x.isalnum())
+        return_str = "".join(
+            x for x in return_str if x.isalnum()
         )
     else:
         for var in sorted(part._vars):
             return_str += str(type(var)) + str(var)
-        return_str = (
-            part.name
-            + "_"
-            + "".join(x for x in return_str if x.isalnum())
+        return_str = "".join(
+            x for x in return_str if x.isalnum()
         )
     if "p" in part:
         return (
-            return_str + "__" + __encode_table_name(part.p)
+            part.name
+            + "_"
+            + str(
+                abs(
+                    hash(
+                        (
+                            return_str
+                            + "__"
+                            + __encode_table_name(part.p)
+                        )
+                    )
+                )
+            )
         )
     else:
         return (
-            return_str
-            + "__"
-            + __encode_table_name(part.p1)
-            + "__"
-            + __encode_table_name(part.p2)
+            part.name
+            + "_"
+            + str(
+                abs(
+                    hash(
+                        (
+                            return_str
+                            + "__"
+                            + __encode_table_name(part.p1)
+                            + "__"
+                            + __encode_table_name(part.p2)
+                        )
+                    )
+                )
+            )
         )
 
 

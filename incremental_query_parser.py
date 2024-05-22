@@ -401,18 +401,24 @@ def test_queryParser(
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python query_parser.py <output_dir>")
+    if len(sys.argv) < 4:
+        print(
+            "Usage: python query_parser.py <query> <data> <output_dir>"
+        )
         exit(1)
     else:
-        output_file: str = sys.argv[1]
+        query_str: str = sys.argv[1]
+        data_str: str = sys.argv[2]
+        output_file: str = sys.argv[3]
         f = open(output_file, "w")
         f.close()
 
-    query1_time: float = 0
+    """query1_time: float = 0
     query2_time: float = 0
     query3_time: float = 0
     query4_time: float = 0
     test_queryParser(
         [100, 1000, 5000], ["small", "medium", "large"]
-    )
+    )"""
+
+    data: str = readQueryFile(data_str)

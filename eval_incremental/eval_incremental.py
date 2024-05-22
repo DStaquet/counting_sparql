@@ -19,6 +19,7 @@ def drop_all_tables(part) -> None:
     drop_query, drop_delta_query, drop_nu_query = (
         SQL_Constructor.drop_all_tables(part)
     )
+    print(drop_query)
     duckdb_conn.sql(drop_query)
     duckdb_conn.sql(drop_delta_query)
     duckdb_conn.sql(drop_nu_query)
