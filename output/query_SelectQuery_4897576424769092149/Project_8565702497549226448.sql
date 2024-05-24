@@ -1,0 +1,1 @@
+SELECT label, product, SUM(k_count) as k_count FROM Filter_6053215694347634662 GROUP BY label, product;

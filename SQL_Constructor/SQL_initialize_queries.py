@@ -49,8 +49,34 @@ def build_queries(part: CompValue, output_dir: str) -> None:
         build_queries(part.p2, output_dir)
     # Construct the SQL query
     if part.name == "BGP":
-        bgp_query = SQL_Constructor.bgp_table_query(part)
-        print(bgp_query)
+        bgp_query = SQL_Constructor.bgp_query(part)
         __write_query_to_output_dir(
             part, output_dir, bgp_query
+        )
+    elif part.name == "Filter":
+        filter_query = SQL_Constructor.filter_query(part)
+        __write_query_to_output_dir(
+            part, output_dir, filter_query
+        )
+    elif part.name == "Project":
+        project_query = SQL_Constructor.project_query(part)
+        __write_query_to_output_dir(
+            part, output_dir, project_query
+        )
+    elif part.name == "LeftJoin":
+        leftjoin_query = SQL_Constructor.leftjoin_query(
+            part
+        )
+        __write_query_to_output_dir(
+            part, output_dir, leftjoin_query
+        )
+    elif part.name == "Minus":
+        minus_query = SQL_Constructor.minus_query(part)
+        __write_query_to_output_dir(
+            part, output_dir, minus_query
+        )
+    elif part.name == "Union":
+        union_query = SQL_Constructor.union_query(part)
+        __write_query_to_output_dir(
+            part, output_dir, union_query
         )

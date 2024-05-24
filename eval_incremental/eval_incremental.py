@@ -19,7 +19,6 @@ def drop_all_tables(part) -> None:
     drop_query, drop_delta_query, drop_nu_query = (
         SQL_Constructor.drop_all_tables(part)
     )
-    print(drop_query)
     duckdb_conn.sql(drop_query)
     duckdb_conn.sql(drop_delta_query)
     duckdb_conn.sql(drop_nu_query)
@@ -504,9 +503,7 @@ def evalIncremBGP(
                 duckdb_conn.sql(bgp_delta_insert_query)
         insert_increm_nu_table(part)
     else:
-        bgp_query: str = SQL_Constructor.bgp_table_query(
-            part
-        )
+        bgp_query: str = SQL_Constructor.bgp_query(part)
         bgp_results_handle = duckdb_conn.sql(bgp_query)
         bgp_results: DataFrame = bgp_results_handle.df()
         if not bgp_results.empty:

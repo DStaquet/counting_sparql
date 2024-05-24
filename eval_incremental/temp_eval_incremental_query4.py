@@ -402,9 +402,7 @@ def evalIncremBGP(
                 duckdb_conn.sql(bgp_delta_insert_query)
         insert_increm_nu_table(part)
     else:
-        bgp_query: str = SQL_Constructor.bgp_table_query(
-            part
-        )
+        bgp_query: str = SQL_Constructor.bgp_query(part)
         bgp_results_handle = duckdb_conn.sql(bgp_query)
         bgp_results: DataFrame = bgp_results_handle.df()
         if not bgp_results.empty:

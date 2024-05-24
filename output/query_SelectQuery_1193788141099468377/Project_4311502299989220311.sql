@@ -1,0 +1,1 @@
+SELECT label, product, propertyTextual, SUM(k_count) as k_count FROM Union_6291923553636737850 GROUP BY label, product, propertyTextual;

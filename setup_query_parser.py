@@ -4,11 +4,13 @@ from eval_incremental.eval_incremental import (
     dropTablesRec,
 )
 from SQL_Constructor import (
-    SQL_Constructor,
     SQL_initialize_queries,
 )
+from SQL_Constructor.SQL_Constructor import get_table_name
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql import parser, algebra
+from os.path import join, exists
+from os import mkdir
 
 
 def __non_increm_queries(
@@ -20,7 +22,14 @@ def __non_increm_queries(
         part (CompValue): Current part of the query
         output_dir (str): Where to write the SQL queries
     """
-    SQL_initialize_queries.build_queries(part, output_dir)
+    query_output_dir: str = join(
+        output_dir, "query_" + get_table_name(part)
+    )
+    if not exists(query_output_dir):
+        mkdir(query_output_dir)
+    SQL_initialize_queries.build_queries(
+        part, query_output_dir
+    )
 
 
 def setup_tables(query: CompValue) -> None:
@@ -50,6 +59,7 @@ def setup_queries(
     """
     query_tree = parser.parseQuery(str(query_str))
     q_query_object = algebra.translateQuery(query_tree)
+    algebra.pprintAlgebra(q_query_object)
     setup_tables(q_query_object.algebra)
     if increm:
         pass

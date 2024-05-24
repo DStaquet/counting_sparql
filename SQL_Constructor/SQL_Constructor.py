@@ -1,7 +1,10 @@
 from hashlib import sha256
 
 from rdflib.plugins.sparql.sparql import FrozenBindings
-from rdflib.plugins.sparql.parserutils import CompValue
+from rdflib.plugins.sparql.parserutils import (
+    CompValue,
+    Expr,
+)
 from rdflib.term import Variable
 
 from pandas import DataFrame
@@ -619,7 +622,7 @@ def bgp_delta_table_query(
     )
 
 
-def bgp_table_query(part: CompValue) -> str:
+def bgp_query(part: CompValue) -> str:
     """Creates three different parts to simulate an SQL query to get the data from a BGP given the triple patterns in the BGP part of the query.
 
     Args:
@@ -1096,3 +1099,187 @@ def delta_union_table_query(
     )
 
     return (first_query, second_query)
+
+
+def filter_expr_part(expr: Expr) -> str:
+    """Recursively construct the filter expression part of the query.
+
+    Args:
+        expr (Expr): Current expression part of the query
+
+    Returns:
+        str: Expression part for the filter query.
+    """
+    filter_expr = ""
+    if type(expr.expr) == Expr:
+        filter_expr += filter_expr_part(expr.expr)
+        for i in range(len(expr.other)):
+            filter_expr += " AND "
+            filter_expr += filter_expr_part(expr.other[i])
+    else:
+        filter_expr += (
+            expr.expr + " " + expr.op + " " + expr.other
+        )
+    return filter_expr
+
+
+def filter_query(part: CompValue) -> str:
+    """Build up the filter queries
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Query string to get the results of the filter operation
+    """
+    table_name: str = __encode_table_name(part.p)
+    filter_str: str = (
+        "SELECT * FROM "
+        + table_name
+        + " WHERE "
+        + filter_expr_part(part.expr)
+        + ";"
+    )
+    return filter_str
+
+
+def project_query(part: CompValue) -> str:
+    """Generate the query string to project the variables from the table.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Query string to project the variables from the table.
+    """
+    table_name: str = __encode_table_name(part.p)
+    return (
+        "SELECT "
+        + ", ".join(var for var in sorted(part.PV))
+        + ", SUM(k_count) as k_count FROM "
+        + table_name
+        + " GROUP BY "
+        + ", ".join(var for var in sorted(part.PV))
+        + ";"
+    )
+
+
+def leftjoin_query(part: CompValue) -> str:
+    """Generate the query string to left join the tables
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Query string to left join the tables
+    """
+    leftjoin_query: str = (
+        "SELECT "
+        + ", ".join(
+            var
+            for var in sorted(part.p1._vars)
+            if var != "k_count"
+        )
+        + ", "
+        + ", ".join(
+            var
+            for var in sorted(part.p2._vars)
+            if var != "k_count"
+        )
+        + ", r1.k_count as k_count\nFROM "
+        + __encode_table_name(part.p1)
+        + " AS r1 LEFT JOIN "
+        + __encode_table_name(part.p2)
+        + " AS r2"
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        leftjoin_query += " ON "
+        leftjoin_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part.p1._vars.intersection(
+                part.p2._vars
+            )
+        )
+    else:
+        leftjoin_query += " ON TRUE"
+    leftjoin_query += ";"
+    return leftjoin_query
+
+
+def minus_query(part: CompValue) -> str:
+    """Minus query string for the algebra
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string for the minus operation
+    """
+    minus_query: str = (
+        "SELECT * \nFROM "
+        + __encode_table_name(part.p1)
+        + " AS r1\n"
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        minus_query += (
+            "WHERE "
+            + ", ".join(
+                f"r1.{var}"
+                for var in sorted(
+                    part.p1._vars.intersection(
+                        part.p2._vars
+                    )
+                )
+            )
+            + " NOT IN (SELECT "
+            + ", ".join(
+                f"r2.{var}"
+                for var in sorted(
+                    part.p1._vars.intersection(
+                        part.p2._vars
+                    )
+                )
+            )
+            + " FROM "
+            + __encode_table_name(part.p2)
+            + " AS r2);"
+        )
+    else:
+        minus_query += ";"
+    return minus_query
+
+
+def union_query(part: CompValue) -> str:
+    """Union query string for the algebra
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string for the union operation
+    """
+    union_table_name1: str = __encode_table_name(part.p1)
+    union_query_left: str = (
+        "SELECT * FROM " + union_table_name1 + "\n"
+    )
+    union_table_name2: str = __encode_table_name(part.p2)
+    union_query_right: str = (
+        "SELECT "
+        + ", ".join(
+            var
+            for var in sorted(
+                part.p2._vars.intersection(part.p1._vars)
+            )
+        )
+        + ", "
+        + ", ".join(
+            f"NULL AS {var}"
+            for var in sorted(
+                part.p1._vars.difference(part.p2._vars)
+            )
+        )
+        + " FROM "
+        + union_table_name2
+        + ";\n"
+    )
+    return union_query_left + "UNION \n" + union_query_right
