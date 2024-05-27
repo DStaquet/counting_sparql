@@ -19,7 +19,11 @@ def create_nu_table() -> str:
 
 
 def __write_query_to_output_dir(
-    part: CompValue, output_dir: str, query: str
+    part: CompValue,
+    output_dir: str,
+    query: str,
+    append: bool = False,
+    name: str = "",
 ) -> None:
     """Writes the query to the output directory
 
@@ -28,11 +32,79 @@ def __write_query_to_output_dir(
         output_dir (str): Directory to write the SQL queries
         query (str): The query to write
     """
-    with open(
-        f"{output_dir}/{SQL_Constructor.get_table_name(part)}.sql",
-        "w",
-    ) as f:
-        f.write(query)
+    if not append:
+        with open(
+            f"{output_dir}/{name}{SQL_Constructor.get_table_name(part)}.sql",
+            "w",
+        ) as f:
+            f.write(query)
+    else:
+        with open(
+            f"{output_dir}/{name}{SQL_Constructor.get_table_name(part)}.sql",
+            "a",
+        ) as f:
+            f.write(query)
+
+
+def __delta_bgp_queries(part: CompValue) -> list[str]:
+    """Builds up the different delta BGP queries for the incremental query.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        list[str]: List of the delta queries for the BGP
+    """
+    delta_queries: list[str] = list()
+    for triple_index in range(len(part.triples)):
+        delta_queries.append(
+            SQL_Constructor.bgp_delta_table_query(
+                part, triple_index + 1
+            )
+        )
+    return delta_queries
+
+
+def build_increm_queries(
+    part: CompValue, output_dir: str
+) -> None:
+    """Builds up the different incremental queries provided by the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        output_dir (str): Directory to write the SQL queries
+    """
+    if "p" in part:
+        build_increm_queries(part.p, output_dir)
+    elif "p1" in part and "p2" in part:
+        build_increm_queries(part.p1, output_dir)
+        build_increm_queries(part.p2, output_dir)
+    # Construct the SQL query
+    match part.name:
+        case "BGP":
+            bgp_queries: list[str] = __delta_bgp_queries(
+                part
+            )
+            first: bool = True
+            for query in bgp_queries:
+                if first:
+                    __write_query_to_output_dir(
+                        part,
+                        output_dir,
+                        query,
+                        name="delta_",
+                    )
+                    first = False
+                else:
+                    __write_query_to_output_dir(
+                        part,
+                        output_dir,
+                        query,
+                        True,
+                        name="delta_",
+                    )
+        case "_":
+            print("Didn't implement", part.name)
 
 
 def build_queries(part: CompValue, output_dir: str) -> None:
