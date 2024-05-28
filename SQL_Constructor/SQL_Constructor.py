@@ -9,6 +9,9 @@ from rdflib.term import Variable
 
 from pandas import DataFrame
 
+from os.path import isdir
+from os import listdir
+
 
 def drop_all_tables(
     part: CompValue,
@@ -622,7 +625,9 @@ def bgp_delta_table_query(
     )
 
 
-def bgp_query(part: CompValue) -> str:
+def bgp_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> str:
     """Creates three different parts to simulate an SQL query to get the data from a BGP given the triple patterns in the BGP part of the query.
 
     Args:
@@ -758,6 +763,14 @@ def bgp_query(part: CompValue) -> str:
                     )
                     + "'"
                 )
+
+    schemas[table_name] = list()
+    schemas[table_name].append(list())
+    for var in known_vars:
+        if var not in schemas[table_name]:
+            schemas[table_name][0].append(
+                var
+            )  # Uses 0 as BGP will always have one schema
 
     return (
         bgp_select_clause
@@ -1123,7 +1136,9 @@ def filter_expr_part(expr: Expr) -> str:
     return filter_expr
 
 
-def filter_query(part: CompValue) -> str:
+def filter_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> str:
     """Build up the filter queries
 
     Args:
@@ -1140,10 +1155,38 @@ def filter_query(part: CompValue) -> str:
         + filter_expr_part(part.expr)
         + ";"
     )
+
+    part_name: str = __encode_table_name(part)
+    schemas[part_name] = list()
+    for var_list in schemas[table_name]:
+        schemas[part_name].append(var_list)
+
     return filter_str
 
 
-def project_query(part: CompValue) -> str:
+def delta_filter_query(part: CompValue) -> str:
+    """Build up the incremental delta filter queries.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string to get the results of the delta filter operation
+    """
+    table_name: str = "delta_" + __encode_table_name(part.p)
+    filter_str: str = (
+        "SELECT * FROM "
+        + table_name
+        + " WHERE "
+        + filter_expr_part(part.expr)
+        + ";"
+    )
+    return filter_str
+
+
+def project_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> str:
     """Generate the query string to project the variables from the table.
 
     Args:
@@ -1153,6 +1196,16 @@ def project_query(part: CompValue) -> str:
         str: Query string to project the variables from the table.
     """
     table_name: str = __encode_table_name(part.p)
+
+    part_name: str = __encode_table_name(part)
+    schemas[part_name] = list()
+    for var_list in schemas[table_name]:
+        new_var_list: list[str] = list()
+        for var in var_list:
+            if var in part.PV:
+                new_var_list.append(var)
+        schemas[part_name].append(new_var_list)
+
     return (
         "SELECT "
         + ", ".join(var for var in sorted(part.PV))
@@ -1206,7 +1259,11 @@ def leftjoin_query(part: CompValue) -> str:
     return leftjoin_query
 
 
-def minus_query(part: CompValue) -> str:
+def minus_query(
+    part: CompValue,
+    schemas: dict[str, list[list[str]]],
+    multiple_schemas: bool = False,
+) -> str:
     """Minus query string for the algebra
 
     Args:
@@ -1215,41 +1272,67 @@ def minus_query(part: CompValue) -> str:
     Returns:
         str: Query string for the minus operation
     """
-    minus_query: str = (
-        "SELECT * \nFROM "
-        + __encode_table_name(part.p1)
-        + " AS r1\n"
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        minus_query += (
-            "WHERE "
-            + ", ".join(
-                f"r1.{var}"
-                for var in sorted(
-                    part.p1._vars.intersection(
-                        part.p2._vars
-                    )
-                )
-            )
-            + " NOT IN (SELECT "
-            + ", ".join(
-                f"r2.{var}"
-                for var in sorted(
-                    part.p1._vars.intersection(
-                        part.p2._vars
-                    )
-                )
-            )
-            + " FROM "
-            + __encode_table_name(part.p2)
-            + " AS r2);"
+    if not multiple_schemas:
+        minus_query: str = (
+            "SELECT * \nFROM "
+            + __encode_table_name(part.p1)
+            + " AS r1\n"
         )
+        if (
+            part.p1._vars.intersection(part.p2._vars)
+            != set()
+        ):
+            minus_query += (
+                "WHERE "
+                + ", ".join(
+                    f"r1.{var}"
+                    for var in sorted(
+                        part.p1._vars.intersection(
+                            part.p2._vars
+                        )
+                    )
+                )
+                + " NOT IN (SELECT "
+                + ", ".join(
+                    f"r2.{var}"
+                    for var in sorted(
+                        part.p1._vars.intersection(
+                            part.p2._vars
+                        )
+                    )
+                )
+                + " FROM "
+                + __encode_table_name(part.p2)
+                + " AS r2);"
+            )
+        else:
+            minus_query += ";"
     else:
-        minus_query += ";"
+        if isdir(__encode_table_name(part.p1)):
+            minus_query: str = ""
+            for p1_file in listdir(
+                __encode_table_name(part.p1)
+            ):
+                minus_query += (
+                    "SELECT * \nFROM "
+                    + p1_file
+                    + " AS r1\n"
+                )
+                if isdir(__encode_table_name(part.p2)):
+                    pass
+
+    part_name: str = __encode_table_name(part)
+    schemas[part_name] = list()
+    left_table_name: str = __encode_table_name(part.p1)
+    for var_list in schemas[left_table_name]:
+        schemas[part_name].append(var_list)
+
     return minus_query
 
 
-def union_query(part: CompValue) -> str:
+def union_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> str:
     """Union query string for the algebra
 
     Args:
@@ -1282,4 +1365,15 @@ def union_query(part: CompValue) -> str:
         + union_table_name2
         + ";\n"
     )
+
+    left_table_name: str = __encode_table_name(part.p1)
+    right_table_name: str = __encode_table_name(part.p2)
+    part_name: str = __encode_table_name(part)
+    schemas[part_name] = list()
+    for var_list in schemas[left_table_name]:
+        schemas[part_name].append(var_list)
+    for var_list in schemas[right_table_name]:
+        schemas[part_name].append(var_list)
+    print(schemas)
+
     return union_query_left + "UNION \n" + union_query_right

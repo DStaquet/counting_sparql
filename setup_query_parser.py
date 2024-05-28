@@ -14,7 +14,9 @@ from os import mkdir
 
 
 def __non_increm_queries(
-    part: CompValue, output_dir: str
+    part: CompValue,
+    output_dir: str,
+    schemas: dict[str, list[list[str]]],
 ) -> None:
     """Constructs the non_incremental queries
 
@@ -28,12 +30,14 @@ def __non_increm_queries(
     if not exists(query_output_dir):
         mkdir(query_output_dir)
     SQL_initialize_queries.build_queries(
-        part, query_output_dir
+        part, query_output_dir, schemas
     )
 
 
 def __increm_queries(
-    part: CompValue, output_dir: str
+    part: CompValue,
+    output_dir: str,
+    schemas: dict[str, list[list[str]]],
 ) -> None:
     """Builds up the incremental queries
 
@@ -47,7 +51,7 @@ def __increm_queries(
     if not exists(query_output_dir):
         mkdir(query_output_dir)
     SQL_initialize_queries.build_increm_queries(
-        part, query_output_dir
+        part, query_output_dir, schemas
     )
 
 
@@ -80,11 +84,16 @@ def setup_queries(
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
     setup_tables(q_query_object.algebra)
+
+    schemas: dict[str, list[list[str]]] = dict()
+
     if increm:
-        __increm_queries(q_query_object.algebra, output_dir)
+        __increm_queries(
+            q_query_object.algebra, output_dir, schemas
+        )
     else:
         __non_increm_queries(
-            q_query_object.algebra, output_dir
+            q_query_object.algebra, output_dir, schemas
         )
 
 

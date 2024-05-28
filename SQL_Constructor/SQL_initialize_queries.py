@@ -1,5 +1,6 @@
 from rdflib.plugins.sparql.parserutils import CompValue
 from SQL_Constructor import SQL_Constructor
+from os.path import isdir
 
 
 def create_table() -> str:
@@ -66,7 +67,9 @@ def __delta_bgp_queries(part: CompValue) -> list[str]:
 
 
 def build_increm_queries(
-    part: CompValue, output_dir: str
+    part: CompValue,
+    output_dir: str,
+    schemas: dict[str, list[list[str]]],
 ) -> None:
     """Builds up the different incremental queries provided by the query.
 
@@ -75,10 +78,10 @@ def build_increm_queries(
         output_dir (str): Directory to write the SQL queries
     """
     if "p" in part:
-        build_increm_queries(part.p, output_dir)
+        build_increm_queries(part.p, output_dir, schemas)
     elif "p1" in part and "p2" in part:
-        build_increm_queries(part.p1, output_dir)
-        build_increm_queries(part.p2, output_dir)
+        build_increm_queries(part.p1, output_dir, schemas)
+        build_increm_queries(part.p2, output_dir, schemas)
     # Construct the SQL query
     match part.name:
         case "BGP":
@@ -103,11 +106,25 @@ def build_increm_queries(
                         True,
                         name="delta_",
                     )
+        case "Filter":
+            filter_delta_query: str = (
+                SQL_Constructor.delta_filter_query(part)
+            )
+            __write_query_to_output_dir(
+                part,
+                output_dir,
+                filter_delta_query,
+                name="delta_",
+            )
         case "_":
             print("Didn't implement", part.name)
 
 
-def build_queries(part: CompValue, output_dir: str) -> None:
+def build_queries(
+    part: CompValue,
+    output_dir: str,
+    schemas: dict[str, list[list[str]]],
+) -> None:
     """Builds up the different queries provided by the query.
 
     Args:
@@ -115,23 +132,27 @@ def build_queries(part: CompValue, output_dir: str) -> None:
         output_dir (str): Directory to write the SQL queries
     """
     if "p" in part:
-        build_queries(part.p, output_dir)
+        build_queries(part.p, output_dir, schemas)
     elif "p1" in part and "p2" in part:
-        build_queries(part.p1, output_dir)
-        build_queries(part.p2, output_dir)
+        build_queries(part.p1, output_dir, schemas)
+        build_queries(part.p2, output_dir, schemas)
     # Construct the SQL query
     if part.name == "BGP":
-        bgp_query = SQL_Constructor.bgp_query(part)
+        bgp_query = SQL_Constructor.bgp_query(part, schemas)
         __write_query_to_output_dir(
             part, output_dir, bgp_query
         )
     elif part.name == "Filter":
-        filter_query = SQL_Constructor.filter_query(part)
+        filter_query = SQL_Constructor.filter_query(
+            part, schemas
+        )
         __write_query_to_output_dir(
             part, output_dir, filter_query
         )
     elif part.name == "Project":
-        project_query = SQL_Constructor.project_query(part)
+        project_query = SQL_Constructor.project_query(
+            part, schemas
+        )
         __write_query_to_output_dir(
             part, output_dir, project_query
         )
@@ -143,12 +164,25 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             part, output_dir, leftjoin_query
         )
     elif part.name == "Minus":
-        minus_query = SQL_Constructor.minus_query(part)
+        if isdir(
+            f"{output_dir}/{SQL_Constructor.get_table_name(part.p1)}"
+        ) or isdir(
+            f"{output_dir}/{SQL_Constructor.get_table_name(part.p2)}"
+        ):
+            minus_query: str = SQL_Constructor.minus_query(
+                part, schemas, True
+            )
+        else:
+            minus_query = SQL_Constructor.minus_query(
+                part, schemas
+            )
         __write_query_to_output_dir(
             part, output_dir, minus_query
         )
     elif part.name == "Union":
-        union_query = SQL_Constructor.union_query(part)
+        union_query = SQL_Constructor.union_query(
+            part, schemas
+        )
         __write_query_to_output_dir(
             part, output_dir, union_query
         )
