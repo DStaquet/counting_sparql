@@ -1,0 +1,1 @@
+SELECT label, product, SUM(k_count) as k_count FROM delta_Minus_6349949983044087158 GROUP BY label, product;

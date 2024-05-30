@@ -1206,6 +1206,211 @@ def delta_filter_query(part: CompValue) -> str:
     return filter_str
 
 
+def delta_project_query(part: CompValue) -> str:
+    """Generate the query string to project the variables from the table.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Query string to project the variables from the table.
+    """
+    table_name: str = "delta_" + __encode_table_name(part.p)
+
+    return (
+        "SELECT "
+        + ", ".join(var for var in sorted(part.PV))
+        + ", SUM(k_count) as k_count FROM "
+        + table_name
+        + " GROUP BY "
+        + ", ".join(var for var in sorted(part.PV))
+        + ";"
+    )
+
+
+def delta_leftjoin_query(part: CompValue) -> list[str]:
+    """Constructs the delta query for the leftjoin operation.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        list[str]: Query strings for the delta leftjoin operation
+    """
+    leftjoin_queries: list[str] = list()
+    leftjoin_query: str = (
+        "SELECT "
+        + ", ".join(
+            var
+            for var in sorted(part.p1._vars)
+            if var != "k_count"
+        )
+        + ", "
+        + ", ".join(
+            var
+            for var in sorted(part.p2._vars)
+            if var != "k_count"
+        )
+        + ", r1.k_count as k_count\nFROM "
+        + "delta_"
+        + __encode_table_name(part.p1)
+        + " AS r1 LEFT JOIN "
+        + __encode_table_name(part.p2)
+        + " AS r2"
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        leftjoin_query += " ON "
+        leftjoin_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part.p1._vars.intersection(
+                part.p2._vars
+            )
+        )
+    else:
+        leftjoin_query += " ON TRUE"
+    leftjoin_query += ";"
+    leftjoin_queries.append(leftjoin_query)
+
+    leftjoin_query: str = (
+        "SELECT "
+        + ", ".join(
+            var
+            for var in sorted(part.p1._vars)
+            if var != "k_count"
+        )
+        + ", "
+        + ", ".join(
+            var
+            for var in sorted(part.p2._vars)
+            if var != "k_count"
+        )
+        + ", r2.k_count as k_count\nFROM "
+        + "nu_"
+        + __encode_table_name(part.p1)
+        + " AS r1 LEFT JOIN "
+        + "delta_"
+        + __encode_table_name(part.p2)
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        leftjoin_query += " ON "
+        leftjoin_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part.p1._vars.intersection(
+                part.p2._vars
+            )
+        )
+    else:
+        leftjoin_query += " ON TRUE"
+    leftjoin_query += ";"
+    leftjoin_queries.append(leftjoin_query)
+
+    return leftjoin_queries
+
+
+def delta_minus_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> list[dict[str, str]]:
+    """Delta minus query string for the algebra
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string for the delta minus operation
+    """
+    all_minus_queries: list[dict[str, str]] = list()
+    all_minus_queries.append(dict())
+    for schema in schemas[__encode_table_name(part.p1)]:
+        delta_minus_query: str = (
+            "SELECT * \nFROM "
+            + "delta_"
+            + __encode_table_name(part.p1)
+            + " AS r1\n"
+        )
+        open_brackets: int = 0
+        for schema2 in schemas[
+            __encode_table_name(part.p2)
+        ]:
+            if (
+                set(schema).intersection(set(schema2))
+                != set()
+            ):
+                delta_minus_query += (
+                    "WHERE "
+                    + ", ".join(
+                        f"r1.{var}"
+                        for var in sorted(schema)
+                        if var in schema2
+                    )
+                    + " NOT IN (SELECT "
+                    + ", ".join(
+                        f"r2.{var}"
+                        for var in sorted(schema)
+                        if var in schema2
+                    )
+                    + " FROM "
+                    + __encode_table_name(part.p2)
+                )
+                open_brackets += 1
+        for _ in range(open_brackets):
+            delta_minus_query += ")"
+        delta_minus_query += ";"
+        all_minus_queries[0][
+            __schema_table(part, schema)
+        ] = delta_minus_query
+
+    return delta_minus_query
+
+
+def delta_union_query(part: CompValue) -> str:
+    """Constructs the union query.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string for the union operation
+    """
+    """Union query string for the algebra
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string for the union operation
+    """
+    union_table_name1: str = "delta_" + __encode_table_name(
+        part.p1
+    )
+    union_query_left: str = (
+        "SELECT * FROM " + union_table_name1 + "\n"
+    )
+    union_table_name2: str = "delta_" + __encode_table_name(
+        part.p2
+    )
+    union_query_right: str = (
+        "SELECT "
+        + ", ".join(
+            var
+            for var in sorted(
+                part.p2._vars.intersection(part.p1._vars)
+            )
+        )
+        + ", "
+        + ", ".join(
+            f"NULL AS {var}"
+            for var in sorted(
+                part.p1._vars.difference(part.p2._vars)
+            )
+        )
+        + " FROM "
+        + union_table_name2
+        + ";\n"
+    )
+
+    return union_query_left + "UNION\n" + union_query_right
+
+
 def project_query(
     part: CompValue, schemas: dict[str, list[list[str]]]
 ) -> str:
