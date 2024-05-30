@@ -23,6 +23,7 @@ def __write_query_to_output_dir(
     part: CompValue,
     output_dir: str,
     query: str,
+    filename: str,
     append: bool = False,
     name: str = "",
 ) -> None:
@@ -35,13 +36,13 @@ def __write_query_to_output_dir(
     """
     if not append:
         with open(
-            f"{output_dir}/{name}{SQL_Constructor.get_table_name(part)}.sql",
+            f"{output_dir}/{name}{filename}.sql",
             "w",
         ) as f:
             f.write(query)
     else:
         with open(
-            f"{output_dir}/{name}{SQL_Constructor.get_table_name(part)}.sql",
+            f"{output_dir}/{name}{filename}.sql",
             "a",
         ) as f:
             f.write(query)
@@ -95,6 +96,9 @@ def build_increm_queries(
                         part,
                         output_dir,
                         query,
+                        SQL_Constructor.get_table_name(
+                            part
+                        ),
                         name="delta_",
                     )
                     first = False
@@ -103,6 +107,9 @@ def build_increm_queries(
                         part,
                         output_dir,
                         query,
+                        SQL_Constructor.get_table_name(
+                            part
+                        ),
                         True,
                         name="delta_",
                     )
@@ -114,6 +121,7 @@ def build_increm_queries(
                 part,
                 output_dir,
                 filter_delta_query,
+                SQL_Constructor.get_table_name(part),
                 name="delta_",
             )
         case "_":
@@ -140,28 +148,40 @@ def build_queries(
     if part.name == "BGP":
         bgp_query = SQL_Constructor.bgp_query(part, schemas)
         __write_query_to_output_dir(
-            part, output_dir, bgp_query
+            part,
+            output_dir,
+            bgp_query,
+            SQL_Constructor.get_table_name(part),
         )
     elif part.name == "Filter":
         filter_query = SQL_Constructor.filter_query(
             part, schemas
         )
         __write_query_to_output_dir(
-            part, output_dir, filter_query
+            part,
+            output_dir,
+            filter_query,
+            SQL_Constructor.get_table_name(part),
         )
     elif part.name == "Project":
         project_query = SQL_Constructor.project_query(
             part, schemas
         )
         __write_query_to_output_dir(
-            part, output_dir, project_query
+            part,
+            output_dir,
+            project_query,
+            SQL_Constructor.get_table_name(part),
         )
     elif part.name == "LeftJoin":
         leftjoin_query = SQL_Constructor.leftjoin_query(
-            part
+            part, schemas
         )
         __write_query_to_output_dir(
-            part, output_dir, leftjoin_query
+            part,
+            output_dir,
+            leftjoin_query,
+            SQL_Constructor.get_table_name(part),
         )
     elif part.name == "Minus":
         if isdir(
@@ -169,20 +189,26 @@ def build_queries(
         ) or isdir(
             f"{output_dir}/{SQL_Constructor.get_table_name(part.p2)}"
         ):
-            minus_query: str = SQL_Constructor.minus_query(
-                part, schemas, True
+            minus_query: dict[str, str] = (
+                SQL_Constructor.minus_query(
+                    part, schemas, True
+                )
             )
         else:
             minus_query = SQL_Constructor.minus_query(
                 part, schemas
             )
-        __write_query_to_output_dir(
-            part, output_dir, minus_query
-        )
+        for key in minus_query:
+            __write_query_to_output_dir(
+                part, output_dir, minus_query[key], key
+            )
     elif part.name == "Union":
         union_query = SQL_Constructor.union_query(
             part, schemas
         )
         __write_query_to_output_dir(
-            part, output_dir, union_query
+            part,
+            output_dir,
+            union_query,
+            SQL_Constructor.get_table_name(part),
         )

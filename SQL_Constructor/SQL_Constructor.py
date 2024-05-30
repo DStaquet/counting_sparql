@@ -74,6 +74,28 @@ def __create_vars(variables: set) -> str:
     return var_str
 
 
+def get_schema_w_table_name(
+    part: CompValue, schema: list[str]
+) -> str:
+    """Returns the schema with the table name."""
+    return __schema_table(part, schema)
+
+
+def __schema_table(
+    part: CompValue, schema: list[str]
+) -> str:
+    """Constructs the table and schema name."""
+    return (
+        __encode_table_name(part)
+        + "_"
+        + __hash_schema(schema)
+    )
+
+
+def __hash_schema(schema: list[str]) -> str:
+    return str(abs(hash("".join(schema))))
+
+
 def __encode_table_name(part: CompValue) -> str:
     """Encodes the table name to a usable string for SQL.
 
@@ -1217,7 +1239,9 @@ def project_query(
     )
 
 
-def leftjoin_query(part: CompValue) -> str:
+def leftjoin_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> str:
     """Generate the query string to left join the tables
 
     Args:
@@ -1256,14 +1280,35 @@ def leftjoin_query(part: CompValue) -> str:
     else:
         leftjoin_query += " ON TRUE"
     leftjoin_query += ";"
+
+    left_part_name: str = __encode_table_name(part.p1)
+    part_name: str = __encode_table_name(part)
+    schemas[part_name] = list()
+    for var_list in schemas[left_part_name]:
+        new_list: list[str] = var_list.copy()
+        if (
+            part.p1._vars.intersection(part.p2._vars)
+            != set()
+        ):
+            for var in part.p1._vars.intersection(
+                part.p2._vars
+            ):
+                new_list.append(var)
+        schemas[part_name].append(new_list)
+
     return leftjoin_query
+
+
+# TODO: Implement the difference queries
+def diff_query(part: CompValue) -> str:
+    return ""
 
 
 def minus_query(
     part: CompValue,
     schemas: dict[str, list[list[str]]],
     multiple_schemas: bool = False,
-) -> str:
+) -> dict[str, str]:
     """Minus query string for the algebra
 
     Args:
@@ -1272,62 +1317,62 @@ def minus_query(
     Returns:
         str: Query string for the minus operation
     """
-    if not multiple_schemas:
+    all_minus_queries: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p1)]:
         minus_query: str = (
             "SELECT * \nFROM "
-            + __encode_table_name(part.p1)
+            + __schema_table(part.p1, schema)
             + " AS r1\n"
         )
-        if (
-            part.p1._vars.intersection(part.p2._vars)
-            != set()
-        ):
-            minus_query += (
-                "WHERE "
-                + ", ".join(
-                    f"r1.{var}"
-                    for var in sorted(
-                        part.p1._vars.intersection(
-                            part.p2._vars
-                        )
-                    )
-                )
-                + " NOT IN (SELECT "
-                + ", ".join(
-                    f"r2.{var}"
-                    for var in sorted(
-                        part.p1._vars.intersection(
-                            part.p2._vars
-                        )
-                    )
-                )
-                + " FROM "
-                + __encode_table_name(part.p2)
-                + " AS r2);"
-            )
-        else:
-            minus_query += ";"
-    else:
-        if isdir(__encode_table_name(part.p1)):
-            minus_query: str = ""
-            for p1_file in listdir(
-                __encode_table_name(part.p1)
+        open_brackets: int = 0
+        for schema2 in schemas[
+            __encode_table_name(part.p2)
+        ]:
+            if (
+                set(schema).intersection(set(schema2))
+                != set()
             ):
                 minus_query += (
-                    "SELECT * \nFROM "
-                    + p1_file
-                    + " AS r1\n"
+                    "WHERE "
+                    + ", ".join(
+                        f"r1.{var}"
+                        for var in sorted(schema)
+                        if var in schema2
+                    )
+                    + " NOT IN (SELECT "
+                    + ", ".join(
+                        f"r2.{var}"
+                        for var in sorted(schema)
+                        if var in schema2
+                    )
+                    + " FROM "
+                    + __schema_table(part.p2, schema2)
                 )
-                if isdir(__encode_table_name(part.p2)):
-                    pass
+                open_brackets += 1
+        for _ in range(open_brackets):
+            minus_query += ")"
+        minus_query += ";"
+        all_minus_queries[__schema_table(part, schema)] = (
+            minus_query
+        )
 
     part_name: str = __encode_table_name(part)
     schemas[part_name] = list()
     left_table_name: str = __encode_table_name(part.p1)
+    right_table_name: str = __encode_table_name(part.p2)
     for var_list in schemas[left_table_name]:
-        schemas[part_name].append(var_list)
+        for var_list2 in schemas[right_table_name]:
+            new_var_list2: list[str] = list()
+            for var in var_list2:
+                if var in part.p1._vars.intersection(
+                    part.p2._vars
+                ):
+                    new_var_list2.append(var)
+            schemas[part_name].append(
+                var_list + new_var_list2
+            )
 
-    return minus_query
+    return all_minus_queries
 
 
 def union_query(
@@ -1374,6 +1419,5 @@ def union_query(
         schemas[part_name].append(var_list)
     for var_list in schemas[right_table_name]:
         schemas[part_name].append(var_list)
-    print(schemas)
 
     return union_query_left + "UNION \n" + union_query_right
