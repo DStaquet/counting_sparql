@@ -3,9 +3,8 @@ from eval_incremental.eval_incremental import (
     constructTablesRec,
     dropTablesRec,
 )
-from SQL_Constructor import (
-    SQL_initialize_queries,
-)
+from SQL_Constructor import SQL_initialize_queries
+from SQL_Constructor.SQL_schemas import build_schemas
 from SQL_Constructor.SQL_Constructor import get_table_name
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql import parser, algebra
@@ -85,7 +84,10 @@ def setup_queries(
     # algebra.pprintAlgebra(q_query_object)
     setup_tables(q_query_object.algebra)
 
-    schemas: dict[str, list[list[str]]] = dict()
+    schemas: dict[str, list[list[str]]] = build_schemas(
+        q_query_object.algebra, dict()
+    )
+    print(schemas)
 
     if increm:
         __increm_queries(

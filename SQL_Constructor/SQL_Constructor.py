@@ -786,14 +786,6 @@ def bgp_query(
                     + "'"
                 )
 
-    schemas[table_name] = list()
-    schemas[table_name].append(list())
-    for var in known_vars:
-        if var not in schemas[table_name]:
-            schemas[table_name][0].append(
-                var
-            )  # Uses 0 as BGP will always have one schema
-
     return (
         bgp_select_clause
         + "\n"
@@ -1178,11 +1170,6 @@ def filter_query(
         + ";"
     )
 
-    part_name: str = __encode_table_name(part)
-    schemas[part_name] = list()
-    for var_list in schemas[table_name]:
-        schemas[part_name].append(var_list)
-
     return filter_str
 
 
@@ -1324,7 +1311,7 @@ def delta_minus_query(
         delta_minus_query: str = (
             "SELECT * \nFROM "
             + "delta_"
-            + __encode_table_name(part.p1)
+            + __schema_table(part.p1, schema)
             + " AS r1\n"
         )
         open_brackets: int = 0
@@ -1349,7 +1336,7 @@ def delta_minus_query(
                         if var in schema2
                     )
                     + " FROM "
-                    + __encode_table_name(part.p2)
+                    + __schema_table(part.p2, schema2)
                 )
                 open_brackets += 1
         for _ in range(open_brackets):
@@ -1359,7 +1346,102 @@ def delta_minus_query(
             __schema_table(part, schema)
         ] = delta_minus_query
 
-    return delta_minus_query
+    all_minus_queries.append(dict())
+    for schema in schemas[__encode_table_name(part.p1)]:
+        # Beginning of queries
+        delta_minus_query_first_part_begin: str = (
+            "SELECT F_nu.* \nFROM nu_"
+            + __schema_table(part.p1, schema)
+            + " AS F_nu join delta_"
+        )
+        delta_minus_query_second_part_begin: str = (
+            "SELECT "
+            + ", ".join(
+                var
+                for var in sorted(schema)
+                if var != "k_count"
+            )
+            + ", -F_nu.k_count \nFROM nu_"
+            + __schema_table(part.p1, schema)
+            + " AS F_nu join delta_"
+        )
+
+        schema1_queries: str = ""
+
+        # Constructs the IN and NOT IN clauses
+        for schema2 in schemas[
+            __encode_table_name(part.p2)
+        ]:
+            # First second part
+            delta_minus_query_first_part = (
+                delta_minus_query_first_part_begin
+                + __schema_table(part.p2, schema2)
+            )
+            delta_minus_query_first_part += (
+                " as delta_P2"
+                + " ON "
+                + " AND ".join(
+                    f"F_nu.{var} = delta_P2.{var}"
+                    for var in sorted(schema)
+                    if var in schema2 and var != "k_count"
+                )
+            )
+            delta_minus_query_first_part += " \nWHERE ("
+            delta_minus_query_first_part += ", ".join(
+                var
+                for var in sorted(schema)
+                if var in schema2 and var != "k_count"
+            )
+            delta_minus_query_first_part += (
+                "-delta_P2.k_count) "
+            )
+            delta_minus_query_first_part += (
+                " IN (SELECT *"
+                + " FROM "
+                + __schema_table(part.p2, schema2)
+                + ")"
+            )
+
+            # Second second part
+            delta_minus_query_second_part: str = (
+                delta_minus_query_second_part_begin
+                + __schema_table(part.p2, schema2)
+            )
+            delta_minus_query_second_part += (
+                " ON "
+                + " AND ".join(
+                    f"F_nu.{var} = delta_P2.{var}"
+                    for var in sorted(schema)
+                    if var in schema2 and var != "k_count"
+                )
+                + " \nWHERE ("
+                + ", ".join(
+                    var
+                    for var in sorted(schema)
+                    if var in schema2 and var != "k_count"
+                )
+                + ") NOT IN (SELECT "
+                + ", ".join(
+                    var
+                    for var in sorted(schema)
+                    if var in schema2 and var != "k_count"
+                )
+                + " FROM "
+                + __schema_table(part.p2, schema2)
+                + ")"
+            )
+
+            schema1_queries += (
+                delta_minus_query_first_part
+                + "\nUNION\n"
+                + delta_minus_query_second_part
+                + ";\n"
+            )
+        all_minus_queries[1][
+            __schema_table(part, schema)
+        ] = schema1_queries
+
+    return all_minus_queries
 
 
 def delta_union_query(part: CompValue) -> str:
@@ -1424,15 +1506,6 @@ def project_query(
     """
     table_name: str = __encode_table_name(part.p)
 
-    part_name: str = __encode_table_name(part)
-    schemas[part_name] = list()
-    for var_list in schemas[table_name]:
-        new_var_list: list[str] = list()
-        for var in var_list:
-            if var in part.PV:
-                new_var_list.append(var)
-        schemas[part_name].append(new_var_list)
-
     return (
         "SELECT "
         + ", ".join(var for var in sorted(part.PV))
@@ -1486,21 +1559,6 @@ def leftjoin_query(
         leftjoin_query += " ON TRUE"
     leftjoin_query += ";"
 
-    left_part_name: str = __encode_table_name(part.p1)
-    part_name: str = __encode_table_name(part)
-    schemas[part_name] = list()
-    for var_list in schemas[left_part_name]:
-        new_list: list[str] = var_list.copy()
-        if (
-            part.p1._vars.intersection(part.p2._vars)
-            != set()
-        ):
-            for var in part.p1._vars.intersection(
-                part.p2._vars
-            ):
-                new_list.append(var)
-        schemas[part_name].append(new_list)
-
     return leftjoin_query
 
 
@@ -1552,6 +1610,7 @@ def minus_query(
                     )
                     + " FROM "
                     + __schema_table(part.p2, schema2)
+                    + " AS r2"
                 )
                 open_brackets += 1
         for _ in range(open_brackets):
@@ -1560,22 +1619,6 @@ def minus_query(
         all_minus_queries[__schema_table(part, schema)] = (
             minus_query
         )
-
-    part_name: str = __encode_table_name(part)
-    schemas[part_name] = list()
-    left_table_name: str = __encode_table_name(part.p1)
-    right_table_name: str = __encode_table_name(part.p2)
-    for var_list in schemas[left_table_name]:
-        for var_list2 in schemas[right_table_name]:
-            new_var_list2: list[str] = list()
-            for var in var_list2:
-                if var in part.p1._vars.intersection(
-                    part.p2._vars
-                ):
-                    new_var_list2.append(var)
-            schemas[part_name].append(
-                var_list + new_var_list2
-            )
 
     return all_minus_queries
 
@@ -1615,14 +1658,5 @@ def union_query(
         + union_table_name2
         + ";\n"
     )
-
-    left_table_name: str = __encode_table_name(part.p1)
-    right_table_name: str = __encode_table_name(part.p2)
-    part_name: str = __encode_table_name(part)
-    schemas[part_name] = list()
-    for var_list in schemas[left_table_name]:
-        schemas[part_name].append(var_list)
-    for var_list in schemas[right_table_name]:
-        schemas[part_name].append(var_list)
 
     return union_query_left + "UNION \n" + union_query_right
