@@ -1,0 +1,3 @@
+SELECT comment, f, label, p, producer, productFeature, propertyNumeric1, propertyNumeric2, propertyTextual1, propertyTextual2, propertyTextual3, propertyTextual4, propertyTextual5, r1.k_count * r2.k_count as k_count
+FROM delta_LeftJoin_5874294442988197449 AS r1 LEFT OUTER JOIN BGP_5599850506786390090 AS r2 ON TRUE;SELECT comment, f, label, p, producer, productFeature, propertyNumeric1, propertyNumeric2, propertyTextual1, propertyTextual2, propertyTextual3, propertyTextual4, propertyTextual5, r1.k_count * r2.k_count as k_count
+FROM nu_LeftJoin_5874294442988197449 AS r1 LEFT OUTER JOIN delta_BGP_5599850506786390090 ON TRUE;

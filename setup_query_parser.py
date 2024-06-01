@@ -87,7 +87,6 @@ def setup_queries(
     schemas: dict[str, list[list[str]]] = build_schemas(
         q_query_object.algebra, dict()
     )
-    print(schemas)
 
     if increm:
         __increm_queries(

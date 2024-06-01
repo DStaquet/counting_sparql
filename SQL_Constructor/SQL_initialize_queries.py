@@ -137,7 +137,9 @@ def build_increm_queries(
             )
         case "LeftJoin":
             leftjoin_delta_queries: list[str] = (
-                SQL_Constructor.delta_leftjoin_query(part)
+                SQL_Constructor.delta_leftjoin_query(
+                    part, schemas
+                )
             )
             first = True
             for leftjoin_query in leftjoin_delta_queries:
