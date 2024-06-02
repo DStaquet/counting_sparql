@@ -54,16 +54,18 @@ def __increm_queries(
     )
 
 
-def setup_tables(query: CompValue) -> None:
+def setup_tables(
+    query: CompValue, schemas: dict[str, list[list[str]]]
+) -> None:
     """Sets up the tables to use for the queries
 
     Args:
         query (CompValue): Algebra or part of the query
     """
     # Drop all the tables before the setup
-    dropTablesRec(query)
+    dropTablesRec(query, schemas)
     # Construct the tables
-    constructTablesRec(query)
+    constructTablesRec(query, schemas)
 
 
 def setup_queries(
@@ -82,11 +84,12 @@ def setup_queries(
     query_tree = parser.parseQuery(str(query_str))
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
-    setup_tables(q_query_object.algebra)
 
     schemas: dict[str, list[list[str]]] = build_schemas(
         q_query_object.algebra, dict()
     )
+
+    setup_tables(q_query_object.algebra, schemas)
 
     if increm:
         __increm_queries(

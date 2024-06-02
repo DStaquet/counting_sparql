@@ -14,23 +14,27 @@ from rdflib.term import Identifier
 _Triple = tuple[Identifier, Identifier, Identifier]
 
 
-def drop_all_tables(part) -> None:
+def drop_all_tables(
+    part, schemas: dict[str, list[list[str]]]
+) -> None:
     """Drops all tables in the database."""
     drop_query, drop_delta_query, drop_nu_query = (
-        SQL_Constructor.drop_all_tables(part)
+        SQL_Constructor.drop_all_tables(part, schemas)
     )
     duckdb_conn.sql(drop_query)
     duckdb_conn.sql(drop_delta_query)
     duckdb_conn.sql(drop_nu_query)
 
 
-def construct_tables(part) -> None:
+def construct_tables(
+    part, schemas: dict[str, list[list[str]]]
+) -> None:
     """Drops the delta table and constructs the tables in the database."""
     delta_table_drop_query: str = (
-        SQL_Constructor.drop_delta_table(part)
+        SQL_Constructor.drop_delta_table(part, schemas)
     )
     table_query, table_delta, table_nu = (
-        SQL_Constructor.make_tables(part, part._vars)
+        SQL_Constructor.make_tables_schema(part, schemas)
     )
     duckdb_conn.sql(table_query)
     duckdb_conn.sql(delta_table_drop_query)
@@ -38,28 +42,32 @@ def construct_tables(part) -> None:
     duckdb_conn.sql(table_nu)
 
 
-def dropTablesRec(part) -> None:
+def dropTablesRec(
+    part, schemas: dict[str, list[list[str]]]
+) -> None:
     """Drops the tables in the database recursively."""
     if part == None:
         return
     if "p" in part or part.name == "BGP":
-        dropTablesRec(part.p)
+        dropTablesRec(part.p, schemas)
     elif "p1" in part and "p2" in part:
-        dropTablesRec(part.p1)
-        dropTablesRec(part.p2)
-    drop_all_tables(part)
+        dropTablesRec(part.p1, schemas)
+        dropTablesRec(part.p2, schemas)
+    drop_all_tables(part, schemas)
 
 
-def constructTablesRec(part) -> None:
+def constructTablesRec(
+    part, schemas: dict[str, list[list[str]]]
+) -> None:
     """Constructs the tables in the database recursively."""
     if part == None:
         return
     if "p" in part or part.name == "BGP":
-        constructTablesRec(part.p)
+        constructTablesRec(part.p, schemas)
     elif "p1" in part and "p2" in part:
-        constructTablesRec(part.p1)
-        constructTablesRec(part.p2)
-    construct_tables(part)
+        constructTablesRec(part.p1, schemas)
+        constructTablesRec(part.p2, schemas)
+    construct_tables(part, schemas)
 
 
 def evalIncrSelectQuery(

@@ -1,0 +1,2 @@
+SELECT comment, f, label, p, producer, productFeature, propertyNumeric1, propertyNumeric2, propertyTextual1, propertyTextual2, propertyTextual3, propertyTextual4, r1.k_count as k_count
+FROM BGP_6096836102481082072_1289134416171866470 AS r1 LEFT JOIN BGP_1320827854144898937_4205737439464600167 AS r2 ON TRUE;

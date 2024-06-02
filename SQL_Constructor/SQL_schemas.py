@@ -152,6 +152,26 @@ def filter_schema(
     return schemas
 
 
+def select_query_schema(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> dict[str, list[list[str]]]:
+    """Constructs the schema for the select query part of the query.
+
+    Args:
+        part (CompValue): Current part of the query.
+        schemas (dict[str, list[list[str]]]): All schemas yet constructed.
+
+    Returns:
+        dict[str, list[list[str]]]: All schemas.
+    """
+    part_name: str = get_table_name(part)
+    schemas[part_name] = list()
+    for var_list in schemas[get_table_name(part.p)]:
+        schemas[part_name].append(var_list)
+
+    return schemas
+
+
 def build_schemas(
     part: CompValue, schemas: dict[str, list[list[str]]]
 ) -> dict[str, list[list[str]]]:
@@ -181,5 +201,7 @@ def build_schemas(
         schemas = minus_schema(part, schemas)
     elif part.name == "Union":
         schemas = union_schema(part, schemas)
+    elif part.name == "SelectQuery":
+        schemas = select_query_schema(part, schemas)
 
     return schemas

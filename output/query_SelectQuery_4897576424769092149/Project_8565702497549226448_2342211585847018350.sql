@@ -1,0 +1,1 @@
+SELECT label, product, SUM(k_count) as k_count FROM Project_8565702497549226448_2342211585847018350 GROUP BY label, product;

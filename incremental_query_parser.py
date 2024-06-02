@@ -14,6 +14,9 @@ from eval_incremental.eval_incremental import (
 )
 from eval_incremental import delta_inserter, duckdb_conn
 from eval_incremental.eval_incremental import evalIncrPart
+from SQL_Constructor.SQL_schemas import build_schemas
+from SQL_Constructor.SQL_Constructor import get_table_name
+from eval_incremental import eval_increm_premade
 
 from pandas import DataFrame
 
@@ -76,7 +79,11 @@ def insertParseQuery(
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
 
-    constructTablesRec(q_query_object.algebra)
+    schemas: dict[str, list[list[str]]] = build_schemas(
+        q_query_object.algebra, dict()
+    )
+
+    constructTablesRec(q_query_object.algebra, schemas)
     output: DataFrame = evalIncrPart(
         QueryContext(g), q_query_object.algebra, True
     )
@@ -113,9 +120,12 @@ def queryParser(
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
+    schemas: dict[str, list[list[str]]] = build_schemas(
+        q_query_object.algebra, dict()
+    )
     if not increm_bool:
-        dropTablesRec(q_query_object.algebra)
-    constructTablesRec(q_query_object.algebra)
+        dropTablesRec(q_query_object.algebra, schemas)
+    constructTablesRec(q_query_object.algebra, schemas)
     result: DataFrame = (
         temp_eval_incremental_query1.evalIncrPart(
             QueryContext(g),
@@ -148,9 +158,12 @@ def queryParser(
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
+    schemas: dict[str, list[list[str]]] = build_schemas(
+        q_query_object.algebra, dict()
+    )
     if not increm_bool:
-        dropTablesRec(q_query_object.algebra)
-    constructTablesRec(q_query_object.algebra)
+        dropTablesRec(q_query_object.algebra, schemas)
+    constructTablesRec(q_query_object.algebra, schemas)
     result: DataFrame = (
         temp_eval_incremental_query2.evalIncrPart(
             QueryContext(g),
@@ -183,9 +196,12 @@ def queryParser(
     )
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
+    schemas: dict[str, list[list[str]]] = build_schemas(
+        q_query_object.algebra, dict()
+    )
     if not increm_bool:
-        dropTablesRec(q_query_object.algebra)
-    constructTablesRec(q_query_object.algebra)
+        dropTablesRec(q_query_object.algebra, schemas)
+    constructTablesRec(q_query_object.algebra, schemas)
     result: DataFrame = (
         temp_eval_incremental_query3.evalIncrPart(
             QueryContext(g),
@@ -218,9 +234,12 @@ def queryParser(
     query_tree = parser.parseQuery(str(query))
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
+    schemas: dict[str, list[list[str]]] = build_schemas(
+        q_query_object.algebra, dict()
+    )
     if not increm_bool:
-        dropTablesRec(q_query_object.algebra)
-    constructTablesRec(q_query_object.algebra)
+        dropTablesRec(q_query_object.algebra, schemas)
+    constructTablesRec(q_query_object.algebra, schemas)
     result: DataFrame = (
         temp_eval_incremental_query4.evalIncrPart(
             QueryContext(g),
@@ -400,7 +419,39 @@ def test_queryParser(
     f.close()
 
 
+def run_query(
+    data: str,
+    query: str,
+    output_file: str,
+    increm: bool = False,
+):
+    g: graph.Graph = buildGraphFromData(data)
+    query_tree = parser.parseQuery(str(query))
+    q_query_object = algebra.translateQuery(query_tree)
+    schemas: dict[str, list[list[str]]] = build_schemas(
+        q_query_object.algebra, dict()
+    )
+    query_output_dir: str = os.path.join(
+        output_file,
+        "query_" + get_table_name(q_query_object.algebra),
+    )
+    output: DataFrame = eval_increm_premade.evalIncremPart(
+        q_query_object.algebra,
+        schemas,
+        query_output_dir,
+        increm,
+    )
+
+
 if __name__ == "__main__":
+
+    hashseed = os.getenv("PYTHONHASHSEED")
+    if not hashseed:
+        os.environ["PYTHONHASHSEED"] = "0"
+        os.execv(
+            sys.executable, [sys.executable] + sys.argv
+        )
+
     if len(sys.argv) < 4:
         print(
             "Usage: python query_parser.py <query> <data> <output_dir>"
@@ -410,8 +461,8 @@ if __name__ == "__main__":
         query_str: str = sys.argv[1]
         data_str: str = sys.argv[2]
         output_file: str = sys.argv[3]
-        f = open(output_file, "w")
-        f.close()
+        """f = open(output_file, "w")
+        f.close()"""
 
     """query1_time: float = 0
     query2_time: float = 0
@@ -422,3 +473,5 @@ if __name__ == "__main__":
     )"""
 
     data: str = readQueryFile(data_str)
+    query: str = readQueryFile(query_str)
+    run_query(data, query, output_file)

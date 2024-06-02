@@ -14,7 +14,7 @@ from os import listdir
 
 
 def drop_all_tables(
-    part: CompValue,
+    part: CompValue, schemas: dict[str, list[list[str]]]
 ) -> tuple[str, str, str]:
     """Queries to drop all the tables
 
@@ -25,24 +25,30 @@ def drop_all_tables(
         tuple[str, str, str]: The drop queries for the table, delta table, and nu table.
     """
     drop_query: str = (
-        """
-    DROP TABLE IF EXISTS """
-        + __encode_table_name(part)
-        + """;"""
+        " DROP TABLE IF EXISTS "
+        + ", ".join(
+            __schema_table(part, schema)
+            for schema in schemas[__encode_table_name(part)]
+        )
+        + ";"
     )
 
     drop_delta_query: str = (
-        """
-    DROP TABLE IF EXISTS delta_"""
-        + __encode_table_name(part)
-        + """;"""
+        " DROP TABLE IF EXISTS "
+        + ", ".join(
+            f"delta_{__schema_table(part, schema)}"
+            for schema in schemas[__encode_table_name(part)]
+        )
+        + ";"
     )
 
     drop_nu_query: str = (
-        """
-    DROP TABLE IF EXISTS nu_"""
-        + __encode_table_name(part)
-        + """;"""
+        " DROP TABLE IF EXISTS "
+        + ", ".join(
+            f"nu_{__schema_table(part, schema)}"
+            for schema in schemas[__encode_table_name(part)]
+        )
+        + ";"
     )
 
     return drop_query, drop_delta_query, drop_nu_query
@@ -93,7 +99,7 @@ def __schema_table(
 
 
 def __hash_schema(schema: list[str]) -> str:
-    return str(abs(hash("".join(schema))))
+    return str(abs(hash("".join(sorted(schema)))))
 
 
 def __encode_table_name(part: CompValue) -> str:
@@ -223,8 +229,51 @@ def values_var(res: list) -> str:
     return var_str
 
 
-def drop_delta_table(part: CompValue) -> str:
-    return f"DROP TABLE IF EXISTS delta_{__encode_table_name(part)};"
+def drop_delta_table(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> str:
+    return (
+        "DROP TABLE IF EXISTS "
+        + ", ".join(
+            f"delta_{__schema_table(part, schema)}"
+            for schema in schemas[__encode_table_name(part)]
+        )
+        + ";"
+    )
+
+
+def make_tables_schema(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> tuple[str, str, str]:
+    """Builds all the different tables based upon the schemas
+
+    Args:
+        part (CompValue): Current part of the algebra
+        schemas (dict[str, list[list[str]]]): All the schemas
+
+    Returns:
+        tuple[str, str, str]: All the different tables strings
+    """
+    def_bgp_query, def_delta_bgp_query, def_bgp_nu_query = (
+        "",
+        "",
+        "",
+    )
+    for schema in schemas[__encode_table_name(part)]:
+        (
+            create_table_str,
+            create_table_delta_bgp,
+            create_table_bgp_nu,
+        ) = make_tables(part, set(schema))
+        def_bgp_query += create_table_str + "\n"
+        def_delta_bgp_query += create_table_delta_bgp + "\n"
+        def_bgp_nu_query += create_table_bgp_nu + "\n"
+
+    return (
+        def_bgp_query,
+        def_delta_bgp_query,
+        def_bgp_nu_query,
+    )
 
 
 def make_tables(
@@ -244,7 +293,7 @@ def make_tables(
         # BGP old table
         create_table_str: str = (
             f"CREATE TABLE IF NOT EXISTS "
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + "\t"
         )
@@ -261,7 +310,7 @@ def make_tables(
         # BGP delta table
         create_table_delta_bgp: str = (
             f"CREATE TABLE IF NOT EXISTS delta_"
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + "\t"
         )
@@ -280,7 +329,7 @@ def make_tables(
         # BGP nu table
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + "\t"
         )
@@ -307,7 +356,7 @@ def make_tables(
             res: list = part.res
         create_table_str: str = (
             f"CREATE TABLE IF NOT EXISTS "
-            + __encode_table_name(part)
+            + __schema_table(part, res)
             + " (\n"
             + values_var(res)
             + ");"
@@ -315,7 +364,7 @@ def make_tables(
 
         create_table_delta_bgp: str = (
             f"CREATE TABLE IF NOT EXISTS delta_"
-            + __encode_table_name(part)
+            + __schema_table(part, res)
             + " (\n"
             + values_var(res)
             + ");"
@@ -323,7 +372,7 @@ def make_tables(
 
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + values_var(res)
             + ");"
@@ -338,7 +387,7 @@ def make_tables(
             variables = part.PV
         create_table_str: str = (
             f"CREATE TABLE IF NOT EXISTS "
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + __create_vars(variables)
             + "\tPRIMARY KEY ("
@@ -349,7 +398,7 @@ def make_tables(
 
         create_table_delta_bgp: str = (
             f"CREATE TABLE IF NOT EXISTS delta_"
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + __create_vars(variables)
             + "\tPRIMARY KEY ("
@@ -360,7 +409,7 @@ def make_tables(
 
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + __create_vars(variables)
             + "\tPRIMARY KEY ("
@@ -372,7 +421,7 @@ def make_tables(
     else:
         create_table_str: str = (
             f"CREATE TABLE IF NOT EXISTS "
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + __create_vars(variables)
             + "\tPRIMARY KEY ("
@@ -383,7 +432,7 @@ def make_tables(
 
         create_table_delta_bgp: str = (
             f"CREATE TABLE IF NOT EXISTS delta_"
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + __create_vars(variables)
             + "\tPRIMARY KEY ("
@@ -394,7 +443,7 @@ def make_tables(
 
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
-            + __encode_table_name(part)
+            + __schema_table(part, list(variables))
             + " (\n"
             + __create_vars(variables)
             + "\tPRIMARY KEY ("
@@ -799,12 +848,13 @@ def bgp_query(
 def insert_delta_query(
     part: CompValue,
     results: DataFrame,
+    schema: list[str],
     increm_table_name_part: str = "",
 ) -> str:
     insert_str: str = (
         "INSERT INTO "
         + increm_table_name_part
-        + __encode_table_name(part)
+        + __schema_table(part, schema)
         + " ("
     )
     first: bool = True
@@ -851,12 +901,13 @@ def insert_delta_query(
 def insert_query(
     part: CompValue,
     results: DataFrame,
+    schema: list[str],
     increm_table_name_part: str = "",
 ) -> str:
     insert_str: str = (
         "INSERT INTO "
         + increm_table_name_part
-        + __encode_table_name(part)
+        + __schema_table(part, schema)
         + " ("
     )
     first: bool = True
@@ -901,10 +952,10 @@ def insert_query(
 
 
 def bgp_insert_query(
-    part: CompValue, results: DataFrame
+    part: CompValue, results: DataFrame, schema: list[str]
 ) -> str:
     insert_str: str = (
-        "INSERT INTO " + __encode_table_name(part) + " ("
+        "INSERT INTO " + __schema_table(part, schema) + " ("
     )
     first: bool = True
     for key in sorted(results.keys()):
@@ -964,8 +1015,8 @@ def project_table_query(part: CompValue) -> str:
     return project_str
 
 
-def select_query(part: CompValue) -> str:
-    table_name = __encode_table_name(part.p)
+def select_query(part: CompValue, schema: list[str]) -> str:
+    table_name = __schema_table(part.p, schema)
     select_str = "SELECT " + "* FROM " + table_name + ";"
     return select_str
 
@@ -1144,15 +1195,26 @@ def filter_expr_part(expr: Expr) -> str:
             filter_expr += " AND "
             filter_expr += filter_expr_part(expr.other[i])
     else:
-        filter_expr += (
-            expr.expr + " " + expr.op + " " + expr.other
-        )
+        if expr.op in ["=", "<", ">", "<=", ">=", "!="]:
+            filter_expr += (
+                "CAST("
+                + expr.expr
+                + " AS INT) "
+                + expr.op
+                + " CAST("
+                + expr.other
+                + " AS INT)"
+            )
+        else:
+            filter_expr += (
+                expr.expr + " " + expr.op + " " + expr.other
+            )
     return filter_expr
 
 
 def filter_query(
     part: CompValue, schemas: dict[str, list[list[str]]]
-) -> str:
+) -> dict[str, str]:
     """Build up the filter queries
 
     Args:
@@ -1161,19 +1223,26 @@ def filter_query(
     Returns:
         str: Query string to get the results of the filter operation
     """
-    table_name: str = __encode_table_name(part.p)
-    filter_str: str = (
-        "SELECT * FROM "
-        + table_name
-        + " WHERE "
-        + filter_expr_part(part.expr)
-        + ";"
-    )
+    filter_dict: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p)]:
+        table_name: str = __schema_table(part.p, schema)
+        filter_str: str = (
+            "SELECT * FROM "
+            + table_name
+            + " WHERE "
+            + filter_expr_part(part.expr)
+            + ";"
+        )
+        filter_dict[__schema_table(part, schema)] = (
+            filter_str
+        )
 
-    return filter_str
+    return filter_dict
 
 
-def delta_filter_query(part: CompValue) -> str:
+def delta_filter_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> dict[str, str]:
     """Build up the incremental delta filter queries.
 
     Args:
@@ -1182,18 +1251,29 @@ def delta_filter_query(part: CompValue) -> str:
     Returns:
         str: Query string to get the results of the delta filter operation
     """
-    table_name: str = "delta_" + __encode_table_name(part.p)
-    filter_str: str = (
-        "SELECT * FROM "
-        + table_name
-        + " WHERE "
-        + filter_expr_part(part.expr)
-        + ";"
-    )
-    return filter_str
+    filter_queries: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p)]:
+        table_name: str = "delta_" + __schema_table(
+            part.p, schema
+        )
+        filter_str: str = (
+            "SELECT * FROM "
+            + table_name
+            + " WHERE "
+            + filter_expr_part(part.expr)
+            + ";"
+        )
+        filter_queries[__schema_table(part, schema)] = (
+            filter_str
+        )
+        print(filter_queries)
+
+    return filter_queries
 
 
-def delta_project_query(part: CompValue) -> str:
+def delta_project_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> dict[str, str]:
     """Generate the query string to project the variables from the table.
 
     Args:
@@ -1202,22 +1282,31 @@ def delta_project_query(part: CompValue) -> str:
     Returns:
         str: Query string to project the variables from the table.
     """
-    table_name: str = "delta_" + __encode_table_name(part.p)
+    project_queries: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p)]:
+        table_name: str = "delta_" + __encode_table_name(
+            part.p
+        )
 
-    return (
-        "SELECT "
-        + ", ".join(var for var in sorted(part.PV))
-        + ", SUM(k_count) as k_count FROM "
-        + table_name
-        + " GROUP BY "
-        + ", ".join(var for var in sorted(part.PV))
-        + ";"
-    )
+        query: str = (
+            "SELECT "
+            + ", ".join(var for var in sorted(part.PV))
+            + ", SUM(k_count) as k_count FROM "
+            + table_name
+            + " GROUP BY "
+            + ", ".join(var for var in sorted(part.PV))
+            + ";"
+        )
+        project_queries[__schema_table(part, schema)] = (
+            query
+        )
+
+    return project_queries
 
 
 def delta_leftjoin_query(
     part: CompValue, schemas: dict[str, list[list[str]]]
-) -> list[str]:
+) -> dict[str, list[str]]:
     """Constructs the delta query for the leftjoin operation.
 
     Args:
@@ -1226,74 +1315,86 @@ def delta_leftjoin_query(
     Returns:
         list[str]: Query strings for the delta leftjoin operation
     """
-    leftjoin_queries: list[str] = list()
-    leftjoin_query: str = (
-        "SELECT "
-        + ", ".join(
-            var
-            for var in sorted(part.p1._vars)
-            if var != "k_count"
-        )
-        + ", "
-        + ", ".join(
-            var
-            for var in sorted(part.p2._vars)
-            if var != "k_count"
-        )
-        + ", r1.k_count * r2.k_count as k_count\nFROM "
-        + "delta_"
-        + __encode_table_name(part.p1)
-        + " AS r1 LEFT OUTER JOIN "
-        + __encode_table_name(part.p2)
-        + " AS r2"
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        leftjoin_query += " ON "
-        leftjoin_query += " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in part.p1._vars.intersection(
-                part.p2._vars
+    leftjoin_dict: dict[str, list[str]] = dict()
+    for schema in schemas[__encode_table_name(part.p1)]:
+        leftjoin_queries: list[str] = list()
+        leftjoin_query: str = (
+            "SELECT "
+            + ", ".join(
+                var
+                for var in sorted(part.p1._vars)
+                if var != "k_count"
             )
-        )
-    else:
-        leftjoin_query += " ON TRUE"
-    leftjoin_query += ";"
-    leftjoin_queries.append(leftjoin_query)
-
-    leftjoin_query: str = (
-        "SELECT "
-        + ", ".join(
-            var
-            for var in sorted(part.p1._vars)
-            if var != "k_count"
-        )
-        + ", "
-        + ", ".join(
-            var
-            for var in sorted(part.p2._vars)
-            if var != "k_count"
-        )
-        + ", r1.k_count * r2.k_count as k_count\nFROM "
-        + "nu_"
-        + __encode_table_name(part.p1)
-        + " AS r1 LEFT OUTER JOIN "
-        + "delta_"
-        + __encode_table_name(part.p2)
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        leftjoin_query += " ON "
-        leftjoin_query += " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in part.p1._vars.intersection(
-                part.p2._vars
+            + ", "
+            + ", ".join(
+                var
+                for var in sorted(part.p2._vars)
+                if var != "k_count"
             )
+            + ", r1.k_count * r2.k_count as k_count\nFROM "
+            + "delta_"
+            + __encode_table_name(part.p1)
+            + " AS r1 LEFT OUTER JOIN "
+            + __encode_table_name(part.p2)
+            + " AS r2"
         )
-    else:
-        leftjoin_query += " ON TRUE"
-    leftjoin_query += ";"
-    leftjoin_queries.append(leftjoin_query)
+        if (
+            part.p1._vars.intersection(part.p2._vars)
+            != set()
+        ):
+            leftjoin_query += " ON "
+            leftjoin_query += " AND ".join(
+                f"r1.{var} = r2.{var}"
+                for var in part.p1._vars.intersection(
+                    part.p2._vars
+                )
+            )
+        else:
+            leftjoin_query += " ON TRUE"
+        leftjoin_query += ";"
+        leftjoin_queries.append(leftjoin_query)
 
-    return leftjoin_queries
+        leftjoin_query: str = (
+            "SELECT "
+            + ", ".join(
+                var
+                for var in sorted(part.p1._vars)
+                if var != "k_count"
+            )
+            + ", "
+            + ", ".join(
+                var
+                for var in sorted(part.p2._vars)
+                if var != "k_count"
+            )
+            + ", r1.k_count * r2.k_count as k_count\nFROM "
+            + "nu_"
+            + __encode_table_name(part.p1)
+            + " AS r1 LEFT OUTER JOIN "
+            + "delta_"
+            + __encode_table_name(part.p2)
+        )
+        if (
+            part.p1._vars.intersection(part.p2._vars)
+            != set()
+        ):
+            leftjoin_query += " ON "
+            leftjoin_query += " AND ".join(
+                f"r1.{var} = r2.{var}"
+                for var in part.p1._vars.intersection(
+                    part.p2._vars
+                )
+            )
+        else:
+            leftjoin_query += " ON TRUE"
+        leftjoin_query += ";"
+        leftjoin_queries.append(leftjoin_query)
+
+        leftjoin_dict[__schema_table(part, schema)] = (
+            leftjoin_queries
+        )
+
+    return leftjoin_dict
     """leftjoin_queries: list[str] = list()
     for schema in schemas[__encode_table_name(part.p1)]:
         delta_minus_query: str = (
@@ -1765,7 +1866,9 @@ def delta_minus_query(
     return all_minus_queries
 
 
-def delta_union_query(part: CompValue) -> str:
+def delta_union_query(
+    part: CompValue, schemas: dict[str, list[list[str]]]
+) -> dict[str, str]:
     """Constructs the union query.
 
     Args:
@@ -1782,41 +1885,52 @@ def delta_union_query(part: CompValue) -> str:
     Returns:
         str: Query string for the union operation
     """
-    union_table_name1: str = "delta_" + __encode_table_name(
-        part.p1
-    )
-    union_query_left: str = (
-        "SELECT * FROM " + union_table_name1 + "\n"
-    )
-    union_table_name2: str = "delta_" + __encode_table_name(
-        part.p2
-    )
-    union_query_right: str = (
-        "SELECT "
-        + ", ".join(
-            var
-            for var in sorted(
-                part.p2._vars.intersection(part.p1._vars)
+    union_dict: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p1)]:
+        for schema2 in schemas[
+            __encode_table_name(part.p2)
+        ]:
+            union_table_name2: str = (
+                "delta_" + __schema_table(part.p2, schema2)
             )
+        union_table_name1: str = "delta_" + __schema_table(
+            part.p1, schema
         )
-        + ", "
-        + ", ".join(
-            f"NULL AS {var}"
-            for var in sorted(
-                part.p1._vars.difference(part.p2._vars)
+        union_query_left: str = (
+            "SELECT * FROM " + union_table_name1 + "\n"
+        )
+        union_query_right: str = (
+            "SELECT "
+            + ", ".join(
+                var
+                for var in sorted(
+                    part.p2._vars.intersection(
+                        part.p1._vars
+                    )
+                )
             )
+            + ", "
+            + ", ".join(
+                f"NULL AS {var}"
+                for var in sorted(
+                    part.p1._vars.difference(part.p2._vars)
+                )
+            )
+            + " FROM "
+            + union_table_name2
+            + ";\n"
         )
-        + " FROM "
-        + union_table_name2
-        + ";\n"
-    )
 
-    return union_query_left + "UNION\n" + union_query_right
+        union_dict[__schema_table(part, schema)] = (
+            union_query_left + "UNION\n" + union_query_right
+        )
+
+    return union_dict
 
 
 def project_query(
     part: CompValue, schemas: dict[str, list[list[str]]]
-) -> str:
+) -> dict[str, str]:
     """Generate the query string to project the variables from the table.
 
     Args:
@@ -1825,22 +1939,30 @@ def project_query(
     Returns:
         str: Query string to project the variables from the table.
     """
-    table_name: str = __encode_table_name(part.p)
+    project_queries: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p)]:
+        table_name: str = __schema_table(part, schema)
 
-    return (
-        "SELECT "
-        + ", ".join(var for var in sorted(part.PV))
-        + ", SUM(k_count) as k_count FROM "
-        + table_name
-        + " GROUP BY "
-        + ", ".join(var for var in sorted(part.PV))
-        + ";"
-    )
+        query = (
+            "SELECT "
+            + ", ".join(var for var in sorted(part.PV))
+            + ", SUM(k_count) as k_count FROM "
+            + table_name
+            + " GROUP BY "
+            + ", ".join(var for var in sorted(part.PV))
+            + ";"
+        )
+
+        project_queries[__schema_table(part, schema)] = (
+            query
+        )
+
+    return project_queries
 
 
 def leftjoin_query(
     part: CompValue, schemas: dict[str, list[list[str]]]
-) -> str:
+) -> dict[str, str]:
     """Generate the query string to left join the tables
 
     Args:
@@ -1849,38 +1971,51 @@ def leftjoin_query(
     Returns:
         str: Query string to left join the tables
     """
-    leftjoin_query: str = (
-        "SELECT "
-        + ", ".join(
-            var
-            for var in sorted(part.p1._vars)
-            if var != "k_count"
-        )
-        + ", "
-        + ", ".join(
-            var
-            for var in sorted(part.p2._vars)
-            if var != "k_count"
-        )
-        + ", r1.k_count as k_count\nFROM "
-        + __encode_table_name(part.p1)
-        + " AS r1 LEFT JOIN "
-        + __encode_table_name(part.p2)
-        + " AS r2"
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        leftjoin_query += " ON "
-        leftjoin_query += " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in part.p1._vars.intersection(
-                part.p2._vars
+    leftjoin_queries: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p1)]:
+        for schema2 in schemas[
+            __encode_table_name(part.p2)
+        ]:
+            leftjoin_query: str = (
+                "SELECT "
+                + ", ".join(
+                    var
+                    for var in sorted(part.p1._vars)
+                    if var != "k_count"
+                )
+                + ", "
+                + ", ".join(
+                    var
+                    for var in sorted(part.p2._vars)
+                    if var != "k_count"
+                )
+                + ", r1.k_count as k_count\nFROM "
+                + __schema_table(part.p1, schema)
+                + " AS r1 LEFT JOIN "
+                + __schema_table(part.p2, schema2)
+                + " AS r2"
             )
-        )
-    else:
-        leftjoin_query += " ON TRUE"
-    leftjoin_query += ";"
+            if (
+                part.p1._vars.intersection(part.p2._vars)
+                != set()
+            ):
+                leftjoin_query += " ON "
+                leftjoin_query += " AND ".join(
+                    f"r1.{var} = r2.{var}"
+                    for var in part.p1._vars.intersection(
+                        part.p2._vars
+                    )
+                )
+            else:
+                leftjoin_query += " ON TRUE"
+            leftjoin_query += ";"
 
-    return leftjoin_query
+    for schema in schemas[__encode_table_name(part)]:
+        leftjoin_queries[__schema_table(part, schema)] = (
+            leftjoin_query
+        )
+
+    return leftjoin_queries
 
 
 # TODO: Implement the difference queries
@@ -1946,7 +2081,7 @@ def minus_query(
 
 def union_query(
     part: CompValue, schemas: dict[str, list[list[str]]]
-) -> str:
+) -> dict[str, str]:
     """Union query string for the algebra
 
     Args:
@@ -1955,29 +2090,53 @@ def union_query(
     Returns:
         str: Query string for the union operation
     """
-    union_table_name1: str = __encode_table_name(part.p1)
-    union_query_left: str = (
-        "SELECT * FROM " + union_table_name1 + "\n"
-    )
-    union_table_name2: str = __encode_table_name(part.p2)
-    union_query_right: str = (
-        "SELECT "
-        + ", ".join(
-            var
-            for var in sorted(
-                part.p2._vars.intersection(part.p1._vars)
+    union_dict: dict[str, str] = dict()
+    for schema in schemas[__encode_table_name(part.p1)]:
+        for schema2 in schemas[
+            __encode_table_name(part.p2)
+        ]:
+            union_table_name1: str = __schema_table(
+                part.p1, schema
             )
-        )
-        + ", "
-        + ", ".join(
-            f"NULL AS {var}"
-            for var in sorted(
-                part.p1._vars.difference(part.p2._vars)
+            union_query_left: str = (
+                "SELECT * FROM " + union_table_name1 + "\n"
             )
-        )
-        + " FROM "
-        + union_table_name2
-        + ";\n"
-    )
+            union_table_name2: str = __schema_table(
+                part.p2, schema2
+            )
+            union_query_right: str = (
+                "SELECT "
+                + ", ".join(
+                    var
+                    for var in sorted(
+                        part.p2._vars.intersection(
+                            part.p1._vars
+                        )
+                    )
+                )
+                + ", "
+                + ", ".join(
+                    f"NULL AS {var}"
+                    for var in sorted(
+                        part.p1._vars.difference(
+                            part.p2._vars
+                        )
+                    )
+                )
+                + " FROM "
+                + union_table_name2
+                + ";\n"
+            )
 
-    return union_query_left + "UNION \n" + union_query_right
+            union_dict[__schema_table(part, schema)] = (
+                union_query_left
+                + "UNION \n"
+                + union_query_right
+            )
+            union_dict[__schema_table(part, schema2)] = (
+                union_query_left
+                + "UNION \n"
+                + union_query_right
+            )
+
+    return union_dict

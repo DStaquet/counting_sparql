@@ -114,57 +114,62 @@ def build_increm_queries(
                         name="delta_",
                     )
         case "Filter":
-            filter_delta_query: str = (
-                SQL_Constructor.delta_filter_query(part)
+            filter_delta_query: dict[str, str] = (
+                SQL_Constructor.delta_filter_query(
+                    part, schemas
+                )
             )
-            __write_query_to_output_dir(
-                part,
-                output_dir,
-                filter_delta_query,
-                SQL_Constructor.get_table_name(part),
-                name="delta_",
-            )
+            for key in filter_delta_query:
+                __write_query_to_output_dir(
+                    part,
+                    output_dir,
+                    filter_delta_query[key],
+                    key,
+                    name="delta_",
+                )
         case "Project":
-            project_delta_query: str = (
-                SQL_Constructor.delta_project_query(part)
+            project_delta_query: dict[str, str] = (
+                SQL_Constructor.delta_project_query(
+                    part, schemas
+                )
             )
-            __write_query_to_output_dir(
-                part,
-                output_dir,
-                project_delta_query,
-                SQL_Constructor.get_table_name(part),
-                name="delta_",
-            )
+            for key in project_delta_query:
+                __write_query_to_output_dir(
+                    part,
+                    output_dir,
+                    project_delta_query[key],
+                    key,
+                    name="delta_",
+                )
         case "LeftJoin":
-            leftjoin_delta_queries: list[str] = (
+            leftjoin_delta_queries: dict[str, list[str]] = (
                 SQL_Constructor.delta_leftjoin_query(
                     part, schemas
                 )
             )
-            first = True
-            for leftjoin_query in leftjoin_delta_queries:
-                if first:
-                    __write_query_to_output_dir(
-                        part,
-                        output_dir,
-                        leftjoin_query,
-                        SQL_Constructor.get_table_name(
-                            part
-                        ),
-                        name="delta_",
-                    )
-                    first = False
-                else:
-                    __write_query_to_output_dir(
-                        part,
-                        output_dir,
-                        leftjoin_query,
-                        SQL_Constructor.get_table_name(
-                            part
-                        ),
-                        True,
-                        name="delta_",
-                    )
+            for key in leftjoin_delta_queries:
+                first = True
+                for (
+                    leftjoin_query
+                ) in leftjoin_delta_queries[key]:
+                    if first:
+                        __write_query_to_output_dir(
+                            part,
+                            output_dir,
+                            leftjoin_query,
+                            key,
+                            name="delta_",
+                        )
+                        first = False
+                    else:
+                        __write_query_to_output_dir(
+                            part,
+                            output_dir,
+                            leftjoin_query,
+                            key,
+                            True,
+                            name="delta_",
+                        )
         case "Minus":
             minus_delta_query: list[dict[str, str]] = (
                 SQL_Constructor.delta_minus_query(
@@ -194,16 +199,19 @@ def build_increm_queries(
                             name="delta_",
                         )
         case "Union":
-            union_delta_query: str = (
-                SQL_Constructor.delta_union_query(part)
+            union_delta_query: dict[str, str] = (
+                SQL_Constructor.delta_union_query(
+                    part, schemas
+                )
             )
-            __write_query_to_output_dir(
-                part,
-                output_dir,
-                union_delta_query,
-                SQL_Constructor.get_table_name(part),
-                name="delta_",
-            )
+            for key in union_delta_query:
+                __write_query_to_output_dir(
+                    part,
+                    output_dir,
+                    union_delta_query[key],
+                    key,
+                    name="delta_",
+                )
         case "_":
             print("Didn't implement", part.name)
 
@@ -227,42 +235,50 @@ def build_queries(
     # Construct the SQL query
     if part.name == "BGP":
         bgp_query = SQL_Constructor.bgp_query(part, schemas)
-        __write_query_to_output_dir(
-            part,
-            output_dir,
-            bgp_query,
-            SQL_Constructor.get_table_name(part),
-        )
+        for schema in schemas[
+            SQL_Constructor.get_table_name(part)
+        ]:
+            __write_query_to_output_dir(
+                part,
+                output_dir,
+                bgp_query,
+                SQL_Constructor.get_schema_w_table_name(
+                    part, schema
+                ),
+            )
     elif part.name == "Filter":
-        filter_query = SQL_Constructor.filter_query(
-            part, schemas
+        filter_query_result: dict[str, str] = (
+            SQL_Constructor.filter_query(part, schemas)
         )
-        __write_query_to_output_dir(
-            part,
-            output_dir,
-            filter_query,
-            SQL_Constructor.get_table_name(part),
-        )
+        for key in filter_query_result:
+            __write_query_to_output_dir(
+                part,
+                output_dir,
+                filter_query_result[key],
+                key,
+            )
     elif part.name == "Project":
-        project_query = SQL_Constructor.project_query(
-            part, schemas
+        project_query: dict[str, str] = (
+            SQL_Constructor.project_query(part, schemas)
         )
-        __write_query_to_output_dir(
-            part,
-            output_dir,
-            project_query,
-            SQL_Constructor.get_table_name(part),
-        )
+        for key in project_query:
+            __write_query_to_output_dir(
+                part,
+                output_dir,
+                project_query[key],
+                key,
+            )
     elif part.name == "LeftJoin":
-        leftjoin_query = SQL_Constructor.leftjoin_query(
-            part, schemas
+        leftjoin_query: dict[str, str] = (
+            SQL_Constructor.leftjoin_query(part, schemas)
         )
-        __write_query_to_output_dir(
-            part,
-            output_dir,
-            leftjoin_query,
-            SQL_Constructor.get_table_name(part),
-        )
+        for key in leftjoin_query:
+            __write_query_to_output_dir(
+                part,
+                output_dir,
+                leftjoin_query[key],
+                key,
+            )
     elif part.name == "Minus":
         minus_query: dict[str, str] = (
             SQL_Constructor.minus_query(part, schemas)
@@ -275,9 +291,14 @@ def build_queries(
         union_query = SQL_Constructor.union_query(
             part, schemas
         )
-        __write_query_to_output_dir(
-            part,
-            output_dir,
-            union_query,
-            SQL_Constructor.get_table_name(part),
-        )
+        for schema in schemas[
+            SQL_Constructor.get_table_name(part)
+        ]:
+            __write_query_to_output_dir(
+                part,
+                output_dir,
+                union_query,
+                SQL_Constructor.get_schema_w_table_name(
+                    part, schema
+                ),
+            )
