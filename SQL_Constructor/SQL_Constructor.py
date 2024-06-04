@@ -1,7 +1,10 @@
 from hashlib import sha256
 
 from rdflib.plugins.sparql.sparql import FrozenBindings
-from rdflib.plugins.sparql.parserutils import CompValue
+from rdflib.plugins.sparql.parserutils import (
+    CompValue,
+    Expr,
+)
 from rdflib.term import Variable
 
 from pandas import DataFrame
@@ -50,8 +53,17 @@ def __create_vars(variables: set) -> str:
     return var_str
 
 
-def __encode_table_name(part) -> str:
+def __encode_table_name(part: CompValue) -> str:
+    """Encodes the table name to a usable string for SQL.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Encoded table name
+    """
     return_str: str = ""
+
     if part.name == "BGP":
         for triple in sorted(part.triples):
             return_str += str(triple)
@@ -60,45 +72,83 @@ def __encode_table_name(part) -> str:
         return (
             part.name
             + "_"
-            + "".join(
-                ltr for ltr in return_str if ltr.isalnum()
+            + str(
+                abs(
+                    hash(
+                        (
+                            "".join(
+                                ltr
+                                for ltr in return_str
+                                if ltr.isalnum()
+                            )
+                        )
+                    )
+                )
             )
         )
     elif part.name == "values":
         return (
             part.name
             + "_"
-            + "".join(
-                x for x in part.__str__() if x.isalnum()
+            + str(
+                abs(
+                    hash(
+                        (
+                            "".join(
+                                x
+                                for x in part.__str__()
+                                if x.isalnum()
+                            )
+                        )
+                    )
+                )
             )
         )
     elif "PV" in part:
         for var in sorted(part.PV):
             return_str += str(type(var)) + str(var)
-        return_str = (
-            part.name
-            + "_"
-            + "".join(x for x in return_str if x.isalnum())
+        return_str = "".join(
+            x for x in return_str if x.isalnum()
         )
     else:
         for var in sorted(part._vars):
             return_str += str(type(var)) + str(var)
-        return_str = (
-            part.name
-            + "_"
-            + "".join(x for x in return_str if x.isalnum())
+        return_str = "".join(
+            x for x in return_str if x.isalnum()
         )
     if "p" in part:
         return (
-            return_str + "__" + __encode_table_name(part.p)
+            part.name
+            + "_"
+            + str(
+                abs(
+                    hash(
+                        (
+                            return_str
+                            + "__"
+                            + __encode_table_name(part.p)
+                        )
+                    )
+                )
+            )
         )
     else:
         return (
-            return_str
-            + "__"
-            + __encode_table_name(part.p1)
-            + "__"
-            + __encode_table_name(part.p2)
+            part.name
+            + "_"
+            + str(
+                abs(
+                    hash(
+                        (
+                            return_str
+                            + "__"
+                            + __encode_table_name(part.p1)
+                            + "__"
+                            + __encode_table_name(part.p2)
+                        )
+                    )
+                )
+            )
         )
 
 
@@ -798,6 +848,17 @@ def bgp_insert_query(
     return insert_str
 
 
+def insert_into_w_select(
+    given_table: str,
+    select_query: str,
+    columns_given: bool = False,
+) -> str:
+    if not columns_given:
+        return f"INSERT INTO {given_table}\n{select_query}"
+    else:
+        return f"INSERT INTO {given_table} (SELECT * FROM {select_query});"
+
+
 def combine_create_table_insert(
     create_str: str, insert_str: str
 ) -> str:
@@ -986,3 +1047,177 @@ def delta_union_table_query(
     )
 
     return (first_query, second_query)
+
+
+def filter_expr_part(expr: Expr) -> str:
+    """Recursively construct the filter expression part of the query.
+
+    Args:
+        expr (Expr): Current expression part of the query
+
+    Returns:
+        str: Expression part for the filter query.
+    """
+    filter_expr = ""
+    if type(expr.expr) == Expr:
+        filter_expr += filter_expr_part(expr.expr)
+        for i in range(len(expr.other)):
+            filter_expr += " AND "
+            filter_expr += filter_expr_part(expr.other[i])
+    else:
+        if expr.op in ["=", "<", ">", "<=", ">=", "!="]:
+            filter_expr += (
+                "CAST("
+                + expr.expr
+                + " AS INT) "
+                + expr.op
+                + " CAST("
+                + expr.other
+                + " AS INT)"
+            )
+        else:
+            filter_expr += (
+                expr.expr + " " + expr.op + " " + expr.other
+            )
+    return filter_expr
+
+
+def delta_filter_query(part: CompValue) -> str:
+    """Build up the incremental delta filter queries.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string to get the results of the delta filter operation
+    """
+    table_name: str = "delta_" + __encode_table_name(part.p)
+    filter_str: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+        "SELECT * \nFROM "
+        + table_name
+        + " \nWHERE "
+        + filter_expr_part(part.expr)
+        + ";"
+    )
+    return filter_str
+
+
+def delta_project_query(part: CompValue) -> str:
+    """Build up the incremental delta project queries.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string to get the results of the delta project operation
+    """
+    table_name: str = "delta_" + __encode_table_name(part.p)
+    project_str: str = (
+        "INSERT INTO "
+        + "delta_"
+        + __encode_table_name(part)
+        + "("
+        + ", ".join(var for var in sorted(part.PV))
+        + ", k_count)\n"
+        + "SELECT "
+        + ", ".join(var for var in sorted(part.PV))
+        + ", SUM(k_count) AS k_count\nFROM "
+        + table_name
+        + "\nGROUP BY "
+        + ", ".join(var for var in sorted(part.PV))
+        + ";"
+    )
+    return project_str
+
+
+def __delta_leftjoin_select_clause(part: CompValue) -> str:
+    """Returns the lefjoin select clause for the delta rule.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: String containing the leftjoin variable clause.
+    """
+    return_str: str = (
+        ", ".join(
+            var
+            for var in sorted(part.p1._vars)
+            if var != "k_count"
+        )
+        + ", "
+        + ", ".join(
+            var
+            for var in sorted(part.p2._vars)
+            if var != "k_count"
+        )
+    )
+    return return_str
+
+
+def delta_left_join_query(part: CompValue) -> str:
+    # First delta rules of the left join
+    leftjoin_delta_query: str = (
+        "INSERT INTO delta_" + get_table_name(part)
+    )
+    leftjoin_delta_query += (
+        "("
+        + __delta_leftjoin_select_clause(part)
+        + ", k_count)\n"
+    )
+    leftjoin_delta_query += (
+        "SELECT "
+        + __delta_leftjoin_select_clause(part)
+        + ", r1.k_count as k_count\nFROM "
+        + "delta_"
+        + __encode_table_name(part.p1)
+        + " AS r1 LEFT OUTER JOIN "
+        + __encode_table_name(part.p2)
+        + " AS r2"
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        leftjoin_delta_query += " ON "
+        leftjoin_delta_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part.p1._vars.intersection(
+                part.p2._vars
+            )
+        )
+    else:
+        leftjoin_delta_query += " ON TRUE"
+    leftjoin_delta_query += ";\n"
+
+    # Second delta rules of the left join
+    leftjoin_delta_query += (
+        "INSERT INTO delta_" + get_table_name(part)
+    )
+    leftjoin_delta_query += "\nSELECT "
+    leftjoin_delta_query += ", ".join(
+        var for var in part.p1._vars if var != "k_count"
+    )
+    leftjoin_delta_query += ", "
+    leftjoin_delta_query += ", ".join(
+        var for var in part.p2._vars if var != "k_count"
+    )
+    leftjoin_delta_query += ", r2.k_count as k_count"
+    leftjoin_delta_query += " FROM nu_"
+    leftjoin_delta_query += get_table_name(part.p1)
+    leftjoin_delta_query += " AS r1 LEFT OUTER JOIN delta_"
+    leftjoin_delta_query += get_table_name(part.p2)
+    leftjoin_delta_query += " AS r2"
+    leftjoin_delta_query += " ON "
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        leftjoin_delta_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part.p1._vars.intersection(
+                part.p2._vars
+            )
+        )
+    else:
+        leftjoin_delta_query += "1 = 1 WHERE r2.k_count < 0"
+    leftjoin_delta_query += ";\n"
+
+    return leftjoin_delta_query

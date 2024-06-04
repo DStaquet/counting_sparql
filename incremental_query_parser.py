@@ -251,15 +251,19 @@ def check_relevancy(
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python query_parser.py <output_dir>")
+    if len(sys.argv) < 4:
+        print(
+            "Usage: python query_parser.py <query_file> <data_file> <output_dir>"
+        )
         exit(1)
     else:
-        output_file: str = sys.argv[1]
-        f = open(output_file, "w")
-        f.close()
+        query_str: str = sys.argv[1]
+        data_str: str = sys.argv[2]
+        output_dir: str = sys.argv[3]
+        # f = open(output_file, "w")
+        # f.close()
 
-    f = open("./measurements/results.csv", "w")
+    """f = open("./measurements/results.csv", "w")
     f.write(
         "Data size,Delta size,Sample,Incremental,Query1,Query2,Query3,Query4\n"
     )
@@ -360,4 +364,6 @@ if __name__ == "__main__":
                     f"{data_size},{delta_size},Product{sample},False,{query1_time},{query2_time},{query3_time},{query4_time}\n"
                 )
         print("\n")
-    f.close()
+    
+
+    f.close()"""
