@@ -121,3 +121,23 @@ def build_increm_queries(
                 SQL_Constructor.get_table_name(part),
                 name="delta_",
             )
+        case "Minus":
+            minus_query: str = (
+                SQL_Constructor.delta_minus_query(part)
+            )
+            __write_query_to_output_dir(
+                output_dir,
+                minus_query,
+                SQL_Constructor.get_table_name(part),
+                name="delta_",
+            )
+        case "Union":
+            union_query: str = (
+                SQL_Constructor.delta_union_query(part)
+            )
+            __write_query_to_output_dir(
+                output_dir,
+                union_query,
+                SQL_Constructor.get_table_name(part),
+                name="delta_",
+            )

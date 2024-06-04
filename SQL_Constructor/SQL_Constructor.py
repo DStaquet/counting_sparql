@@ -1133,6 +1133,308 @@ def delta_project_query(part: CompValue) -> str:
     return project_str
 
 
+def __delta_diff_sub(part: CompValue) -> str:
+    """Generates the minus subquery.
+
+    Args:
+        part (CompValue): Current part of the query containing the minus operation.
+
+    Returns:
+        str: Query string of the needed minus operation.
+    """
+    # R1 MINUS delta_R2
+    first_query: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+    )
+    first_query += (
+        "SELECT "
+        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", "
+        + ", ".join(
+            f"coalesce(p2.{var}, 'UNBOUND')"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+        + ", p1.k_count as k_count\n"
+    )
+    first_query += (
+        "FROM delta_"
+        + __encode_table_name(part.p1)
+        + " AS p1\n"
+    )
+    first_query += "WHERE (" + ", ".join(
+        f"p1.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    first_query += ") NOT IN (SELECT " + ", ".join(
+        f"p2.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    first_query += (
+        " FROM "
+        + __encode_table_name(part.p2)
+        + " AS p2)\n"
+    )
+    first_query += "ON CONFLICT DO\nUPDATE SET\n\t"
+    first_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    )
+    first_query += ";\n"
+
+    # R1_nu MINUS delta_R2 - First part
+    second_query_first: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+    )
+    second_query_first += (
+        "SELECT "
+        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", "
+        + ", ".join(
+            f"coalesce(p2.{var}, 'UNBOUND')"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+        + ", p1.k_count as k_count\n"
+    )
+    second_query_first += "FROM "
+    second_query_first += (
+        "nu_"
+        + __encode_table_name(part.p1)
+        + " AS p1, delta_"
+        + __encode_table_name(part.p2)
+        + " AS delta_p2\n"
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        second_query_first += "WHERE (" + ", ".join(
+            f"p1.{var} = delta_p2.{var}"
+            for var in sorted(
+                part.p1._vars.intersection(part.p2._vars)
+            )
+        )
+        second_query_first += (
+            ", -delta_p2.k_count) IN (SELECT "
+            + ", ".join(
+                f"{var}"
+                for var in sorted(
+                    part.p1._vars.intersection(
+                        part.p2._vars
+                    )
+                )
+            )
+            + ", k_count\n"
+        )
+        second_query_first += (
+            "FROM "
+            + __encode_table_name(part.p2)
+            + " AS p2)\n"
+        )
+    second_query_first += "ON CONFLICT DO\nUPDATE SET\n\t"
+    second_query_first += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    )
+    second_query_first += ";\n"
+
+    # R1_nu MINUS delta_R2 - Second part
+    second_query_second: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+    )
+    second_query_second += (
+        "SELECT "
+        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", "
+        + ", ".join(
+            f"coalesce(p2.{var}, 'UNBOUND')"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+        + ", -p1.k_count\n"
+    )
+    second_query_second += "FROM "
+    second_query_second += (
+        "nu_"
+        + __encode_table_name(part.p1)
+        + " AS p1, delta_"
+        + __encode_table_name(part.p2)
+        + " AS delta_p2\n"
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        second_query_second += "WHERE (" + ", ".join(
+            f"p1.{var} = delta_p2.{var}"
+            for var in sorted(
+                part.p1._vars.intersection(part.p2._vars)
+            )
+        )
+        second_query_second += (
+            ", k_count) NOT IN (SELECT "
+            + ", ".join(
+                f"{var}"
+                for var in sorted(
+                    part.p1._vars.intersection(
+                        part.p2._vars
+                    )
+                )
+            )
+            + ", k_count\n"
+        )
+        second_query_second += (
+            "FROM "
+            + __encode_table_name(part.p2)
+            + " AS p2)\n"
+        )
+    second_query_second += "ON CONFLICT DO\nUPDATE SET\n\t"
+    second_query_second += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    )
+    second_query_second += ";\n"
+
+    second_query: str = (
+        second_query_first + second_query_second
+    )
+
+    return first_query + second_query
+
+
+def __delta_join_sub(
+    part1: CompValue, part2: CompValue, join_part: CompValue
+) -> str:
+    """Generates the delta join subquery.
+
+    Args:
+        part1 (CompValue): First part of the join.
+        part2 (CompValue): Second part of the join.
+    """
+    # R1 JOIN delta_R2
+    first_query: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(join_part)
+        + "\n"
+    )
+    first_query += (
+        "SELECT "
+        + __delta_leftjoin_select_clause(join_part)
+        + ", r1.k_count * r2.k_count as k_count\n"
+    )
+    first_query += (
+        "FROM delta_"
+        + __encode_table_name(part1)
+        + " AS r1 JOIN "
+        + __encode_table_name(part2)
+        + " AS r2 "
+    )
+    first_query += "ON "
+    if part1._vars.intersection(part2._vars) != set():
+        first_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part1._vars.intersection(part2._vars)
+        )
+        first_query += "\n"
+    else:
+        first_query += "TRUE\n"
+    first_query += "ON CONFLICT DO\nUPDATE SET\n\t"
+    first_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}" for var in part1._vars
+        )
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in part2._vars.difference(part1._vars)
+        )
+    )
+    first_query += ";\n"
+
+    second_query: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(join_part)
+    )
+    second_query += (
+        "\nSELECT "
+        + __delta_leftjoin_select_clause(join_part)
+        + ", r1.k_count * r2.k_count as k_count\n"
+    )
+    second_query += (
+        "FROM nu_"
+        + __encode_table_name(part1)
+        + " AS r1 JOIN delta_"
+        + __encode_table_name(part2)
+        + " AS r2\n"
+    )
+    second_query += "ON "
+    if part1._vars.intersection(part2._vars) != set():
+        second_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part1._vars.intersection(part2._vars)
+        )
+        second_query += "\n"
+    else:
+        second_query += "TRUE\n"
+    second_query += "ON CONFLICT DO\nUPDATE SET\n\t"
+    second_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}" for var in part1._vars
+        )
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in part2._vars.difference(part1._vars)
+        )
+    )
+    second_query += ";\n"
+
+    return first_query + second_query
+
+
 def __delta_leftjoin_select_clause(part: CompValue) -> str:
     """Returns the lefjoin select clause for the delta rule.
 
@@ -1151,7 +1453,9 @@ def __delta_leftjoin_select_clause(part: CompValue) -> str:
         + ", "
         + ", ".join(
             var
-            for var in sorted(part.p2._vars)
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
             if var != "k_count"
         )
     )
@@ -1160,64 +1464,278 @@ def __delta_leftjoin_select_clause(part: CompValue) -> str:
 
 def delta_left_join_query(part: CompValue) -> str:
     # First delta rules of the left join
-    leftjoin_delta_query: str = (
-        "INSERT INTO delta_" + get_table_name(part)
+    # Join deltas
+    leftjoin_join_delta_query: str = __delta_join_sub(
+        part.p1, part.p2, part
     )
-    leftjoin_delta_query += (
-        "("
-        + __delta_leftjoin_select_clause(part)
-        + ", k_count)\n"
+    leftjoin_minus_delta_query: str = __delta_diff_sub(part)
+
+    return (
+        leftjoin_join_delta_query
+        + leftjoin_minus_delta_query
     )
-    leftjoin_delta_query += (
+
+
+def delta_minus_query(part: CompValue) -> str:
+    """Returns the delta minus query.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: Query string for the delta minus operation.
+    """
+    if part.p1._vars.intersection(part.p2._vars) == set():
+        return (
+            "INSERT INTO delta_"
+            + __encode_table_name(part)
+            + " SELECT * FROM delta_"
+            + __encode_table_name(part.p1)
+            + ";"
+        )
+    # R1 MINUS delta_R2
+    first_query: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+    )
+    first_query += (
         "SELECT "
-        + __delta_leftjoin_select_clause(part)
-        + ", r1.k_count as k_count\nFROM "
-        + "delta_"
+        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", p1.k_count as k_count\n"
+    )
+    first_query += (
+        "FROM delta_"
         + __encode_table_name(part.p1)
-        + " AS r1 LEFT OUTER JOIN "
+        + " AS p1\n"
+    )
+    first_query += "WHERE (" + ", ".join(
+        f"p1.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    first_query += ") NOT IN (SELECT " + ", ".join(
+        f"p2.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    first_query += (
+        " FROM "
         + __encode_table_name(part.p2)
-        + " AS r2"
+        + " AS p2)\n"
     )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        leftjoin_delta_query += " ON "
-        leftjoin_delta_query += " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in part.p1._vars.intersection(
-                part.p2._vars
+    first_query += "ON CONFLICT DO\nUPDATE SET\n\t"
+    first_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
             )
         )
-    else:
-        leftjoin_delta_query += " ON TRUE"
-    leftjoin_delta_query += ";\n"
+    )
+    first_query += ";\n"
 
-    # Second delta rules of the left join
-    leftjoin_delta_query += (
-        "INSERT INTO delta_" + get_table_name(part)
+    # R1_nu MINUS delta_R2 - First part
+    second_query_first: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
     )
-    leftjoin_delta_query += "\nSELECT "
-    leftjoin_delta_query += ", ".join(
-        var for var in part.p1._vars if var != "k_count"
+    second_query_first += (
+        "SELECT "
+        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", p1.k_count as k_count\n"
     )
-    leftjoin_delta_query += ", "
-    leftjoin_delta_query += ", ".join(
-        var for var in part.p2._vars if var != "k_count"
+    second_query_first += "FROM "
+    second_query_first += (
+        "nu_"
+        + __encode_table_name(part.p1)
+        + " AS p1, delta_"
+        + __encode_table_name(part.p2)
+        + " AS delta_p2\n"
     )
-    leftjoin_delta_query += ", r2.k_count as k_count"
-    leftjoin_delta_query += " FROM nu_"
-    leftjoin_delta_query += get_table_name(part.p1)
-    leftjoin_delta_query += " AS r1 LEFT OUTER JOIN delta_"
-    leftjoin_delta_query += get_table_name(part.p2)
-    leftjoin_delta_query += " AS r2"
-    leftjoin_delta_query += " ON "
     if part.p1._vars.intersection(part.p2._vars) != set():
-        leftjoin_delta_query += " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in part.p1._vars.intersection(
-                part.p2._vars
+        second_query_first += "WHERE (" + ", ".join(
+            f"p1.{var} = delta_p2.{var}"
+            for var in sorted(
+                part.p1._vars.intersection(part.p2._vars)
             )
         )
-    else:
-        leftjoin_delta_query += "1 = 1 WHERE r2.k_count < 0"
-    leftjoin_delta_query += ";\n"
+        second_query_first += (
+            ", -delta_p2.k_count) IN (SELECT "
+            + ", ".join(
+                f"{var}"
+                for var in sorted(
+                    part.p1._vars.intersection(
+                        part.p2._vars
+                    )
+                )
+            )
+            + ", k_count\n"
+        )
+        second_query_first += (
+            "FROM "
+            + __encode_table_name(part.p2)
+            + " AS p2)\n"
+        )
+    second_query_first += "ON CONFLICT DO\nUPDATE SET\n\t"
+    second_query_first += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    )
+    second_query_first += ";\n"
 
-    return leftjoin_delta_query
+    # R1_nu MINUS delta_R2 - Second part
+    second_query_second: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+    )
+    second_query_second += (
+        "SELECT "
+        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", -p1.k_count\n"
+    )
+    second_query_second += "FROM "
+    second_query_second += (
+        "nu_"
+        + __encode_table_name(part.p1)
+        + " AS p1, delta_"
+        + __encode_table_name(part.p2)
+        + " AS delta_p2\n"
+    )
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        second_query_second += "WHERE (" + ", ".join(
+            f"p1.{var} = delta_p2.{var}"
+            for var in sorted(
+                part.p1._vars.intersection(part.p2._vars)
+            )
+        )
+        second_query_second += (
+            ", k_count) NOT IN (SELECT "
+            + ", ".join(
+                f"{var}"
+                for var in sorted(
+                    part.p1._vars.intersection(
+                        part.p2._vars
+                    )
+                )
+            )
+            + ", k_count\n"
+        )
+        second_query_second += (
+            "FROM "
+            + __encode_table_name(part.p2)
+            + " AS p2)\n"
+        )
+    second_query_second += "ON CONFLICT DO\nUPDATE SET\n\t"
+    second_query_second += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    )
+    second_query_second += ";\n"
+
+    second_query: str = (
+        second_query_first + second_query_second
+    )
+
+    return first_query + second_query
+
+
+def delta_union_query(part: CompValue) -> str:
+    """Generates the union delta query.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: Query string for the delta union operation.
+    """
+    union_query: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+    )
+    union_query += (
+        "SELECT "
+        + ", ".join(
+            f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
+            for var in sorted(part.p1._vars)
+        )
+        + ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count\n"
+    )
+    union_query += (
+        "FROM delta_"
+        + __encode_table_name(part.p1)
+        + " AS r1 FULL OUTER JOIN "
+        + __encode_table_name(part.p2)
+        + " AS r2 ON "
+    )
+    union_query += " AND ".join(
+        f"r1.{var} = r2.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    union_query += ";\n"
+
+    union_query += (
+        "INSERT INTO delta_"
+        + __encode_table_name(part)
+        + "\n"
+    )
+    union_query += (
+        "SELECT "
+        + ", ".join(
+            f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
+            for var in sorted(part.p1._vars)
+        )
+        + ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count\n"
+    )
+    union_query += (
+        "FROM nu_"
+        + __encode_table_name(part.p1)
+        + " AS r1 FULL OUTER JOIN delta_"
+        + __encode_table_name(part.p2)
+        + " AS r2 ON "
+    )
+    union_query += " AND ".join(
+        f"r1.{var} = r2.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    union_query += ";\n"
+
+    return union_query

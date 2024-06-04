@@ -250,6 +250,26 @@ def check_relevancy(
             return False
 
 
+def run_query(
+    query_str: str, data_str: str, output_dir: str
+):
+    g = graph.Graph()
+    g.parse(data_str)
+
+    query_tree = parser.parseQuery(str(query_str))
+    q_query_object = algebra.translateQuery(query_tree)
+    constructTablesRec(q_query_object.algebra)
+    output: DataFrame = evalIncrPart(
+        QueryContext(g), q_query_object.algebra, True
+    )
+    print(output)
+
+    with open(f"{output_dir}/output.txt", "w") as f:
+        f.write(str(output))
+
+    return output
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(
