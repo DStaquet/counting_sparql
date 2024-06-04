@@ -1148,18 +1148,17 @@ def __delta_diff_sub(part: CompValue) -> str:
         + __encode_table_name(part)
         + "\n"
     )
-    first_query += (
-        "SELECT "
-        + ", ".join(var for var in sorted(part.p1._vars))
-        + ", "
-        + ", ".join(
+    first_query += "SELECT " + ", ".join(
+        var for var in sorted(part.p1._vars)
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        first_query += ", " + ", ".join(
             f"coalesce(p2.{var}, 'UNBOUND')"
             for var in sorted(
                 part.p2._vars.difference(part.p1._vars)
             )
         )
-        + ", p1.k_count as k_count\n"
-    )
+    first_query += ", p1.k_count as k_count\n"
     first_query += (
         "FROM delta_"
         + __encode_table_name(part.p1)
@@ -1206,18 +1205,17 @@ def __delta_diff_sub(part: CompValue) -> str:
         + __encode_table_name(part)
         + "\n"
     )
-    second_query_first += (
-        "SELECT "
-        + ", ".join(var for var in sorted(part.p1._vars))
-        + ", "
-        + ", ".join(
+    first_query += "SELECT " + ", ".join(
+        var for var in sorted(part.p1._vars)
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        first_query += ", " + ", ".join(
             f"coalesce(p2.{var}, 'UNBOUND')"
             for var in sorted(
                 part.p2._vars.difference(part.p1._vars)
             )
         )
-        + ", p1.k_count as k_count\n"
-    )
+    first_query += ", p1.k_count as k_count\n"
     second_query_first += "FROM "
     second_query_first += (
         "nu_"
@@ -1274,18 +1272,17 @@ def __delta_diff_sub(part: CompValue) -> str:
         + __encode_table_name(part)
         + "\n"
     )
-    second_query_second += (
-        "SELECT "
-        + ", ".join(var for var in sorted(part.p1._vars))
-        + ", "
-        + ", ".join(
+    first_query += "SELECT " + ", ".join(
+        var for var in sorted(part.p1._vars)
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        first_query += ", " + ", ".join(
             f"coalesce(p2.{var}, 'UNBOUND')"
             for var in sorted(
                 part.p2._vars.difference(part.p1._vars)
             )
         )
-        + ", -p1.k_count\n"
-    )
+    first_query += ", -p1.k_count as k_count\n"
     second_query_second += "FROM "
     second_query_second += (
         "nu_"
@@ -1360,7 +1357,7 @@ def __delta_join_sub(
     )
     first_query += (
         "SELECT "
-        + __delta_leftjoin_select_clause(join_part)
+        + __left_join_select_clause(join_part)
         + ", r1.k_count * r2.k_count as k_count\n"
     )
     first_query += (
@@ -1399,7 +1396,7 @@ def __delta_join_sub(
     )
     second_query += (
         "\nSELECT "
-        + __delta_leftjoin_select_clause(join_part)
+        + __left_join_select_clause(join_part)
         + ", r1.k_count * r2.k_count as k_count\n"
     )
     second_query += (
@@ -1435,7 +1432,7 @@ def __delta_join_sub(
     return first_query + second_query
 
 
-def __delta_leftjoin_select_clause(part: CompValue) -> str:
+def __left_join_select_clause(part: CompValue) -> str:
     """Returns the lefjoin select clause for the delta rule.
 
     Args:
@@ -1727,6 +1724,238 @@ def delta_union_query(part: CompValue) -> str:
         "FROM nu_"
         + __encode_table_name(part.p1)
         + " AS r1 FULL OUTER JOIN delta_"
+        + __encode_table_name(part.p2)
+        + " AS r2 ON "
+    )
+    union_query += " AND ".join(
+        f"r1.{var} = r2.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    union_query += ";\n"
+
+    return union_query
+
+
+def filter_query(part: CompValue) -> str:
+    """Generate filter query for the current part of the algebra.
+
+    Args:
+        part (CompValue): Current part of the algebra.
+
+    Returns:
+        str: Query string for the filter operation.
+    """
+    filter_str: str = (
+        "INSERT INTO " + __encode_table_name(part) + "\n"
+        "SELECT * \nFROM "
+        + __encode_table_name(part.p)
+        + " \nWHERE "
+        + filter_expr_part(part.expr)
+        + ";"
+    )
+    return filter_str
+
+
+def project_query(part: CompValue) -> str:
+    """Generate project query for the current part of the algebra.
+
+    Args:
+        part (CompValue): Current part of the algebra.
+
+    Returns:
+        str: Query string for the project operation.
+    """
+    project_str: str = (
+        "INSERT INTO "
+        + __encode_table_name(part)
+        + "("
+        + ", ".join(var for var in sorted(part.PV))
+        + ", k_count)\n"
+        + "SELECT "
+        + ", ".join(var for var in sorted(part.PV))
+        + ", SUM(k_count) AS k_count\nFROM "
+        + __encode_table_name(part.p)
+        + "\nGROUP BY "
+        + ", ".join(var for var in sorted(part.PV))
+        + ";"
+    )
+    return project_str
+
+
+def __join_query(part: CompValue) -> str:
+    """Generates the join query.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: Query string for the join operation.
+    """
+    join_query: str = (
+        "INSERT INTO " + __encode_table_name(part) + "\n"
+    )
+    join_query += "SELECT "
+    join_query += __left_join_select_clause(part)
+    join_query += ", r1.k_count * r2.k_count as k_count\n"
+    join_query += "FROM "
+    join_query += __encode_table_name(part.p1)
+    join_query += " AS r1 JOIN "
+    join_query += __encode_table_name(part.p2)
+    join_query += " AS r2 "
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        join_query += "ON "
+        join_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in sorted(
+                part.p1._vars.intersection(part.p2._vars)
+            )
+        )
+    join_query += "\nON CONFLICT DO\nUPDATE SET\n\t"
+    join_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    )
+    join_query += ";\n"
+    return join_query
+
+
+def __diff_query_sub(part: CompValue) -> str:
+    """Generates the difference subquery.
+
+    Args:
+        part (CompValue): Current part of the query containing the dofference operation.
+
+    Returns:
+        str: Query string of the needed difference operation.
+    """
+    diff_query: str = (
+        "INSERT INTO "
+        + __encode_table_name(part)
+        + "\n"
+        + "SELECT "
+        + ", ".join(var for var in sorted(part.p1._vars))
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        diff_query += ", " + ", ".join(
+            f"coalesce(p2.{var}, 'UNBOUND')"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    diff_query += (
+        ", p1.k_count as k_count\n"
+        + "FROM "
+        + __encode_table_name(part.p1)
+        + " AS p1\n"
+    )
+    diff_query += "WHERE (" + ", ".join(
+        f"p1.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    diff_query += ") NOT IN (SELECT " + ", ".join(
+        f"p2.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
+        )
+    )
+    diff_query += (
+        " FROM "
+        + __encode_table_name(part.p2)
+        + " AS p2)\n"
+    )
+    diff_query += "ON CONFLICT DO\nUPDATE SET\n\t"
+    diff_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(part.p1._vars)
+        )
+        + " AND "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+        )
+    )
+    diff_query += ";\n"
+
+    return diff_query
+
+
+def left_join_query(part: CompValue) -> str:
+    """Generates the leftjoin query.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: Query string for the leftjoin operation.
+    """
+    leftjoin_join: str = __join_query(part)
+    leftjoin_diff: str = __diff_query_sub(part)
+
+    return leftjoin_join + leftjoin_diff
+
+
+def minus_query(part: CompValue) -> str:
+    """Generates the minus query.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: Query string for the minus operation.
+    """
+    if part.p1._vars.intersection(part.p2._vars) == set():
+        return (
+            "INSERT INTO "
+            + __encode_table_name(part)
+            + " SELECT * FROM "
+            + __encode_table_name(part.p1)
+            + ";"
+        )
+    else:
+        return __diff_query_sub(part)
+
+
+def union_query(part: CompValue) -> str:
+    """Generates the union query.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: Query string containing the union operation.
+    """
+    union_query: str = (
+        "INSERT INTO "
+        + __encode_table_name(part)
+        + "\n"
+        + "SELECT "
+        + ", ".join(
+            f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
+            for var in sorted(part.p1._vars)
+        )
+        + ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count\n"
+        + "FROM "
+        + __encode_table_name(part.p1)
+        + " AS r1 FULL OUTER JOIN "
         + __encode_table_name(part.p2)
         + " AS r2 ON "
     )
