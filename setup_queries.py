@@ -51,16 +51,28 @@ def __increm_queries(
     )
 
 
-def setup_tables(query: CompValue) -> None:
+def setup_tables(query: CompValue, output_dir: str) -> None:
     """Sets up the tables to use for the queries
 
     Args:
         query (CompValue): Algebra or part of the query
     """
     # Drop all the tables before the setup
-    dropTablesRec(query)
+    drop_queries: str = dropTablesRec(query)
     # Construct the tables
-    constructTablesRec(query)
+    construct_queries: str = constructTablesRec(query)
+
+    # Write the queries to the output directory
+    SQL_initialize_queries.write_query_to_output_dir(
+        join(output_dir, "query_" + get_table_name(query)),
+        drop_queries,
+        "drop_tables",
+    )
+    SQL_initialize_queries.write_query_to_output_dir(
+        join(output_dir, "query_" + get_table_name(query)),
+        construct_queries,
+        "construct_tables",
+    )
 
 
 def setup_queries(
@@ -80,7 +92,7 @@ def setup_queries(
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
 
-    setup_tables(q_query_object.algebra)
+    setup_tables(q_query_object.algebra, output_dir)
 
     if increm:
         __increm_queries(q_query_object.algebra, output_dir)

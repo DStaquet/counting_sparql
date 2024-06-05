@@ -55,26 +55,37 @@ if TYPE_CHECKING:
 from eval_incremental import VALUES
 
 
-def drop_all_tables(part) -> None:
+def drop_all_tables(part) -> str:
     drop_query, drop_delta_query, drop_nu_query = (
         SQL_Constructor.drop_all_tables(part)
     )
-    duckdb_conn.sql(drop_query)
-    duckdb_conn.sql(drop_delta_query)
-    duckdb_conn.sql(drop_nu_query)
+    return (
+        drop_query
+        + "\n"
+        + drop_delta_query
+        + "\n"
+        + drop_nu_query
+        + "\n"
+    )
 
 
-def construct_tables(part) -> None:
+def construct_tables(part) -> str:
     delta_table_drop_query: str = (
         SQL_Constructor.drop_delta_table(part)
     )
     table_query, table_delta, table_nu = (
         SQL_Constructor.make_tables(part, part._vars)
     )
-    duckdb_conn.sql(table_query)
-    duckdb_conn.sql(delta_table_drop_query)
-    duckdb_conn.sql(table_delta)
-    duckdb_conn.sql(table_nu)
+    return (
+        table_query
+        + "\n"
+        + delta_table_drop_query
+        + "\n"
+        + table_delta
+        + "\n"
+        + table_nu
+        + "\n"
+    )
 
 
 # TODO: Implement join incrementally
@@ -249,26 +260,34 @@ def evalIncrDescribeQuery(ctx: QueryContext, part) -> None:
     pass
 
 
-def dropTablesRec(part) -> None:
+def dropTablesRec(part) -> str:
     if part == None:
-        return
+        return ""
     if "p" in part or part.name == "BGP":
-        dropTablesRec(part.p)
+        return dropTablesRec(part.p) + drop_all_tables(part)
     elif "p1" in part and "p2" in part:
-        dropTablesRec(part.p1)
-        dropTablesRec(part.p2)
-    drop_all_tables(part)
+        return (
+            dropTablesRec(part.p1)
+            + dropTablesRec(part.p2)
+            + drop_all_tables(part)
+        )
+    return ""
 
 
-def constructTablesRec(part) -> None:
+def constructTablesRec(part) -> str:
     if part == None:
-        return
+        return ""
     if "p" in part or part.name == "BGP":
-        constructTablesRec(part.p)
+        return constructTablesRec(
+            part.p
+        ) + construct_tables(part)
     elif "p1" in part and "p2" in part:
-        constructTablesRec(part.p1)
-        constructTablesRec(part.p2)
-    construct_tables(part)
+        return (
+            constructTablesRec(part.p1)
+            + constructTablesRec(part.p2)
+            + construct_tables(part)
+        )
+    return ""
 
 
 def evalIncrPart(

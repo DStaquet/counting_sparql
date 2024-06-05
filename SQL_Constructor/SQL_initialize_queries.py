@@ -2,7 +2,7 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from SQL_Constructor import SQL_Constructor
 
 
-def __write_query_to_output_dir(
+def write_query_to_output_dir(
     output_dir: str,
     query: str,
     filename: str,
@@ -74,7 +74,7 @@ def build_increm_queries(
     match part.name:
         case "BGP":
             delta_queries = __delta_bgp_queries(part)
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 delta_queries,
                 SQL_Constructor.get_table_name(part),
@@ -85,7 +85,7 @@ def build_increm_queries(
             filter_query: str = (
                 SQL_Constructor.delta_filter_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 filter_query,
                 SQL_Constructor.get_table_name(part),
@@ -95,7 +95,7 @@ def build_increm_queries(
             project_query: str = (
                 SQL_Constructor.delta_project_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 project_query,
                 SQL_Constructor.get_table_name(part),
@@ -105,7 +105,7 @@ def build_increm_queries(
             left_join_query: str = (
                 SQL_Constructor.delta_left_join_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 left_join_query,
                 SQL_Constructor.get_table_name(part),
@@ -115,7 +115,7 @@ def build_increm_queries(
             minus_query: str = (
                 SQL_Constructor.delta_minus_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 minus_query,
                 SQL_Constructor.get_table_name(part),
@@ -125,7 +125,7 @@ def build_increm_queries(
             union_query: str = (
                 SQL_Constructor.delta_union_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 union_query,
                 SQL_Constructor.get_table_name(part),
@@ -154,7 +154,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                     SQL_Constructor.bgp_table_query(part),
                 )
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 bgp_query,
                 SQL_Constructor.get_table_name(part),
@@ -163,7 +163,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             filter_query: str = (
                 SQL_Constructor.filter_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 filter_query,
                 SQL_Constructor.get_table_name(part),
@@ -172,7 +172,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             project_query: str = (
                 SQL_Constructor.project_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 project_query,
                 SQL_Constructor.get_table_name(part),
@@ -181,7 +181,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             left_join_query: str = (
                 SQL_Constructor.left_join_query(part)
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 left_join_query,
                 SQL_Constructor.get_table_name(part),
@@ -190,7 +190,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             minus_query: str = SQL_Constructor.minus_query(
                 part
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 minus_query,
                 SQL_Constructor.get_table_name(part),
@@ -199,7 +199,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             union_query: str = SQL_Constructor.union_query(
                 part
             )
-            __write_query_to_output_dir(
+            write_query_to_output_dir(
                 output_dir,
                 union_query,
                 SQL_Constructor.get_table_name(part),
