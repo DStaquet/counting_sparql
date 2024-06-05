@@ -18,6 +18,8 @@ from rdflib.plugins.sparql import algebra
 from rdflib.plugins.sparql import parser
 from rdflib.plugins.sparql.sparql import QueryContext
 from rdflib.plugins.sparql.sparql import Query
+from rdflib.plugins.sparql.parserutils import CompValue
+from os.path import join
 
 import sys, os
 
@@ -39,6 +41,8 @@ from eval_incremental import (
 )
 
 from database import insert_data_graph
+
+from SQL_Constructor import SQL_Constructor
 
 
 def insertData(g: graph.Graph, query: Query) -> None:
@@ -250,27 +254,62 @@ def check_relevancy(
             return False
 
 
+def setup_tables(
+    part: CompValue, input_dir: str, increm: bool = False
+) -> None:
+    """Sets up the tables in the database
+
+    Args:
+        part (CompValue): The query
+        input_dir (str): Input directory
+    """
+    query_input_dir: str = join(
+        input_dir,
+        "query_" + SQL_Constructor.get_table_name(part),
+    )
+    if not increm:
+        with open(
+            join(query_input_dir, "drop_tables.sql"), "r"
+        ) as f:
+            for line in f.read().split(";"):
+                command = line + ";"
+                duckdb_conn.execute(command)
+    with open(
+        join(query_input_dir, "construct_tables.sql"), "r"
+    ) as f:
+        for line in f.read().split(";"):
+            command = line + ";"
+            print(command)
+            duckdb_conn.execute(command)
+
+
 def run_query(
     query_str: str, data_str: str, output_dir: str
-):
+) -> None:
     g = graph.Graph()
     g.parse(data_str)
 
     query_tree = parser.parseQuery(str(query_str))
     q_query_object = algebra.translateQuery(query_tree)
-    constructTablesRec(q_query_object.algebra)
-    output: DataFrame = evalIncrPart(
+
+    setup_tables(q_query_object.algebra, output_dir)
+
+    """output: DataFrame = evalIncrPart(
         QueryContext(g), q_query_object.algebra, True
     )
-    print(output)
 
     with open(f"{output_dir}/output.txt", "w") as f:
-        f.write(str(output))
-
-    return output
+        f.write(str(output))"""
 
 
 if __name__ == "__main__":
+    hashseed = os.getenv("PYTHONHASHSEED")
+    if not hashseed:
+        os.environ["PYTHONHASHSEED"] = "0"
+        os.execv(
+            sys.executable, [sys.executable] + sys.argv
+        )
+
     if len(sys.argv) < 4:
         print(
             "Usage: python query_parser.py <query_file> <data_file> <output_dir>"
@@ -387,3 +426,6 @@ if __name__ == "__main__":
     
 
     f.close()"""
+
+    query: str = readQueryFile(query_str)
+    run_query(query, data_str, output_dir)
