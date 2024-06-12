@@ -29,7 +29,10 @@ from eval_incremental.eval_incremental import (
     dropTablesRec,
 )
 from eval_incremental import delta_inserter, duckdb_conn
-from eval_incremental.eval_incremental import evalIncrPart
+from eval_incremental.eval_incremental import (
+    evalIncrPart,
+    evalPremIncrPart,
+)
 
 from pandas import DataFrame
 
@@ -255,7 +258,9 @@ def check_relevancy(
 
 
 def setup_tables(
-    part: CompValue, input_dir: str, increm: bool = False
+    part: CompValue,
+    query_input_dir: str,
+    increm: bool = False,
 ) -> None:
     """Sets up the tables in the database
 
@@ -263,10 +268,6 @@ def setup_tables(
         part (CompValue): The query
         input_dir (str): Input directory
     """
-    query_input_dir: str = join(
-        input_dir,
-        "query_" + SQL_Constructor.get_table_name(part),
-    )
     if not increm:
         with open(
             join(query_input_dir, "drop_tables.sql"), "r"
@@ -277,23 +278,33 @@ def setup_tables(
     with open(
         join(query_input_dir, "construct_tables.sql"), "r"
     ) as f:
-        for line in f.read().split(";"):
+        for line in f.read().split(";\n"):
             command = line + ";"
-            print(command)
             duckdb_conn.execute(command)
 
 
 def run_query(
     query_str: str, data_str: str, output_dir: str
 ) -> None:
-    g = graph.Graph()
-    g.parse(data_str)
+    # g = graph.Graph()
+    # g.parse(data_str)
 
     query_tree = parser.parseQuery(str(query_str))
     q_query_object = algebra.translateQuery(query_tree)
 
-    setup_tables(q_query_object.algebra, output_dir)
+    query_input_dir: str = join(
+        output_dir,
+        "query_"
+        + SQL_Constructor.get_table_name(
+            q_query_object.algebra
+        ),
+    )
 
+    setup_tables(q_query_object.algebra, query_input_dir)
+
+    evalPremIncrPart(
+        q_query_object.algebra, query_input_dir
+    )
     """output: DataFrame = evalIncrPart(
         QueryContext(g), q_query_object.algebra, True
     )

@@ -11,7 +11,10 @@ from typing import (
 import collections
 from rdflib.term import Identifier, Variable, URIRef
 from rdflib.plugins.sparql import parser
-from rdflib.plugins.sparql.parserutils import value
+from rdflib.plugins.sparql.parserutils import (
+    value,
+    CompValue,
+)
 from rdflib.plugins.sparql.aggregates import Aggregator
 
 from pyparsing import ParseException
@@ -42,6 +45,8 @@ from urllib.request import Request, urlopen
 
 import itertools
 import re
+
+from os.path import join
 
 from SQL_Constructor import SQL_Constructor
 
@@ -288,6 +293,50 @@ def constructTablesRec(part) -> str:
             + construct_tables(part)
         )
     return ""
+
+
+def get_query_string(
+    part: CompValue, input_dir: str
+) -> str:
+    """Gets the SQL query string for the given part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        input_dir (str): Where to read the SQL queries from.
+
+    Returns:
+        str: Query string
+    """
+    query_file_path: str = join(
+        input_dir,
+        SQL_Constructor.get_table_name(part) + ".sql",
+    )
+    with open(query_file_path, "r") as query_file:
+        return query_file.read()
+
+
+def evalPremIncrPart(
+    part: CompValue, input_dir: str, increm: bool = False
+) -> None:
+    """Goes through the algebra, executing each given SQL query.
+
+    Args:
+        part (CompValue): Current part of the query
+        input_dir (str): Where to read the SQL queries from.
+    """
+    if "p" in part:
+        evalPremIncrPart(part.p, input_dir)
+    elif "p1" in part and "p2" in part:
+        evalPremIncrPart(part.p1, input_dir)
+        evalPremIncrPart(part.p2, input_dir)
+    if not increm:
+        match part.name:
+            case "BGP":
+                bgp_query: str = get_query_string(
+                    part, input_dir
+                )
+                print(bgp_query)
+                duckdb_conn.sql(bgp_query)
 
 
 def evalIncrPart(
