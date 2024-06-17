@@ -335,7 +335,6 @@ def evalPremIncrPart(
                 bgp_query: str = get_query_string(
                     part, input_dir
                 )
-                print(bgp_query)
                 duckdb_conn.sql(bgp_query)
 
 
