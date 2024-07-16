@@ -47,7 +47,6 @@ def insert_data(
     df: DataFrame = db_conn.sql(
         f"SELECT * FROM {table_name};"
     ).df()
-    print(df)
 
 
 if __name__ == "__main__":

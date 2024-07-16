@@ -556,7 +556,9 @@ def bgp_delta_table_query(
     )
 
 
-def bgp_table_query(part: CompValue) -> str:
+def bgp_table_query(
+    part: CompValue,
+) -> tuple[str, set[str]]:
     """Creates three different parts to simulate an SQL query to get the data from a BGP given the triple patterns in the BGP part of the query.
 
     Args:
@@ -582,9 +584,9 @@ def bgp_table_query(part: CompValue) -> str:
     first = False
     known_vars: set = set()
     bgp_select_clause: str = "SELECT "
-    for triple in part.triples:
+    for var in sorted(part._vars):
         for index in range(3):
-            for var in part._vars:
+            for triple in sorted(part.triples):
                 if (
                     triple[index] == var
                     and var not in known_vars
@@ -604,6 +606,11 @@ def bgp_table_query(part: CompValue) -> str:
                         bgp_select_clause += "o"
                     bgp_select_clause += " AS " + var
                     known_vars.add(var)
+    bgp_select_clause += ", ("
+    bgp_select_clause += "*".join(
+        f"{g}.k_count" for g in g_per_triple.values()
+    )
+    bgp_select_clause += ") AS k_count"
 
     # construct where clause
     where_clause: str = " WHERE "
@@ -694,12 +701,15 @@ def bgp_table_query(part: CompValue) -> str:
                 )
 
     return (
-        bgp_select_clause
-        + "\n"
-        + from_clause
-        + "\n"
-        + where_clause
-        + ";\n"
+        (
+            bgp_select_clause
+            + "\n"
+            + from_clause
+            + "\n"
+            + where_clause
+            + ";\n"
+        ),
+        known_vars,
     )
 
 
@@ -848,12 +858,21 @@ def bgp_insert_query(
 def insert_into_w_select(
     given_table: str,
     select_query: str,
-    columns_given: bool = False,
+    columns: list[str] | None = None,
 ) -> str:
-    if not columns_given:
+    if columns is None:
         return f"INSERT INTO {given_table}\n{select_query}"
     else:
-        return f"INSERT INTO {given_table} (SELECT * FROM {select_query});"
+        insert_str: str = (
+            f"INSERT INTO {given_table} ("
+            + ", ".join(
+                key
+                for key in sorted(columns)
+                if key != "k_count"
+            )
+        )
+        insert_str += ", k_count)\n" + select_query
+        return insert_str
 
 
 def combine_create_table_insert(
@@ -885,6 +904,15 @@ def project_table_query(part: CompValue) -> str:
 def select_query(part: CompValue) -> str:
     table_name = __encode_table_name(part.p)
     select_str = "SELECT " + "* FROM " + table_name + ";"
+    return select_str
+
+
+def delta_select_query(part: CompValue) -> str:
+    table_name: str = __encode_table_name(part.p)
+    delta_table_name: str = "delta_" + table_name
+    select_str: str = (
+        "SELECT " + "* FROM " + delta_table_name + ";"
+    )
     return select_str
 
 
@@ -1093,7 +1121,13 @@ def delta_filter_query(part: CompValue) -> str:
         "INSERT INTO delta_"
         + __encode_table_name(part)
         + "\n"
-        "SELECT * \nFROM "
+        + "SELECT ("
+        + ", ".join(
+            var
+            for var in sorted(part._vars)
+            if var != "k_count"
+        )
+        + ", k_count)\nFROM "
         + table_name
         + " \nWHERE "
         + filter_expr_part(part.expr)
@@ -1745,8 +1779,22 @@ def filter_query(part: CompValue) -> str:
         str: Query string for the filter operation.
     """
     filter_str: str = (
-        "INSERT INTO " + __encode_table_name(part) + "\n"
-        "SELECT * \nFROM "
+        "INSERT INTO "
+        + __encode_table_name(part)
+        + "("
+        + ", ".join(
+            var
+            for var in sorted(part._vars)
+            if var != "k_count"
+        )
+        + ", k_count)\n"
+        + "SELECT "
+        + ", ".join(
+            var
+            for var in sorted(part._vars)
+            if var != "k_count"
+        )
+        + ", k_count\nFROM "
         + __encode_table_name(part.p)
         + " \nWHERE "
         + filter_expr_part(part.expr)
@@ -1882,14 +1930,14 @@ def __diff_query_sub(part: CompValue) -> str:
             f"{var} = EXCLUDED.{var}"
             for var in sorted(part.p1._vars)
         )
-        + " AND "
-        + " AND ".join(
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        diff_query += " AND " + " AND ".join(
             f"{var} = EXCLUDED.{var}"
             for var in sorted(
                 part.p2._vars.difference(part.p1._vars)
             )
         )
-    )
     diff_query += ";\n"
 
     return diff_query

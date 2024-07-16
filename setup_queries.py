@@ -21,14 +21,7 @@ def __non_increm_queries(
         part (CompValue): Current part of the query
         output_dir (str): Where to write the SQL queries
     """
-    query_output_dir: str = join(
-        output_dir, "query_" + get_table_name(part)
-    )
-    if not exists(query_output_dir):
-        mkdir(query_output_dir)
-    SQL_initialize_queries.build_queries(
-        part, query_output_dir
-    )
+    SQL_initialize_queries.build_queries(part, output_dir)
 
 
 def __increm_queries(
@@ -41,13 +34,8 @@ def __increm_queries(
         part (CompValue): The algebra of the query
         output_dir (str): Directory to write the output to
     """
-    query_output_dir: str = join(
-        output_dir, "query_" + get_table_name(part)
-    )
-    if not exists(query_output_dir):
-        mkdir(query_output_dir)
     SQL_initialize_queries.build_increm_queries(
-        part, query_output_dir
+        part, output_dir
     )
 
 
@@ -92,13 +80,22 @@ def setup_queries(
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
 
+    query_output_dir: str = join(
+        output_dir,
+        "query_" + get_table_name(q_query_object.algebra),
+    )
+    if not exists(query_output_dir):
+        mkdir(query_output_dir)
+
     setup_tables(q_query_object.algebra, output_dir)
 
     if increm:
-        __increm_queries(q_query_object.algebra, output_dir)
+        __increm_queries(
+            q_query_object.algebra, query_output_dir
+        )
     else:
         __non_increm_queries(
-            q_query_object.algebra, output_dir
+            q_query_object.algebra, query_output_dir
         )
 
 

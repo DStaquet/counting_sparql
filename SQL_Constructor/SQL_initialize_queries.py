@@ -131,6 +131,33 @@ def build_increm_queries(
                 SQL_Constructor.get_table_name(part),
                 name="delta_",
             )
+        case "SelectQuery":
+            select_query: str = (
+                SQL_Constructor.delta_select_query(part)
+            )
+            write_query_to_output_dir(
+                output_dir,
+                select_query,
+                SQL_Constructor.get_table_name(part),
+                name="delta_",
+            )
+
+
+def construct_minus_columns(part: CompValue) -> list[str]:
+    """Constructs the columns related to the minus operation
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        list[str]: All values related to the minus operation
+    """
+    minus_columns: list[str] = []
+    for var in part.p1._vars:
+        minus_columns.append(var)
+    for var in part.p2._vars.difference(part.p1._vars):
+        minus_columns.append(var)
+    return minus_columns
 
 
 def build_queries(part: CompValue, output_dir: str) -> None:
@@ -148,10 +175,14 @@ def build_queries(part: CompValue, output_dir: str) -> None:
     # Construct the SQL query
     match part.name:
         case "BGP":
+            bgp_query, known_vars = (
+                SQL_Constructor.bgp_table_query(part)
+            )
             bgp_query: str = (
                 SQL_Constructor.insert_into_w_select(
                     SQL_Constructor.get_table_name(part),
-                    SQL_Constructor.bgp_table_query(part),
+                    bgp_query,
+                    list(known_vars),
                 )
             )
             write_query_to_output_dir(
@@ -202,5 +233,14 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             write_query_to_output_dir(
                 output_dir,
                 union_query,
+                SQL_Constructor.get_table_name(part),
+            )
+        case "SelectQuery":
+            select_query: str = (
+                SQL_Constructor.select_query(part)
+            )
+            write_query_to_output_dir(
+                output_dir,
+                select_query,
                 SQL_Constructor.get_table_name(part),
             )

@@ -296,7 +296,7 @@ def constructTablesRec(part) -> str:
 
 
 def get_query_string(
-    part: CompValue, input_dir: str
+    part: CompValue, input_dir: str, prefix: str = ""
 ) -> str:
     """Gets the SQL query string for the given part of the query.
 
@@ -309,7 +309,9 @@ def get_query_string(
     """
     query_file_path: str = join(
         input_dir,
-        SQL_Constructor.get_table_name(part) + ".sql",
+        prefix
+        + SQL_Constructor.get_table_name(part)
+        + ".sql",
     )
     with open(query_file_path, "r") as query_file:
         return query_file.read()
@@ -317,7 +319,7 @@ def get_query_string(
 
 def evalPremIncrPart(
     part: CompValue, input_dir: str, increm: bool = False
-) -> None:
+) -> DataFrame | None:
     """Goes through the algebra, executing each given SQL query.
 
     Args:
@@ -325,17 +327,22 @@ def evalPremIncrPart(
         input_dir (str): Where to read the SQL queries from.
     """
     if "p" in part:
-        evalPremIncrPart(part.p, input_dir)
+        evalPremIncrPart(part.p, input_dir, increm)
     elif "p1" in part and "p2" in part:
-        evalPremIncrPart(part.p1, input_dir)
-        evalPremIncrPart(part.p2, input_dir)
+        evalPremIncrPart(part.p1, input_dir, increm)
+        evalPremIncrPart(part.p2, input_dir, increm)
     if not increm:
-        match part.name:
-            case "BGP":
-                bgp_query: str = get_query_string(
-                    part, input_dir
-                )
-                duckdb_conn.sql(bgp_query)
+        query: str = get_query_string(part, input_dir)
+        print(query)
+        if part.name == "SelectQuery":
+            return duckdb_conn.sql(query).df()
+        else:
+            duckdb_conn.sql(query)
+    else:
+        query: str = get_query_string(
+            part, input_dir, "delta_"
+        )
+        print(query)
 
 
 def evalIncrPart(

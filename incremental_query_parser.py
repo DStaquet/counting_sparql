@@ -46,6 +46,7 @@ from eval_incremental import (
 from database import insert_data_graph
 
 from SQL_Constructor import SQL_Constructor
+from setup_data import insert_data
 
 
 def insertData(g: graph.Graph, query: Query) -> None:
@@ -291,6 +292,7 @@ def run_query(
 
     query_tree = parser.parseQuery(str(query_str))
     q_query_object = algebra.translateQuery(query_tree)
+    algebra.pprintAlgebra(q_query_object)
 
     query_input_dir: str = join(
         output_dir,
@@ -302,8 +304,12 @@ def run_query(
 
     setup_tables(q_query_object.algebra, query_input_dir)
 
-    evalPremIncrPart(
+    df: DataFrame | None = evalPremIncrPart(
         q_query_object.algebra, query_input_dir
+    )
+    print(df)
+    df = evalPremIncrPart(
+        q_query_object.algebra, query_input_dir, True
     )
     """output: DataFrame = evalIncrPart(
         QueryContext(g), q_query_object.algebra, True
@@ -437,6 +443,9 @@ if __name__ == "__main__":
     
 
     f.close()"""
+
+    data: str = readQueryFile(data_str)
+    insert_data(duckdb_conn, data)
 
     query: str = readQueryFile(query_str)
     run_query(query, data_str, output_dir)
