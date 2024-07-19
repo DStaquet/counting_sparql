@@ -1,4 +1,4 @@
-INSERT INTO delta_Filter_7141111257548129695
-SELECT (label, p1, p3, product, k_count)
+INSERT INTO delta_Filter_7141111257548129695(label, p1, p3, product, k_count)
+SELECT label, p1, p3, product, k_count
 FROM delta_BGP_4245425749932949804 
 WHERE CAST(p1 AS INT) > CAST(88 AS INT) AND CAST(p3 AS INT) < CAST(448 AS INT);

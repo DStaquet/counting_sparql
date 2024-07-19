@@ -403,7 +403,7 @@ def construct_bgp_insert(
 
 def bgp_delta_table_query(
     part: CompValue, triple_count: int
-) -> str:
+) -> tuple[str, set[str]]:
     bgp_delta_table_name = "delta_" + __encode_table_name(
         part
     )
@@ -432,9 +432,9 @@ def bgp_delta_table_query(
     first = False
     known_vars: set = set()
     bgp_select_clause: str = "SELECT "
-    for triple in part.triples:
+    for var in sorted(part._vars):
         for index in range(3):
-            for var in part._vars:
+            for triple in sorted(part.triples):
                 if (
                     triple[index] == var
                     and var not in known_vars
@@ -547,12 +547,15 @@ def bgp_delta_table_query(
                 )
 
     return (
-        bgp_select_clause
-        + "\n"
-        + from_clause
-        + "\n"
-        + where_clause
-        + ";\n"
+        (
+            bgp_select_clause
+            + "\n"
+            + from_clause
+            + "\n"
+            + where_clause
+            + ";\n"
+        ),
+        known_vars,
     )
 
 
@@ -1120,14 +1123,21 @@ def delta_filter_query(part: CompValue) -> str:
     filter_str: str = (
         "INSERT INTO delta_"
         + __encode_table_name(part)
-        + "\n"
-        + "SELECT ("
+        + "("
         + ", ".join(
             var
             for var in sorted(part._vars)
             if var != "k_count"
         )
-        + ", k_count)\nFROM "
+        + ", k_count)"
+        + "\n"
+        + "SELECT "
+        + ", ".join(
+            var
+            for var in sorted(part._vars)
+            if var != "k_count"
+        )
+        + ", k_count\nFROM "
         + table_name
         + " \nWHERE "
         + filter_expr_part(part.expr)
@@ -1529,7 +1539,9 @@ def delta_minus_query(part: CompValue) -> str:
     )
     first_query += (
         "SELECT "
-        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", ".join(
+            f"p1.{var}" for var in sorted(part.p1._vars)
+        )
         + ", p1.k_count as k_count\n"
     )
     first_query += (
@@ -1562,14 +1574,14 @@ def delta_minus_query(part: CompValue) -> str:
             f"{var} = EXCLUDED.{var}"
             for var in sorted(part.p1._vars)
         )
-        + " AND "
-        + " AND ".join(
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        first_query += " AND " + " AND ".join(
             f"{var} = EXCLUDED.{var}"
             for var in sorted(
                 part.p2._vars.difference(part.p1._vars)
             )
         )
-    )
     first_query += ";\n"
 
     # R1_nu MINUS delta_R2 - First part
@@ -1580,7 +1592,9 @@ def delta_minus_query(part: CompValue) -> str:
     )
     second_query_first += (
         "SELECT "
-        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", ".join(
+            f"p1.{var}" for var in sorted(part.p1._vars)
+        )
         + ", p1.k_count as k_count\n"
     )
     second_query_first += "FROM "
@@ -1592,8 +1606,15 @@ def delta_minus_query(part: CompValue) -> str:
         + " AS delta_p2\n"
     )
     if part.p1._vars.intersection(part.p2._vars) != set():
-        second_query_first += "WHERE (" + ", ".join(
+        second_query_first += "WHERE " + ", ".join(
             f"p1.{var} = delta_p2.{var}"
+            for var in sorted(
+                part.p1._vars.intersection(part.p2._vars)
+            )
+        )
+        second_query_first += ") AND ("
+        second_query_first += ", ".join(
+            f"p1.{var}"
             for var in sorted(
                 part.p1._vars.intersection(part.p2._vars)
             )
@@ -1623,14 +1644,14 @@ def delta_minus_query(part: CompValue) -> str:
             f"{var} = EXCLUDED.{var}"
             for var in sorted(part.p1._vars)
         )
-        + " AND "
-        + " AND ".join(
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        second_query_first += " AND " + " AND ".join(
             f"{var} = EXCLUDED.{var}"
             for var in sorted(
                 part.p2._vars.difference(part.p1._vars)
             )
         )
-    )
     second_query_first += ";\n"
 
     # R1_nu MINUS delta_R2 - Second part
@@ -1641,7 +1662,9 @@ def delta_minus_query(part: CompValue) -> str:
     )
     second_query_second += (
         "SELECT "
-        + ", ".join(var for var in sorted(part.p1._vars))
+        + ", ".join(
+            f"p1.{var}" for var in sorted(part.p1._vars)
+        )
         + ", -p1.k_count\n"
     )
     second_query_second += "FROM "
@@ -1684,14 +1707,14 @@ def delta_minus_query(part: CompValue) -> str:
             f"{var} = EXCLUDED.{var}"
             for var in sorted(part.p1._vars)
         )
-        + " AND "
-        + " AND ".join(
+    )
+    if part.p2._vars.difference(part.p1._vars) != set():
+        second_query_second += " AND " + " AND ".join(
             f"{var} = EXCLUDED.{var}"
             for var in sorted(
                 part.p2._vars.difference(part.p1._vars)
             )
         )
-    )
     second_query_second += ";\n"
 
     second_query: str = (
@@ -2013,3 +2036,63 @@ def union_query(part: CompValue) -> str:
     union_query += ";\n"
 
     return union_query
+
+
+def nu_queries(
+    part: CompValue, use_PV: bool = False
+) -> str:
+    """Constructs a query for the nu table.
+
+    Args:
+        part (CompValue): Current part of the algebra
+
+    Returns:
+        str: Query string for the nu table.
+    """
+    if use_PV:
+        if part.PV is None:
+            part.PV = part.p.PV
+        variables = part.PV
+    else:
+        variables = part._vars
+
+    nu_query: str = (
+        "INSERT INTO nu_"
+        + get_table_name(part)
+        + "  ("
+        + ", ".join(
+            var
+            for var in sorted(variables)
+            if var != "k_count"
+        )
+        + ", k_count) select "
+    )
+    nu_query += ", ".join(
+        "(CASE WHEN r1."
+        + var
+        + " NOT NULL THEN r1."
+        + var
+        + " ELSE r2."
+        + var
+        + " END) as "
+        + var
+        for var in sorted(variables)
+        if var != "k_count"
+    )
+    nu_query += ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count"
+    nu_query += (
+        " from "
+        + get_table_name(part)
+        + " AS r1 FULL OUTER JOIN delta_"
+        + get_table_name(part)
+        + " AS r2 ON "
+        + " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in sorted(variables)
+            if var != "k_count"
+        )
+        + " WHERE (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0"
+        + ";"
+    )
+
+    return nu_query

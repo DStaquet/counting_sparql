@@ -333,7 +333,7 @@ def evalPremIncrPart(
         evalPremIncrPart(part.p2, input_dir, increm)
     if not increm:
         query: str = get_query_string(part, input_dir)
-        print(query)
+        print(query, "\n")
         if part.name == "SelectQuery":
             return duckdb_conn.sql(query).df()
         else:
@@ -343,6 +343,12 @@ def evalPremIncrPart(
             part, input_dir, "delta_"
         )
         print(query)
+        duckdb_conn.sql(query)
+        query: str = get_query_string(
+            part, input_dir, "nu_"
+        )
+        print(query)
+        duckdb_conn.sql(query)
 
 
 def evalIncrPart(

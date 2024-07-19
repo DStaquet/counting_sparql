@@ -41,7 +41,7 @@ def __delta_bgp_queries(part: CompValue) -> str:
     """
     delta_queries: str = ""
     for triple_index in range(len(part.triples)):
-        delta_query: str = (
+        delta_query, known_vars = (
             SQL_Constructor.bgp_delta_table_query(
                 part, triple_index + 1
             )
@@ -51,6 +51,7 @@ def __delta_bgp_queries(part: CompValue) -> str:
                 "delta_"
                 + SQL_Constructor.get_table_name(part),
                 delta_query,
+                list(known_vars),
             )
         )
     return delta_queries
@@ -71,6 +72,7 @@ def build_increm_queries(
         build_increm_queries(part.p1, output_dir)
         build_increm_queries(part.p2, output_dir)
     # Construct the SQL query
+    use_PV = False
     match part.name:
         case "BGP":
             delta_queries = __delta_bgp_queries(part)
@@ -92,6 +94,7 @@ def build_increm_queries(
                 name="delta_",
             )
         case "Project":
+            use_PV = True
             project_query: str = (
                 SQL_Constructor.delta_project_query(part)
             )
@@ -141,6 +144,13 @@ def build_increm_queries(
                 SQL_Constructor.get_table_name(part),
                 name="delta_",
             )
+    nu_query: str = SQL_Constructor.nu_queries(part, use_PV)
+    write_query_to_output_dir(
+        output_dir,
+        nu_query,
+        SQL_Constructor.get_table_name(part),
+        name="nu_",
+    )
 
 
 def construct_minus_columns(part: CompValue) -> list[str]:

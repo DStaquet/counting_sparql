@@ -46,7 +46,11 @@ from eval_incremental import (
 from database import insert_data_graph
 
 from SQL_Constructor import SQL_Constructor
-from setup_data import insert_data
+from setup_data import (
+    insert_data,
+    insert_delete_delta_data,
+    insert_nu_data,
+)
 
 
 def insertData(g: graph.Graph, query: Query) -> None:
@@ -327,15 +331,16 @@ if __name__ == "__main__":
             sys.executable, [sys.executable] + sys.argv
         )
 
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 5:
         print(
-            "Usage: python query_parser.py <query_file> <data_file> <output_dir>"
+            "Usage: python query_parser.py <query_file> <data_file> <output_dir> <delete_data_file>"
         )
         exit(1)
     else:
         query_str: str = sys.argv[1]
         data_str: str = sys.argv[2]
         output_dir: str = sys.argv[3]
+        delete_data_str: str = sys.argv[4]
         # f = open(output_file, "w")
         # f.close()
 
@@ -446,6 +451,9 @@ if __name__ == "__main__":
 
     data: str = readQueryFile(data_str)
     insert_data(duckdb_conn, data)
+    delete_data: str = readQueryFile(delete_data_str)
+    insert_delete_delta_data(duckdb_conn, delete_data)
+    insert_nu_data(duckdb_conn)
 
     query: str = readQueryFile(query_str)
     run_query(query, data_str, output_dir)
