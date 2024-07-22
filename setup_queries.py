@@ -6,6 +6,7 @@ from eval_incremental.eval_incremental import (
 from SQL_Constructor import SQL_initialize_queries
 from SQL_Constructor.SQL_Constructor import get_table_name
 from rdflib.plugins.sparql.parserutils import CompValue
+from rdflib.plugins.sparql.sparql import Query
 from rdflib.plugins.sparql import parser, algebra
 from os.path import join, exists
 from os import mkdir
@@ -63,6 +64,24 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
     )
 
 
+def get_query_output_dir(
+    output_dir: str, q_query_object: Query
+) -> str:
+    """Get the query output directory
+
+    Args:
+        output_dir (str): Output directory
+        q_query_object (CompValue): Object containing the query
+
+    Returns:
+        str: String containing the query output directory
+    """
+    return join(
+        output_dir,
+        "query_" + get_table_name(q_query_object.algebra),
+    )
+
+
 def setup_queries(
     query_str: str,
     data: str,
@@ -80,9 +99,8 @@ def setup_queries(
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
 
-    query_output_dir: str = join(
-        output_dir,
-        "query_" + get_table_name(q_query_object.algebra),
+    query_output_dir: str = get_query_output_dir(
+        output_dir, q_query_object
     )
     if not exists(query_output_dir):
         mkdir(query_output_dir)

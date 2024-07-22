@@ -263,7 +263,6 @@ def check_relevancy(
 
 
 def setup_tables(
-    part: CompValue,
     query_input_dir: str,
     increm: bool = False,
 ) -> None:
@@ -288,16 +287,9 @@ def setup_tables(
             duckdb_conn.execute(command)
 
 
-def run_query(
-    query_str: str, data_str: str, output_dir: str
-) -> None:
-    # g = graph.Graph()
-    # g.parse(data_str)
-
-    query_tree = parser.parseQuery(str(query_str))
-    q_query_object = algebra.translateQuery(query_tree)
-    algebra.pprintAlgebra(q_query_object)
-
+def get_query_input(
+    output_dir: str, q_query_object: Query
+) -> str:
     query_input_dir: str = join(
         output_dir,
         "query_"
@@ -305,13 +297,32 @@ def run_query(
             q_query_object.algebra
         ),
     )
+    return query_input_dir
 
-    setup_tables(q_query_object.algebra, query_input_dir)
+
+def get_query_object(query: str) -> Query:
+    query_tree = parser.parseQuery(str(query))
+    return algebra.translateQuery(query_tree)
+
+
+def run_query(
+    query_str: str, data_str: str, output_dir: str
+) -> None:
+    # g = graph.Graph()
+    # g.parse(data_str)
+
+    q_query_object = get_query_object(query_str)
+    algebra.pprintAlgebra(q_query_object)
+
+    query_input_dir: str = get_query_input(
+        output_dir, q_query_object
+    )
+
+    setup_tables(query_input_dir)
 
     df: DataFrame | None = evalPremIncrPart(
         q_query_object.algebra, query_input_dir
     )
-    print(df)
     df = evalPremIncrPart(
         q_query_object.algebra, query_input_dir, True
     )

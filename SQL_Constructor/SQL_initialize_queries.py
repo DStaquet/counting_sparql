@@ -1,6 +1,8 @@
 from rdflib.plugins.sparql.parserutils import CompValue
 from SQL_Constructor import SQL_Constructor
 
+import sqlparse
+
 
 def write_query_to_output_dir(
     output_dir: str,
@@ -16,6 +18,9 @@ def write_query_to_output_dir(
         output_dir (str): Directory to write the SQL queries
         query (str): The query to write
     """
+    query = sqlparse.format(
+        query, reindent=True, keyword_case="upper"
+    )
     if not append:
         with open(
             f"{output_dir}/{name}{filename}.sql",
