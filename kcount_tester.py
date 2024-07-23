@@ -1,5 +1,7 @@
 from duckdb import DuckDBPyConnection
 
+from rdflib.plugins.sparql.parserutils import CompValue
+
 
 def build_data(
     data_file: str,
@@ -62,6 +64,66 @@ def setup_query_files(
     )
 
 
+def run_bgp_queries(
+    part: CompValue,
+    output_dir: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Execute the BGP queries recursively.
+
+    Args:
+        part (CompValue): _description_
+        output_dir (str): _description_
+        duckdb_conn (DuckDBPyConnection): _description_
+    """
+    from eval_incremental.eval_incremental import (
+        get_query_string,
+    )
+
+    if part.name == "BGP":
+        query_file: str = get_query_string(part, output_dir)
+        duckdb_conn.sql(query_file)
+        query_file_delta: str = get_query_string(
+            part, output_dir, "delta_"
+        )
+        duckdb_conn.sql(query_file_delta)
+        query_file_nu: str = get_query_string(
+            part, output_dir, "nu_"
+        )
+        duckdb_conn.sql(query_file_nu)
+    if "p" in part:
+        run_bgp_queries(part.p, output_dir, duckdb_conn)
+    elif "p1" in part and "p2" in part:
+        run_bgp_queries(part.p1, output_dir, duckdb_conn)
+        run_bgp_queries(part.p2, output_dir, duckdb_conn)
+
+
+def run_bgps(
+    query_str: str,
+    output_dir: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Run the BGP queries.
+
+    Args:
+        query_str (str): The query string to construct the BGP queries
+        output_dir (str): The output directory to write the BGP queries to
+        duckdb_con (DuckDBPyConnection): Connection to the database.
+    """
+    import incremental_query_parser as iqp
+    from setup_queries import get_query_output_dir
+
+    q_query_object: iqp.Query = iqp.get_query_object(
+        iqp.readQueryFile(query_str)
+    )
+    output: str = get_query_output_dir(
+        output_dir, q_query_object
+    )
+    run_bgp_queries(
+        q_query_object.algebra, output, duckdb_conn
+    )
+
+
 if __name__ == "__main__":
     import sys, os
     import argparse
@@ -102,3 +164,5 @@ if __name__ == "__main__":
         args.query,
         duckdb_conn,
     )
+
+    run_bgps(args.query, args.output, duckdb_conn)
