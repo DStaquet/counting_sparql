@@ -50,6 +50,7 @@ from setup_data import (
     insert_data,
     insert_delete_delta_data,
     insert_nu_data,
+    insert_insert_delta_data,
 )
 
 

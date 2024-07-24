@@ -52,6 +52,32 @@ def insert_delete_delta_data(
     ).df()
 
 
+def insert_insert_delta_data(
+    db_conn: duckdb.DuckDBPyConnection, data: str
+) -> None:
+    """Builds up the data that gets added to the table.
+
+    Args:
+        db_conn (duckdb.DuckDBPyConnection): Connection to the database
+        data (str): The given data
+    """
+    table_name: str = "delta_G"
+    g: Graph = Graph().parse(data=data)
+    insert_data_query: str = build_query_string_for_data(
+        g, table_name, 1
+    )
+
+    db_conn.execute(f"DROP TABLE IF EXISTS {table_name};")
+    db_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
+    )
+    db_conn.execute(insert_data_query)
+
+    df: DataFrame = db_conn.sql(
+        f"SELECT * FROM {table_name};"
+    ).df()
+
+
 def insert_nu_data(
     db_conn: duckdb.DuckDBPyConnection,
 ) -> None:

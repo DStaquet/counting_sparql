@@ -5,10 +5,11 @@ from rdflib.plugins.sparql.parserutils import CompValue
 
 def build_data(
     data_file: str,
-    delf: str,
     input_dir: str,
     query: str,
     duckdb_conn: DuckDBPyConnection,
+    delf: str | None = None,
+    insf: str | None = None,
 ) -> None:
     """Builds up the data from the data file.
 
@@ -30,8 +31,14 @@ def build_data(
     iqp.insert_data(duckdb_conn, data)
 
     # Read the deleted data file and put deleted data into the database's delta G table.
-    del_data: str = iqp.readQueryFile(delf)
-    iqp.insert_delete_delta_data(duckdb_conn, del_data)
+    if delf is not None:
+        del_data: str = iqp.readQueryFile(delf)
+        iqp.insert_delete_delta_data(duckdb_conn, del_data)
+
+    # Read the inserted data file and put inserted data into the database's delta G table.
+    if insf is not None:
+        ins_data: str = iqp.readQueryFile(insf)
+        iqp.insert_insert_delta_data(duckdb_conn, ins_data)
 
     # Combine the original and deleted data into the new version of the data.
     iqp.insert_nu_data(duckdb_conn)
@@ -150,19 +157,25 @@ if __name__ == "__main__":
     )
     parser.add_argument("data", help="The data file")
     parser.add_argument(
-        "delf",
+        "--delf",
         help="The file containing deletions",
     )
+    parser.add_argument(
+        "--insf",
+        help="The file containing insertions",
+    )
+
     args = parser.parse_args()
 
     setup_query_files(args.query, args.output, duckdb_conn)
 
     build_data(
         args.data,
-        args.delf,
         args.output,
         args.query,
         duckdb_conn,
+        args.delf,
+        args.insf,
     )
 
     run_bgps(args.query, args.output, duckdb_conn)
