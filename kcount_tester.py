@@ -30,6 +30,10 @@ def build_data(
     data: str = iqp.readQueryFile(data_file)
     iqp.insert_data(duckdb_conn, data)
 
+    # Clear the delta G table
+    iqp.drop_delta_table(duckdb_conn, "delta_G")
+    iqp.create_delta_table(duckdb_conn, "delta_G")
+
     # Read the deleted data file and put deleted data into the database's delta G table.
     if delf is not None:
         del_data: str = iqp.readQueryFile(delf)
@@ -39,7 +43,6 @@ def build_data(
     if insf is not None:
         ins_data: str = iqp.readQueryFile(insf)
         iqp.insert_insert_delta_data(duckdb_conn, ins_data)
-
     # Combine the original and deleted data into the new version of the data.
     iqp.insert_nu_data(duckdb_conn)
 
@@ -158,10 +161,12 @@ if __name__ == "__main__":
     parser.add_argument("data", help="The data file")
     parser.add_argument(
         "--delf",
+        dest="deletion_file",
         help="The file containing deletions",
     )
     parser.add_argument(
         "--insf",
+        dest="insert_file",
         help="The file containing insertions",
     )
 
@@ -174,8 +179,8 @@ if __name__ == "__main__":
         args.output,
         args.query,
         duckdb_conn,
-        args.delf,
-        args.insf,
+        args.deletion_file,
+        args.insert_file,
     )
 
     run_bgps(args.query, args.output, duckdb_conn)

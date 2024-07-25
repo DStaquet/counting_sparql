@@ -1,6 +1,7 @@
 import duckdb
 from rdflib.graph import Graph
 from pandas import DataFrame
+import sqlparse
 
 
 def build_query_string_for_data(
@@ -26,6 +27,32 @@ def build_query_string_for_data(
     return insert_str
 
 
+def drop_delta_table(
+    db_conn: duckdb.DuckDBPyConnection, table_name: str
+) -> None:
+    """Drops the delta table.
+
+    Args:
+        db_conn (duckdb.DuckDBPyConnection): Connection with the database.
+        table_name (str): Name of the table to drop.
+    """
+    db_conn.execute(f"DROP TABLE IF EXISTS {table_name};")
+
+
+def create_delta_table(
+    db_conn: duckdb.DuckDBPyConnection, table_name: str
+) -> None:
+    """Creates the delta table.
+
+    Args:
+        db_conn (duckdb.DuckDBPyConnection): Connection with the database.
+        table_name (str): Name of the table to create.
+    """
+    db_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
+    )
+
+
 def insert_delete_delta_data(
     db_conn: duckdb.DuckDBPyConnection, data: str
 ) -> None:
@@ -41,7 +68,6 @@ def insert_delete_delta_data(
         g, table_name, -1
     )
 
-    db_conn.execute(f"DROP TABLE IF EXISTS {table_name};")
     db_conn.execute(
         f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
@@ -67,7 +93,6 @@ def insert_insert_delta_data(
         g, table_name, 1
     )
 
-    db_conn.execute(f"DROP TABLE IF EXISTS {table_name};")
     db_conn.execute(
         f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
@@ -93,9 +118,17 @@ def insert_nu_data(
     db_conn.execute(
         f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
-    db_conn.execute(
-        f"insert into {table_name} (s, p, o, k_count) select r1.s, r1.p, r1.o, coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count from {og_name} as r1 FULL OUTER JOIN {delta_table_name} as r2 ON r1.s = r2.s and r1.p = r2.p and r1.o = r2.o where (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0;"
+    insert_nu_query: str = (
+        f"insert into {table_name} (s, p, o, k_count) select coalesce(r1.s, r2.s) as s, coalesce(r1.p, r2.p) as p, coalesce(r1.o, r2.o) as o, coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count from {og_name} as r1 FULL OUTER JOIN {delta_table_name} as r2 ON r1.s = r2.s and r1.p = r2.p and r1.o = r2.o where (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0;"
     )
+    print(
+        sqlparse.format(
+            insert_nu_query,
+            reindent=True,
+            keyword_case="upper",
+        )
+    )
+    db_conn.execute(insert_nu_query)
 
     df: DataFrame = db_conn.sql(
         f"SELECT * FROM {table_name};"

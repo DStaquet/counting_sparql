@@ -51,6 +51,8 @@ from setup_data import (
     insert_delete_delta_data,
     insert_nu_data,
     insert_insert_delta_data,
+    drop_delta_table,
+    create_delta_table,
 )
 
 
