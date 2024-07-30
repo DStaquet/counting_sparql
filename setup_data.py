@@ -121,13 +121,6 @@ def insert_nu_data(
     insert_nu_query: str = (
         f"insert into {table_name} (s, p, o, k_count) select coalesce(r1.s, r2.s) as s, coalesce(r1.p, r2.p) as p, coalesce(r1.o, r2.o) as o, coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count from {og_name} as r1 FULL OUTER JOIN {delta_table_name} as r2 ON r1.s = r2.s and r1.p = r2.p and r1.o = r2.o where (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0;"
     )
-    print(
-        sqlparse.format(
-            insert_nu_query,
-            reindent=True,
-            keyword_case="upper",
-        )
-    )
     db_conn.execute(insert_nu_query)
 
     df: DataFrame = db_conn.sql(

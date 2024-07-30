@@ -453,7 +453,7 @@ def bgp_delta_table_query(
                     bgp_select_clause += " AS " + var
                     known_vars.add(var)
     bgp_select_clause += (
-        ", delta_G" + str(triple_count) + ".k_count "
+        ", G" + str(triple_count) + ".k_count "
     )
 
     # construct where clause
@@ -622,7 +622,6 @@ def bgp_table_query(
     first: bool = False
     known_var_dict: dict[str, str] = dict()
     for triple_index in range(len(part.triples)):
-        print(part.triples[triple_index])
         for var_index in range(3):
             if (
                 part.triples[triple_index][var_index]

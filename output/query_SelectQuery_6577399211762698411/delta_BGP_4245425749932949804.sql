@@ -3,7 +3,7 @@ SELECT G3.o AS label,
        G4.o AS p1,
        G5.o AS p3,
        G1.s AS product,
-       delta_G1.k_count
+       G1.k_count
 FROM delta_G G1,
      G G2,
      G G3,
@@ -27,7 +27,7 @@ SELECT G3.o AS label,
        G4.o AS p1,
        G5.o AS p3,
        G1.s AS product,
-       delta_G2.k_count
+       G2.k_count
 FROM nu_G G1,
      delta_G G2,
      G G3,
@@ -51,7 +51,7 @@ SELECT G3.o AS label,
        G4.o AS p1,
        G5.o AS p3,
        G1.s AS product,
-       delta_G3.k_count
+       G3.k_count
 FROM nu_G G1,
      nu_G G2,
      delta_G G3,
@@ -75,7 +75,7 @@ SELECT G3.o AS label,
        G4.o AS p1,
        G5.o AS p3,
        G1.s AS product,
-       delta_G4.k_count
+       G4.k_count
 FROM nu_G G1,
      nu_G G2,
      nu_G G3,
@@ -99,7 +99,7 @@ SELECT G3.o AS label,
        G4.o AS p1,
        G5.o AS p3,
        G1.s AS product,
-       delta_G5.k_count
+       G5.k_count
 FROM nu_G G1,
      nu_G G2,
      nu_G G3,
