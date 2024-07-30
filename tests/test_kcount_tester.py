@@ -38,5 +38,3 @@ def test_build_data():
         "SELECT * FROM nu_G WHERE s = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer3/Product105';"
     ).df()
     assert not nu_g_data.empty
-
-    assert g_data.shape[0] != None

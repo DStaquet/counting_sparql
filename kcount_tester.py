@@ -64,11 +64,17 @@ def setup_query_files(
     )
     import incremental_query_parser as iqp
     from setup_queries import get_query_output_dir
+    from rdflib.plugins.sparql import parser, algebra
 
     q_query_object: iqp.Query = iqp.get_query_object(
         iqp.readQueryFile(query_str)
     )
+    # algebra.pprintAlgebra(q_query_object)
     SQLiq.build_queries(
+        q_query_object.algebra,
+        get_query_output_dir(output_dir, q_query_object),
+    )
+    SQLiq.build_increm_queries(
         q_query_object.algebra,
         get_query_output_dir(output_dir, q_query_object),
     )

@@ -1,4 +1,8 @@
-INSERT INTO delta_Filter_5934684086086804418
-SELECT * 
-FROM delta_BGP_2020790532000715027 
+INSERT INTO delta_Filter_5934684086086804418(label, p2, product, propertyTextual, k_count)
+SELECT label,
+       p2,
+       product,
+       propertyTextual,
+       k_count
+FROM delta_BGP_2020790532000715027
 WHERE CAST(p2 AS INT) > CAST(293 AS INT);

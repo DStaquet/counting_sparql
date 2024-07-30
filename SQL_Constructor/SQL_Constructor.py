@@ -420,9 +420,7 @@ def bgp_delta_table_query(
             delta_tables = "delta_"
         elif count < triple_count:
             delta_tables = "nu_"
-        g_per_triple[triple] = (
-            delta_tables + "G" + str(count)
-        )
+        g_per_triple[triple] = "G" + str(count)
         count += 1
         from_clause += (
             delta_tables + "G " + g_per_triple[triple]
@@ -461,62 +459,66 @@ def bgp_delta_table_query(
     # construct where clause
     where_clause: str = " WHERE "
     first: bool = False
+    known_var_dict: dict[str, str] = dict()
     for triple_index in range(len(part.triples)):
         for var_index in range(3):
             if (
                 part.triples[triple_index][var_index]
                 in part._vars
             ):
-                for triple_index2 in range(
-                    triple_index + 1, len(part.triples)
+                if (
+                    type(
+                        part.triples[triple_index][
+                            var_index
+                        ]
+                    )
+                    == Variable
                 ):
-                    for var_index2 in range(3):
-                        if (
+                    current_g: str = g_per_triple[
+                        part.triples[triple_index]
+                    ]
+                    if (
+                        part.triples[triple_index][
+                            var_index
+                        ]
+                        not in known_var_dict
+                    ):
+                        match var_index:
+                            case 0:
+                                current_g += ".s"
+                            case 1:
+                                current_g += ".p"
+                            case 2:
+                                current_g += ".o"
+                        known_var_dict[
                             part.triples[triple_index][
                                 var_index
                             ]
-                            == part.triples[triple_index2][
-                                var_index2
+                        ] = current_g
+                    else:
+                        if not first:
+                            first = True
+                        else:
+                            where_clause += " AND "
+                        current_g = known_var_dict[
+                            part.triples[triple_index][
+                                var_index
                             ]
-                            and type(
-                                part.triples[triple_index][
-                                    var_index
-                                ]
-                            )
-                            == Variable
-                        ):
-                            if not first:
-                                first = True
-                            else:
-                                where_clause += " AND "
-                            where_clause += (
-                                g_per_triple[
-                                    part.triples[
-                                        triple_index
-                                    ]
-                                ]
-                                + "."
-                            )
-                            if var_index == 0:
+                        ]
+                        where_clause += (
+                            current_g
+                            + " = "
+                            + g_per_triple[
+                                part.triples[triple_index]
+                            ]
+                            + "."
+                        )
+                        match var_index:
+                            case 0:
                                 where_clause += "s"
-                            elif var_index == 1:
+                            case 1:
                                 where_clause += "p"
-                            else:
-                                where_clause += "o"
-                            where_clause += " = "
-                            where_clause += (
-                                g_per_triple[
-                                    part.triples[
-                                        triple_index2
-                                    ]
-                                ]
-                                + "."
-                            )
-                            if var_index2 == 0:
-                                where_clause += "s"
-                            elif var_index2 == 1:
-                                where_clause += "p"
-                            else:
+                            case 2:
                                 where_clause += "o"
             elif (
                 type(part.triples[triple_index][var_index])
@@ -618,13 +620,69 @@ def bgp_table_query(
     # construct where clause
     where_clause: str = " WHERE "
     first: bool = False
+    known_var_dict: dict[str, str] = dict()
     for triple_index in range(len(part.triples)):
+        print(part.triples[triple_index])
         for var_index in range(3):
             if (
                 part.triples[triple_index][var_index]
                 in part._vars
             ):
-                for triple_index2 in range(
+                if (
+                    type(
+                        part.triples[triple_index][
+                            var_index
+                        ]
+                    )
+                    == Variable
+                ):
+                    current_g: str = g_per_triple[
+                        part.triples[triple_index]
+                    ]
+                    if (
+                        part.triples[triple_index][
+                            var_index
+                        ]
+                        not in known_var_dict
+                    ):
+                        match var_index:
+                            case 0:
+                                current_g += ".s"
+                            case 1:
+                                current_g += ".p"
+                            case 2:
+                                current_g += ".o"
+                        known_var_dict[
+                            part.triples[triple_index][
+                                var_index
+                            ]
+                        ] = current_g
+                    else:
+                        if not first:
+                            first = True
+                        else:
+                            where_clause += " AND "
+                        current_g = known_var_dict[
+                            part.triples[triple_index][
+                                var_index
+                            ]
+                        ]
+                        where_clause += (
+                            current_g
+                            + " = "
+                            + g_per_triple[
+                                part.triples[triple_index]
+                            ]
+                            + "."
+                        )
+                        match var_index:
+                            case 0:
+                                where_clause += "s"
+                            case 1:
+                                where_clause += "p"
+                            case 2:
+                                where_clause += "o"
+                '''for triple_index2 in range(
                     triple_index + 1, len(part.triples)
                 ):
                     for var_index2 in range(3):
@@ -674,7 +732,7 @@ def bgp_table_query(
                             elif var_index2 == 1:
                                 where_clause += "p"
                             else:
-                                where_clause += "o"
+                                where_clause += "o"'''
             elif (
                 type(part.triples[triple_index][var_index])
                 != Variable
