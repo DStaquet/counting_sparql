@@ -80,9 +80,10 @@ def setup_query_files(
     )
 
 
-def run_bgp_queries(
+def run_queries(
     part: CompValue,
     output_dir: str,
+    part_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Execute the BGP queries recursively.
@@ -96,7 +97,7 @@ def run_bgp_queries(
         get_query_string,
     )
 
-    if part.name == "BGP":
+    if part.name == part_name:
         query_file: str = get_query_string(part, output_dir)
         duckdb_conn.sql(query_file)
         query_file_delta: str = get_query_string(
@@ -108,10 +109,16 @@ def run_bgp_queries(
         )
         duckdb_conn.sql(query_file_nu)
     if "p" in part:
-        run_bgp_queries(part.p, output_dir, duckdb_conn)
+        run_queries(
+            part.p, output_dir, part_name, duckdb_conn
+        )
     elif "p1" in part and "p2" in part:
-        run_bgp_queries(part.p1, output_dir, duckdb_conn)
-        run_bgp_queries(part.p2, output_dir, duckdb_conn)
+        run_queries(
+            part.p1, output_dir, part_name, duckdb_conn
+        )
+        run_queries(
+            part.p2, output_dir, part_name, duckdb_conn
+        )
 
 
 def run_bgps(
@@ -135,8 +142,37 @@ def run_bgps(
     output: str = get_query_output_dir(
         output_dir, q_query_object
     )
-    run_bgp_queries(
-        q_query_object.algebra, output, duckdb_conn
+    run_queries(
+        q_query_object.algebra, output, "BGP", duckdb_conn
+    )
+
+
+def run_filter(
+    query_str: str,
+    output_dir: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Run the filter part of the query
+
+    Args:
+        query_str (str): Query
+        output_dir (str): Output directory
+        duckdb_conn (DuckDBPyConnection): Connection to the database
+    """
+    import incremental_query_parser as iqp
+    from setup_queries import get_query_output_dir
+
+    q_query_object: iqp.Query = iqp.get_query_object(
+        iqp.readQueryFile(query_str)
+    )
+    output: str = get_query_output_dir(
+        output_dir, q_query_object
+    )
+    run_queries(
+        q_query_object.algebra,
+        output,
+        "Filter",
+        duckdb_conn,
     )
 
 
@@ -190,3 +226,4 @@ if __name__ == "__main__":
     )
 
     run_bgps(args.query, args.output, duckdb_conn)
+    run_filter(args.query, args.output, duckdb_conn)

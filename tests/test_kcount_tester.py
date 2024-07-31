@@ -89,3 +89,32 @@ def test_run_bgps() -> None:
     check_df = pd.DataFrame(check_data)
 
     assert g_data.equals(check_df)
+
+
+def test_run_filter() -> None:
+    __set_seed()
+    query_str = "Queries/berlin_benchmark/100/query3_benchmark/query3_99.sparql"
+    output_dir = "output"
+    kcount_tester.run_filter(
+        query_str, output_dir, duckdb_conn
+    )
+
+    g_data = duckdb_conn.sql(
+        "SELECT * FROM " + "Filter_7141111257548129695;"
+    ).df()
+
+    check_data = {
+        "label": [
+            "amtrac puckery",
+            "spillway coxwain",
+        ],
+        "p1": ["858", "165"],
+        "p3": ["302", "227"],
+        "product": [
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product34",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer3/Product98",
+        ],
+        "k_count": np.array([1, 1]).astype("int32"),
+    }
+
+    assert g_data.equals(pd.DataFrame(check_data))
