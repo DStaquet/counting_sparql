@@ -76,10 +76,13 @@ def get_query_output_dir(
     Returns:
         str: String containing the query output directory
     """
-    return join(
+    query_output_dir: str = join(
         output_dir,
         "query_" + get_table_name(q_query_object.algebra),
     )
+    if not exists(query_output_dir):
+        mkdir(query_output_dir)
+    return query_output_dir
 
 
 def setup_queries(

@@ -1,129 +1,154 @@
-CREATE TABLE IF NOT EXISTS BGP_4245425749932949804 (
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
+CREATE TABLE IF NOT EXISTS BGP_4245425749932949804 (p3 VARCHAR(255),
+                                                       product VARCHAR(255),
+                                                               label VARCHAR(255),
+                                                                     p1 VARCHAR(255),
+                                                                        k_count INT, PRIMARY KEY (p3,
+                                                                                                  product,
+                                                                                                  label,
+                                                                                                  p1));
+
+
 DROP TABLE IF EXISTS delta_BGP_4245425749932949804;
-CREATE TABLE IF NOT EXISTS delta_BGP_4245425749932949804 (
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
-CREATE TABLE IF NOT EXISTS nu_BGP_4245425749932949804 (
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
-CREATE TABLE IF NOT EXISTS Filter_7141111257548129695 (
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
+
+
+CREATE TABLE IF NOT EXISTS delta_BGP_4245425749932949804 (p3 VARCHAR(255),
+                                                             product VARCHAR(255),
+                                                                     label VARCHAR(255),
+                                                                           p1 VARCHAR(255),
+                                                                              k_count INT, PRIMARY KEY (p3,
+                                                                                                        product,
+                                                                                                        label,
+                                                                                                        p1));
+
+
+CREATE TABLE IF NOT EXISTS nu_BGP_4245425749932949804 (p3 VARCHAR(255),
+                                                          product VARCHAR(255),
+                                                                  label VARCHAR(255),
+                                                                        p1 VARCHAR(255),
+                                                                           k_count INT, PRIMARY KEY (p3,
+                                                                                                     product,
+                                                                                                     label,
+                                                                                                     p1));
+
+
+CREATE TABLE IF NOT EXISTS Filter_7141111257548129695 (label VARCHAR(255),
+                                                             p1 VARCHAR(255),
+                                                                p3 VARCHAR(255),
+                                                                   product VARCHAR(255),
+                                                                           k_count INT, PRIMARY KEY (p3,
+                                                                                                     product,
+                                                                                                     label,
+                                                                                                     p1));
+
+
 DROP TABLE IF EXISTS delta_Filter_7141111257548129695;
-CREATE TABLE IF NOT EXISTS delta_Filter_7141111257548129695 (
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
-CREATE TABLE IF NOT EXISTS nu_Filter_7141111257548129695 (
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
-CREATE TABLE IF NOT EXISTS BGP_3492496584436433866 (
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product)
-);
+
+
+CREATE TABLE IF NOT EXISTS delta_Filter_7141111257548129695 (label VARCHAR(255),
+                                                                   p1 VARCHAR(255),
+                                                                      p3 VARCHAR(255),
+                                                                         product VARCHAR(255),
+                                                                                 k_count INT, PRIMARY KEY (p3,
+                                                                                                           product,
+                                                                                                           label,
+                                                                                                           p1));
+
+
+CREATE TABLE IF NOT EXISTS nu_Filter_7141111257548129695 (label VARCHAR(255),
+                                                                p1 VARCHAR(255),
+                                                                   p3 VARCHAR(255),
+                                                                      product VARCHAR(255),
+                                                                              k_count INT, PRIMARY KEY (p3,
+                                                                                                        product,
+                                                                                                        label,
+                                                                                                        p1));
+
+
+CREATE TABLE IF NOT EXISTS BGP_3492496584436433866 (product VARCHAR(255),
+                                                            k_count INT, PRIMARY KEY (product));
+
+
 DROP TABLE IF EXISTS delta_BGP_3492496584436433866;
-CREATE TABLE IF NOT EXISTS delta_BGP_3492496584436433866 (
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product)
-);
-CREATE TABLE IF NOT EXISTS nu_BGP_3492496584436433866 (
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product)
-);
-CREATE TABLE IF NOT EXISTS Minus_8000998619767935179 (
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
+
+
+CREATE TABLE IF NOT EXISTS delta_BGP_3492496584436433866 (product VARCHAR(255),
+                                                                  k_count INT, PRIMARY KEY (product));
+
+
+CREATE TABLE IF NOT EXISTS nu_BGP_3492496584436433866 (product VARCHAR(255),
+                                                               k_count INT, PRIMARY KEY (product));
+
+
+CREATE TABLE IF NOT EXISTS Minus_8000998619767935179 (label VARCHAR(255),
+                                                            p1 VARCHAR(255),
+                                                               p3 VARCHAR(255),
+                                                                  product VARCHAR(255),
+                                                                          k_count INT, PRIMARY KEY (p3,
+                                                                                                    product,
+                                                                                                    label,
+                                                                                                    p1));
+
+
 DROP TABLE IF EXISTS delta_Minus_8000998619767935179;
-CREATE TABLE IF NOT EXISTS delta_Minus_8000998619767935179 (
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
-CREATE TABLE IF NOT EXISTS nu_Minus_8000998619767935179 (
-	label VARCHAR(255),
-	p1 VARCHAR(255),
-	p3 VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (p3,product,label,p1)
-);
-CREATE TABLE IF NOT EXISTS Project_2715845132601830848 (
-	label VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product,label)
-);
+
+
+CREATE TABLE IF NOT EXISTS delta_Minus_8000998619767935179 (label VARCHAR(255),
+                                                                  p1 VARCHAR(255),
+                                                                     p3 VARCHAR(255),
+                                                                        product VARCHAR(255),
+                                                                                k_count INT, PRIMARY KEY (p3,
+                                                                                                          product,
+                                                                                                          label,
+                                                                                                          p1));
+
+
+CREATE TABLE IF NOT EXISTS nu_Minus_8000998619767935179 (label VARCHAR(255),
+                                                               p1 VARCHAR(255),
+                                                                  p3 VARCHAR(255),
+                                                                     product VARCHAR(255),
+                                                                             k_count INT, PRIMARY KEY (p3,
+                                                                                                       product,
+                                                                                                       label,
+                                                                                                       p1));
+
+
+CREATE TABLE IF NOT EXISTS Project_2715845132601830848 (label VARCHAR(255),
+                                                              product VARCHAR(255),
+                                                                      k_count INT, PRIMARY KEY (product,
+                                                                                                label));
+
+
 DROP TABLE IF EXISTS delta_Project_2715845132601830848;
-CREATE TABLE IF NOT EXISTS delta_Project_2715845132601830848 (
-	label VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product,label)
-);
-CREATE TABLE IF NOT EXISTS nu_Project_2715845132601830848 (
-	label VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product,label)
-);
-CREATE TABLE IF NOT EXISTS SelectQuery_6577399211762698411 (
-	label VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product,label)
-);
+
+
+CREATE TABLE IF NOT EXISTS delta_Project_2715845132601830848 (label VARCHAR(255),
+                                                                    product VARCHAR(255),
+                                                                            k_count INT, PRIMARY KEY (product,
+                                                                                                      label));
+
+
+CREATE TABLE IF NOT EXISTS nu_Project_2715845132601830848 (label VARCHAR(255),
+                                                                 product VARCHAR(255),
+                                                                         k_count INT, PRIMARY KEY (product,
+                                                                                                   label));
+
+
+CREATE TABLE IF NOT EXISTS SelectQuery_6577399211762698411 (label VARCHAR(255),
+                                                                  product VARCHAR(255),
+                                                                          k_count INT, PRIMARY KEY (product,
+                                                                                                    label));
+
+
 DROP TABLE IF EXISTS delta_SelectQuery_6577399211762698411;
-CREATE TABLE IF NOT EXISTS delta_SelectQuery_6577399211762698411 (
-	label VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product,label)
-);
-CREATE TABLE IF NOT EXISTS nu_SelectQuery_6577399211762698411 (
-	label VARCHAR(255),
-	product VARCHAR(255),
-	k_count INT,
-	PRIMARY KEY (product,label)
-);
+
+
+CREATE TABLE IF NOT EXISTS delta_SelectQuery_6577399211762698411 (label VARCHAR(255),
+                                                                        product VARCHAR(255),
+                                                                                k_count INT, PRIMARY KEY (product,
+                                                                                                          label));
+
+
+CREATE TABLE IF NOT EXISTS nu_SelectQuery_6577399211762698411 (label VARCHAR(255),
+                                                                     product VARCHAR(255),
+                                                                             k_count INT, PRIMARY KEY (product,
+                                                                                                       label));

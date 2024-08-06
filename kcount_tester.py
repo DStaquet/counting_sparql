@@ -63,13 +63,22 @@ def setup_query_files(
         SQL_initialize_queries as SQLiq,
     )
     import incremental_query_parser as iqp
-    from setup_queries import get_query_output_dir
+    from setup_queries import (
+        get_query_output_dir,
+        setup_tables,
+    )
     from rdflib.plugins.sparql import parser, algebra
 
     q_query_object: iqp.Query = iqp.get_query_object(
         iqp.readQueryFile(query_str)
     )
     # algebra.pprintAlgebra(q_query_object)
+
+    setup_tables(
+        q_query_object.algebra,
+        output_dir,
+    )
+
     SQLiq.build_queries(
         q_query_object.algebra,
         get_query_output_dir(output_dir, q_query_object),
@@ -100,9 +109,11 @@ def run_queries(
     if part.name == part_name:
         query_file: str = get_query_string(part, output_dir)
         duckdb_conn.sql(query_file)
+        print(query_file)
         query_file_delta: str = get_query_string(
             part, output_dir, "delta_"
         )
+        print(query_file_delta)
         duckdb_conn.sql(query_file_delta)
         query_file_nu: str = get_query_string(
             part, output_dir, "nu_"
@@ -176,6 +187,64 @@ def run_filter(
     )
 
 
+def run_project(
+    query_str: str,
+    output_dir: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Run the project part of the query
+
+    Args:
+        query_str (str): Query
+        output_dir (str): Output directory
+        duckdb_conn (DuckDBPyConnection): Connection to the database
+    """
+    import incremental_query_parser as iqp
+    from setup_queries import get_query_output_dir
+
+    q_query_object: iqp.Query = iqp.get_query_object(
+        iqp.readQueryFile(query_str)
+    )
+    output: str = get_query_output_dir(
+        output_dir, q_query_object
+    )
+    run_queries(
+        q_query_object.algebra,
+        output,
+        "Project",
+        duckdb_conn,
+    )
+
+
+def run_minus(
+    query_str: str,
+    output_dir: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Run the minus part of the query
+
+    Args:
+        query_str (str): Query
+        output_dir (str): Output directory
+        duckdb_conn (DuckDBPyConnection): Connection to the database
+    """
+    import incremental_query_parser as iqp
+    from setup_queries import get_query_output_dir
+
+    q_query_object: iqp.Query = iqp.get_query_object(
+        iqp.readQueryFile(query_str)
+    )
+    output: str = get_query_output_dir(
+        output_dir, q_query_object
+    )
+    run_queries(
+        q_query_object.algebra,
+        output,
+        "Minus",
+        duckdb_conn,
+    )
+
+
 if __name__ == "__main__":
     import sys, os
     import argparse
@@ -227,3 +296,5 @@ if __name__ == "__main__":
 
     run_bgps(args.query, args.output, duckdb_conn)
     run_filter(args.query, args.output, duckdb_conn)
+    run_minus(args.query, args.output, duckdb_conn)
+    run_project(args.query, args.output, duckdb_conn)

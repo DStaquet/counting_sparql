@@ -118,3 +118,32 @@ def test_run_filter() -> None:
     }
 
     assert g_data.equals(pd.DataFrame(check_data))
+
+
+def test_run_project() -> None:
+    __set_seed()
+    query_str = "Queries/berlin_benchmark/100/query3_benchmark/query3_99.sparql"
+    output_dir = "output"
+    kcount_tester.run_project(
+        query_str, output_dir, duckdb_conn
+    )
+
+    g_data = duckdb_conn.sql(
+        "SELECT * FROM " + "Project_2715845132601830848"
+    ).df()
+
+    check_data = {
+        "label": [
+            "amtrac puckery",
+            "spillway coxwain",
+        ],
+        "p1": ["858", "165"],
+        "p3": ["302", "227"],
+        "product": [
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product34",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer3/Product98",
+        ],
+        "k_count": np.array([1, 1]).astype("int32"),
+    }
+
+    assert g_data.equals(pd.DataFrame(check_data))

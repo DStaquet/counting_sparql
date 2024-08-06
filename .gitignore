@@ -176,3 +176,6 @@ output/debug_results.txt
 *.png
 
 .gitignore
+
+# Ignore the duckdb binary
+database/duckdb
