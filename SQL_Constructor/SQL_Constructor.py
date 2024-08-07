@@ -46,7 +46,7 @@ def __create_vars(variables: set) -> str:
         if var == "k_count":
             continue
         var_str += "\t" + var + " VARCHAR(255),\n"
-    var_str += "\tk_count INT,\n"
+    var_str += "\tk_count INT\n"
     return var_str
 
 
@@ -187,13 +187,13 @@ def make_tables(
         )
         for var in variables:
             create_table_str += var + " VARCHAR(255),\n\t"
-        create_table_str += "k_count INT,\n"
-        create_table_str += (
+        create_table_str += "k_count INT);\n"
+        """create_table_str += (
             "\tPRIMARY KEY ("
             + ",".join(var for var in variables)
             + ")\n"
             + ");"
-        )
+        )"""
 
         # BGP delta table
         create_table_delta_bgp: str = (
@@ -206,13 +206,13 @@ def make_tables(
             create_table_delta_bgp += (
                 var + " VARCHAR(255),\n\t"
             )
-        create_table_delta_bgp += "k_count INT,\n"
-        create_table_delta_bgp += (
+        create_table_delta_bgp += "k_count INT);\n"
+        """create_table_delta_bgp += (
             "\tPRIMARY KEY ("
             + ",".join(var for var in variables)
             + ")\n"
             + ");"
-        )
+        )"""
 
         # BGP nu table
         create_table_bgp_nu: str = (
@@ -225,13 +225,13 @@ def make_tables(
             create_table_bgp_nu += (
                 var + " VARCHAR(255),\n\t"
             )
-        create_table_bgp_nu += "k_count INT,\n"
-        create_table_bgp_nu += (
+        create_table_bgp_nu += "k_count INT);\n"
+        """create_table_bgp_nu += (
             "\tPRIMARY KEY ("
             + ",".join(var for var in variables)
             + ")\n"
             + ");"
-        )
+        )"""
 
     elif part.name == "values" or (
         part.name == "ToMultiSet"
@@ -278,9 +278,6 @@ def make_tables(
             + __encode_table_name(part)
             + " (\n"
             + __create_vars(variables)
-            + "\tPRIMARY KEY ("
-            + ",".join(var for var in variables)
-            + ")\n"
             + ");"
         )
 
@@ -289,9 +286,6 @@ def make_tables(
             + __encode_table_name(part)
             + " (\n"
             + __create_vars(variables)
-            + "\tPRIMARY KEY ("
-            + ",".join(var for var in variables)
-            + ")\n"
             + ");"
         )
 
@@ -300,9 +294,6 @@ def make_tables(
             + __encode_table_name(part)
             + " (\n"
             + __create_vars(variables)
-            + "\tPRIMARY KEY ("
-            + ",".join(var for var in variables)
-            + ")\n"
             + ");"
         )
 
@@ -312,9 +303,6 @@ def make_tables(
             + __encode_table_name(part)
             + " (\n"
             + __create_vars(variables)
-            + "\tPRIMARY KEY ("
-            + ",".join(var for var in variables)
-            + ")\n"
             + ");"
         )
 
@@ -323,9 +311,6 @@ def make_tables(
             + __encode_table_name(part)
             + " (\n"
             + __create_vars(variables)
-            + "\tPRIMARY KEY ("
-            + ",".join(var for var in variables)
-            + ")\n"
             + ");"
         )
 
@@ -334,9 +319,6 @@ def make_tables(
             + __encode_table_name(part)
             + " (\n"
             + __create_vars(variables)
-            + "\tPRIMARY KEY ("
-            + ",".join(var for var in variables)
-            + ")\n"
             + ");"
         )
 

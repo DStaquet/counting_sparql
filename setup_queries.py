@@ -53,12 +53,12 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
 
     # Write the queries to the output directory
     SQL_initialize_queries.write_query_to_output_dir(
-        join(output_dir, "query_" + get_table_name(query)),
+        output_dir,
         drop_queries,
         "drop_tables",
     )
     SQL_initialize_queries.write_query_to_output_dir(
-        join(output_dir, "query_" + get_table_name(query)),
+        output_dir,
         construct_queries,
         "construct_tables",
     )

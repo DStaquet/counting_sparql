@@ -287,6 +287,7 @@ def setup_tables(
     ) as f:
         for line in f.read().split(";\n"):
             command = line + ";"
+            print(command)
             duckdb_conn.execute(command)
 
 

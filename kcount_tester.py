@@ -74,18 +74,23 @@ def setup_query_files(
     )
     # algebra.pprintAlgebra(q_query_object)
 
+    # Output directory
+    query_output_dir: str = get_query_output_dir(
+        output_dir, q_query_object
+    )
+
     setup_tables(
         q_query_object.algebra,
-        output_dir,
+        query_output_dir,
     )
 
     SQLiq.build_queries(
         q_query_object.algebra,
-        get_query_output_dir(output_dir, q_query_object),
+        query_output_dir,
     )
     SQLiq.build_increm_queries(
         q_query_object.algebra,
-        get_query_output_dir(output_dir, q_query_object),
+        query_output_dir,
     )
 
 
