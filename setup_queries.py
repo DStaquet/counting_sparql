@@ -4,7 +4,10 @@ from eval_incremental.eval_incremental import (
     dropTablesRec,
 )
 from SQL_Constructor import SQL_initialize_queries
-from SQL_Constructor.SQL_Constructor import get_table_name
+from SQL_Constructor.SQL_Constructor import (
+    get_table_name,
+    setup_hash_values,
+)
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql.sparql import Query
 from rdflib.plugins.sparql import parser, algebra
@@ -46,6 +49,11 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
     Args:
         query (CompValue): Algebra or part of the query
     """
+
+    # constructs the hash value info file
+    open(join(output_dir, "hash_values.txt"), "w")
+    setup_hash_values(query, output_dir)
+
     # Drop all the tables before the setup
     drop_queries: str = dropTablesRec(query)
     # Construct the tables

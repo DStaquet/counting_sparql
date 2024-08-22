@@ -7,6 +7,8 @@ from rdflib.plugins.sparql.parserutils import (
 )
 from rdflib.term import Variable
 
+from os.path import join
+
 from pandas import DataFrame
 
 
@@ -48,6 +50,29 @@ def __create_vars(variables: set) -> str:
         var_str += "\t" + var + " VARCHAR(255),\n"
     var_str += "\tk_count INT\n"
     return var_str
+
+
+def setup_hash_values(
+    part: CompValue, output_dir: str
+) -> None:
+    """Constructs a hash value info file for the query.
+
+    Args:
+        part (CompValue): Part of the query
+    """
+    if part is None:
+        return
+    hash_value: str = __encode_table_name(part)
+    with open(
+        join(output_dir, "hash_values.txt"), "a"
+    ) as hash_file:
+        hash_file.write(hash_value + ": " + str(part))
+        hash_file.write("\n")
+    if "p" in part:
+        setup_hash_values(part.p, output_dir)
+    elif "p1" in part and "p2" in part:
+        setup_hash_values(part.p1, output_dir)
+        setup_hash_values(part.p2, output_dir)
 
 
 def __encode_table_name(part: CompValue) -> str:
