@@ -1,4 +1,7 @@
 INSERT INTO delta_Project_8565702497549226448(label, product, k_count)
-SELECT label, product, SUM(k_count) AS k_count
+SELECT label,
+       product,
+       SUM(k_count) AS k_count
 FROM delta_Filter_6053215694347634662
-GROUP BY label, product;
+GROUP BY label,
+         product;

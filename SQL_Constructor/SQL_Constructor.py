@@ -194,13 +194,16 @@ def values_var(res: list) -> str:
     return var_str
 
 
-def drop_delta_table(part: CompValue) -> str:
-    return f"DROP TABLE IF EXISTS delta_{__encode_table_name(part)};"
+def drop_delta_table(part: CompValue) -> tuple[str, str]:
+    return (
+        f"DROP TABLE IF EXISTS delta_{__encode_table_name(part)};",
+        f"DROP TABLE IF EXISTS delta_prep_{__encode_table_name(part)};",
+    )
 
 
 def make_tables(
     part, variables: set
-) -> tuple[str, str, str]:
+) -> tuple[str, str, str, str]:
 
     if part.name == "BGP":
         # BGP old table
@@ -232,6 +235,17 @@ def make_tables(
                 var + " VARCHAR(255),\n\t"
             )
         create_table_delta_bgp += "k_count INT);\n"
+        create_table_delta_prep: str = (
+            f"CREATE TABLE IF NOT EXISTS delta_prep_"
+            + __encode_table_name(part)
+            + " (\n"
+            + "\t"
+        )
+        for var in variables:
+            create_table_delta_prep += (
+                var + " VARCHAR(255),\n\t"
+            )
+        create_table_delta_prep += "k_count INT);\n"
         """create_table_delta_bgp += (
             "\tPRIMARY KEY ("
             + ",".join(var for var in variables)
@@ -313,6 +327,13 @@ def make_tables(
             + __create_vars(variables)
             + ");"
         )
+        create_table_delta_prep: str = (
+            f"CREATE TABLE IF NOT EXISTS delta_prep_"
+            + __encode_table_name(part)
+            + " (\n"
+            + __create_vars(variables)
+            + ");"
+        )
 
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
@@ -338,6 +359,13 @@ def make_tables(
             + __create_vars(variables)
             + ");"
         )
+        create_table_delta_prep: str = (
+            f"CREATE TABLE IF NOT EXISTS delta_prep_"
+            + __encode_table_name(part)
+            + " (\n"
+            + __create_vars(variables)
+            + ");"
+        )
 
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
@@ -350,6 +378,7 @@ def make_tables(
     return (
         create_table_str,
         create_table_delta_bgp,
+        create_table_delta_prep,
         create_table_bgp_nu,
     )
 
@@ -406,6 +435,44 @@ def construct_bgp_insert(
         + "WHERE s = EXCLUDED.S AND  p = EXCLUDED.p AND o = EXCLUDED.o;"
     )
     return insert_str
+
+
+def delta_prep_sum_query(
+    part: CompValue, use_pv: bool = False
+) -> str:
+    """Sums the k_count values in the delta_prep table based upon duplicates in the delta table.
+
+    Args:
+        part (CompValue): Current part of the query
+        use_pv (bool, optional): Whether to use the PV values. Defaults to False.
+
+    Returns:
+        str: The query to sum the k_count values in the delta_prep table.
+    """
+    update_query: str = "SELECT "
+    if use_pv:
+        update_query += ", ".join(
+            f"{var}" for var in sorted(part.PV)
+        )
+    else:
+        update_query += ", ".join(
+            f"{var}" for var in sorted(part._vars)
+        )
+    update_query += ", SUM(k_count) AS k_count\n"
+    update_query += "FROM delta_prep_"
+    update_query += __encode_table_name(part)
+    update_query += "\nGROUP BY "
+    if use_pv:
+        update_query += ", ".join(
+            f"{var}" for var in sorted(part.PV)
+        )
+    else:
+        update_query += ", ".join(
+            f"{var}" for var in sorted(part._vars)
+        )
+    update_query += ";"
+
+    return update_query
 
 
 def bgp_delta_table_query(

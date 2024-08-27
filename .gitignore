@@ -179,3 +179,5 @@ output/debug_results.txt
 
 # Ignore the duckdb binary
 database/duckdb
+
+data/mtg_csv/*

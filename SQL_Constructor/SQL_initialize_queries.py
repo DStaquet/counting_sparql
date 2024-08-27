@@ -17,6 +17,8 @@ def write_query_to_output_dir(
         part (CompValue): Current part of the query
         output_dir (str): Directory to write the SQL queries
         query (str): The query to write
+        append (bool, optional): Whether to append to the file. Defaults to False.
+        name (str, optional): The prefix of the file. Defaults to "".
     """
     query = sqlparse.format(
         query, reindent=True, keyword_case="upper"
@@ -53,12 +55,20 @@ def __delta_bgp_queries(part: CompValue) -> str:
         )
         delta_queries += (
             SQL_Constructor.insert_into_w_select(
-                "delta_"
+                "delta_prep_"
                 + SQL_Constructor.get_table_name(part),
                 delta_query,
                 list(known_vars),
             )
         )
+    delta_prep_sum: str = (
+        SQL_Constructor.delta_prep_sum_query(part)
+    )
+    delta_queries += SQL_Constructor.insert_into_w_select(
+        "delta_" + SQL_Constructor.get_table_name(part),
+        delta_prep_sum,
+        list(part._vars),
+    )
     return delta_queries
 
 

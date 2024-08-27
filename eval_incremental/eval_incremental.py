@@ -75,10 +75,10 @@ def drop_all_tables(part) -> str:
 
 
 def construct_tables(part) -> str:
-    delta_table_drop_query: str = (
+    delta_table_drop_query, delta_prep_table_drop_query = (
         SQL_Constructor.drop_delta_table(part)
     )
-    table_query, table_delta, table_nu = (
+    table_query, table_delta, table_delta_prep, table_nu = (
         SQL_Constructor.make_tables(part, part._vars)
     )
     return (
@@ -86,7 +86,11 @@ def construct_tables(part) -> str:
         + "\n"
         + delta_table_drop_query
         + "\n"
+        + delta_prep_table_drop_query
+        + "\n"
         + table_delta
+        + "\n"
+        + table_delta_prep
         + "\n"
         + table_nu
         + "\n"

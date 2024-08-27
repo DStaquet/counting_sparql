@@ -117,6 +117,7 @@ def run_queries(
         query_file_delta: str = get_query_string(
             part, output_dir, "delta_"
         )
+        print(query_file_delta)
         duckdb_conn.sql(query_file_delta)
         query_file_nu: str = get_query_string(
             part, output_dir, "nu_"
