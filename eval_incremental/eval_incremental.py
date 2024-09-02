@@ -61,15 +61,20 @@ from eval_incremental import VALUES
 
 
 def drop_all_tables(part) -> str:
-    drop_query, drop_delta_query, drop_nu_query = (
-        SQL_Constructor.drop_all_tables(part)
-    )
+    (
+        drop_query,
+        drop_delta_query,
+        drop_nu_query,
+        drop_nu_prep_query,
+    ) = SQL_Constructor.drop_all_tables(part)
     return (
         drop_query
         + "\n"
         + drop_delta_query
         + "\n"
         + drop_nu_query
+        + "\n"
+        + drop_nu_prep_query
         + "\n"
     )
 
@@ -78,9 +83,13 @@ def construct_tables(part) -> str:
     delta_table_drop_query, delta_prep_table_drop_query = (
         SQL_Constructor.drop_delta_table(part)
     )
-    table_query, table_delta, table_delta_prep, table_nu = (
-        SQL_Constructor.make_tables(part, part._vars)
-    )
+    (
+        table_query,
+        table_delta,
+        table_delta_prep,
+        table_nu,
+        table_nu_prep,
+    ) = SQL_Constructor.make_tables(part, part._vars)
     return (
         table_query
         + "\n"
@@ -93,6 +102,8 @@ def construct_tables(part) -> str:
         + table_delta_prep
         + "\n"
         + table_nu
+        + "\n"
+        + table_nu_prep
         + "\n"
     )
 

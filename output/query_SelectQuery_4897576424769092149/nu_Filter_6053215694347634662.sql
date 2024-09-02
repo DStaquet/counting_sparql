@@ -1,19 +1,27 @@
+INSERT INTO nu_prep_Filter_6053215694347634662 (label, product, value1, k_count)
+SELECT label,
+       product,
+       value1,
+       k_count
+FROM Filter_6053215694347634662;
+
+INSERT INTO nu_prep_Filter_6053215694347634662 (label, product, value1, k_count)
+SELECT label,
+       product,
+       value1,
+       k_count
+FROM delta_Filter_6053215694347634662;
+
 INSERT INTO nu_Filter_6053215694347634662 (label, product, value1, k_count)
-SELECT (CASE
-            WHEN r1.label NOT NULL THEN r1.label
-            ELSE r2.label
-        END) AS label,
-       (CASE
-            WHEN r1.product NOT NULL THEN r1.product
-            ELSE r2.product
-        END) AS product,
-       (CASE
-            WHEN r1.value1 NOT NULL THEN r1.value1
-            ELSE r2.value1
-        END) AS value1,
-       coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) AS k_count
-FROM Filter_6053215694347634662 AS r1
-FULL OUTER JOIN delta_Filter_6053215694347634662 AS r2 ON r1.label = r2.label
-AND r1.product = r2.product
-AND r1.value1 = r2.value1
-WHERE (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0;
+SELECT label,
+       product,
+       value1,
+       SUM(k_count) AS k_count
+FROM nu_prep_Filter_6053215694347634662
+GROUP BY label,
+         product,
+         value1;
+
+DELETE
+FROM nu_Filter_6053215694347634662
+WHERE k_count <= 0;

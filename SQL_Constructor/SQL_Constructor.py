@@ -12,7 +12,7 @@ from os.path import join
 from pandas import DataFrame
 
 
-def drop_all_tables(part) -> tuple[str, str, str]:
+def drop_all_tables(part) -> tuple[str, str, str, str]:
     drop_query: str = (
         "DROP TABLE IF EXISTS "
         + __encode_table_name(part)
@@ -30,8 +30,18 @@ def drop_all_tables(part) -> tuple[str, str, str]:
         + __encode_table_name(part)
         + ";"
     )
+    drop_nu_prep_query: str = (
+        "DROP TABLE IF EXISTS nu_prep_"
+        + __encode_table_name(part)
+        + ";"
+    )
 
-    return drop_query, drop_delta_query, drop_nu_query
+    return (
+        drop_query,
+        drop_delta_query,
+        drop_nu_query,
+        drop_nu_prep_query,
+    )
 
 
 def get_table_name(part: CompValue) -> str:
@@ -203,7 +213,7 @@ def drop_delta_table(part: CompValue) -> tuple[str, str]:
 
 def make_tables(
     part, variables: set
-) -> tuple[str, str, str, str]:
+) -> tuple[str, str, str, str, str]:
 
     if part.name == "BGP":
         # BGP old table
@@ -246,6 +256,17 @@ def make_tables(
                 var + " VARCHAR(255),\n\t"
             )
         create_table_delta_prep += "k_count INT);\n"
+        create_table_nu_prep: str = (
+            f"CREATE TABLE IF NOT EXISTS nu_prep_"
+            + __encode_table_name(part)
+            + " (\n"
+            + "\t"
+        )
+        for var in variables:
+            create_table_nu_prep += (
+                var + " VARCHAR(255),\n\t"
+            )
+        create_table_nu_prep += "k_count INT);\n"
         """create_table_delta_bgp += (
             "\tPRIMARY KEY ("
             + ",".join(var for var in variables)
@@ -334,6 +355,13 @@ def make_tables(
             + __create_vars(variables)
             + ");"
         )
+        create_table_nu_prep: str = (
+            f"CREATE TABLE IF NOT EXISTS nu_prep_"
+            + __encode_table_name(part)
+            + " (\n"
+            + __create_vars(variables)
+            + ");"
+        )
 
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
@@ -366,6 +394,13 @@ def make_tables(
             + __create_vars(variables)
             + ");"
         )
+        create_table_nu_prep: str = (
+            f"CREATE TABLE IF NOT EXISTS nu_prep_"
+            + __encode_table_name(part)
+            + " (\n"
+            + __create_vars(variables)
+            + ");"
+        )
 
         create_table_bgp_nu: str = (
             f"CREATE TABLE IF NOT EXISTS nu_"
@@ -380,6 +415,7 @@ def make_tables(
         create_table_delta_bgp,
         create_table_delta_prep,
         create_table_bgp_nu,
+        create_table_nu_prep,
     )
 
 
@@ -2137,7 +2173,7 @@ def nu_queries(
     Returns:
         str: Query string for the nu table.
     """
-    if use_PV:
+    """if use_PV:
         if part.PV is None:
             part.PV = part.p.PV
         variables = part.PV
@@ -2181,6 +2217,62 @@ def nu_queries(
         )
         + " WHERE (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0"
         + ";"
+    )"""
+    variables = part._vars
+    if use_PV:
+        if part.PV is None:
+            part.PV = part.p.PV
+        variables = part.PV
+
+    nu_query_original: str = (
+        " SELECT "
+        + ", ".join(var for var in sorted(variables))
+        + ", k_count FROM "
+        + __encode_table_name(part)
+        + ";"
+    )
+    nu_query = insert_into_w_select(
+        "nu_prep_" + __encode_table_name(part),
+        nu_query_original,
+        variables,
+    )
+
+    # Query to add the delta
+    nu_query_delta = (
+        " SELECT "
+        + ", ".join(var for var in sorted(variables))
+        + ", k_count FROM delta_"
+        + __encode_table_name(part)
+        + ";"
+    )
+    nu_query += insert_into_w_select(
+        "nu_prep_" + __encode_table_name(part),
+        nu_query_delta,
+        variables,
+    )
+
+    # Query to sum the k count
+    sum_query: str = (
+        "SELECT "
+        + ", ".join(var for var in sorted(variables))
+        + ", SUM(k_count) as k_count FROM nu_prep_"
+        + __encode_table_name(part)
+        + " GROUP BY "
+        + ", ".join(var for var in sorted(variables))
+        + ";"
+    )
+    sum_query_w_insert = insert_into_w_select(
+        "nu_" + __encode_table_name(part),
+        sum_query,
+        variables,
+    )
+    nu_query += sum_query_w_insert
+
+    # Remove unwanted records
+    nu_query += (
+        "DELETE FROM nu_"
+        + __encode_table_name(part)
+        + " WHERE k_count <= 0;"
     )
 
     return nu_query
