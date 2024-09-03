@@ -1,0 +1,214 @@
+{
+"SelectQuery_4897576424769092149": {
+    "p": {
+        "p": {
+            "expr": {
+                "expr": "value1",
+                "op": ">",
+                "other": "162",
+                "_vars": []
+            },
+            "p": {
+                "triples": [
+                    [
+                        "product",
+                        "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                        "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType16"
+                    ],
+                    [
+                        "product",
+                        "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+                        "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature701"
+                    ],
+                    [
+                        "product",
+                        "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+                        "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature707"
+                    ],
+                    [
+                        "product",
+                        "http://www.w3.org/2000/01/rdf-schema#label",
+                        "label"
+                    ],
+                    [
+                        "product",
+                        "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1",
+                        "value1"
+                    ]
+                ],
+                "_vars": [
+                    "product",
+                    "value1",
+                    "label"
+                ]
+            },
+            "_vars": [
+                "product",
+                "value1",
+                "label"
+            ]
+        },
+        "PV": [
+            "product",
+            "label"
+        ],
+        "_vars": [
+            "product",
+            "value1",
+            "label"
+        ]
+    },
+    "datasetClause": null,
+    "PV": [
+        "product",
+        "label"
+    ],
+    "_vars": [
+        "product",
+        "value1",
+        "label"
+    ]
+}
+,
+"Project_8565702497549226448": {
+    "p": {
+        "expr": {
+            "expr": "value1",
+            "op": ">",
+            "other": "162",
+            "_vars": []
+        },
+        "p": {
+            "triples": [
+                [
+                    "product",
+                    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                    "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType16"
+                ],
+                [
+                    "product",
+                    "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+                    "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature701"
+                ],
+                [
+                    "product",
+                    "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+                    "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature707"
+                ],
+                [
+                    "product",
+                    "http://www.w3.org/2000/01/rdf-schema#label",
+                    "label"
+                ],
+                [
+                    "product",
+                    "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1",
+                    "value1"
+                ]
+            ],
+            "_vars": [
+                "product",
+                "value1",
+                "label"
+            ]
+        },
+        "_vars": [
+            "product",
+            "value1",
+            "label"
+        ]
+    },
+    "PV": [
+        "product",
+        "label"
+    ],
+    "_vars": [
+        "product",
+        "value1",
+        "label"
+    ]
+}
+,
+"Filter_6053215694347634662": {
+    "expr": {
+        "expr": "value1",
+        "op": ">",
+        "other": "162",
+        "_vars": []
+    },
+    "p": {
+        "triples": [
+            [
+                "product",
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType16"
+            ],
+            [
+                "product",
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature701"
+            ],
+            [
+                "product",
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature707"
+            ],
+            [
+                "product",
+                "http://www.w3.org/2000/01/rdf-schema#label",
+                "label"
+            ],
+            [
+                "product",
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1",
+                "value1"
+            ]
+        ],
+        "_vars": [
+            "product",
+            "value1",
+            "label"
+        ]
+    },
+    "_vars": [
+        "product",
+        "value1",
+        "label"
+    ]
+}
+,
+"BGP_1397345390056075867": {
+    "triples": [
+        [
+            "product",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType16"
+        ],
+        [
+            "product",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature701"
+        ],
+        [
+            "product",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature707"
+        ],
+        [
+            "product",
+            "http://www.w3.org/2000/01/rdf-schema#label",
+            "label"
+        ],
+        [
+            "product",
+            "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1",
+            "value1"
+        ]
+    ],
+    "_vars": [
+        "product",
+        "value1",
+        "label"
+    ]
+}
+}

@@ -11,6 +11,8 @@ from os.path import join
 
 from pandas import DataFrame
 
+import json
+
 
 def drop_all_tables(part) -> tuple[str, str, str, str]:
     drop_query: str = (
@@ -62,6 +64,28 @@ def __create_vars(variables: set) -> str:
     return var_str
 
 
+def __serialize_to_json(part: CompValue) -> str:
+    """Serialize to JSON
+
+    Args:
+        part (CompValue): Part to serialize
+
+    Returns:
+        str: Serialized part
+    """
+
+    def set_default(obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return obj
+
+    return json.dumps(
+        part,
+        default=set_default,
+        indent=4,
+    )
+
+
 def setup_hash_values(
     part: CompValue, output_dir: str
 ) -> None:
@@ -74,10 +98,15 @@ def setup_hash_values(
         return
     hash_value: str = __encode_table_name(part)
     with open(
-        join(output_dir, "hash_values.txt"), "a"
+        join(output_dir, "hash_values.json"), "a"
     ) as hash_file:
-        hash_file.write(hash_value + ": " + str(part))
+        json_part: str = __serialize_to_json(part)
+        hash_file.write(
+            '"' + hash_value + '": ' + json_part
+        )
         hash_file.write("\n")
+        if any(key in part for key in ["p", "p1", "p2"]):
+            hash_file.write(",\n")
     if "p" in part:
         setup_hash_values(part.p, output_dir)
     elif "p1" in part and "p2" in part:

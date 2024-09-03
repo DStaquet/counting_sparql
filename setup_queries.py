@@ -51,8 +51,13 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
     """
 
     # constructs the hash value info file
-    open(join(output_dir, "hash_values.txt"), "w")
+    handle = open(join(output_dir, "hash_values.json"), "w")
+    handle.write("{\n")
+    handle.close()
     setup_hash_values(query, output_dir)
+    handle = open(join(output_dir, "hash_values.json"), "a")
+    handle.write("}")
+    handle.close()
 
     # Drop all the tables before the setup
     drop_queries: str = dropTablesRec(query)
