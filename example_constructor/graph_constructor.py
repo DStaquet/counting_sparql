@@ -70,6 +70,96 @@ def construct_serial(
     return Graph(vertices, edges)
 
 
+def __build_left_side(
+    many_to_one_index: int,
+    bottleneck_index: int,
+    bottleneck_right: str,
+) -> tuple[list[str], list[tuple[str, str, str]]]:
+    """Builds left side of parallel graph bottleneck.
+
+    Args:
+        many_to_one_index (int): Index of many to one.
+        bottleneck_index (int): Index of amount of bottlenecks.
+        bottleneck_right (str): Right name of bottleneck.
+        bottleneck_left (str): Left name of bottleneck.
+
+    Returns:
+        tuple[list[str], list[tuple[str, str, str]]]: Vertices and edges.
+    """
+    temp_vertices: list[str] = [
+        str(many_to_one_index)
+        + str(bottleneck_index)
+        + str(k)
+        for k in range(many_vertices)
+    ]
+    # Edges from bottleneck
+    first_temp_edges: list[tuple[str, str, str]] = [
+        (bottleneck_right, "hop", temp_vertices[k])
+        for k in range(many_vertices)
+    ]
+    """# Edges to bottleneck
+    second_temp_edges: list[tuple[str, str, str]] = [
+        (
+            str(many_to_one_index)
+            + str(bottleneck_index + 1)
+            + str(k),
+            "hop",
+            bottleneck_left,
+        )
+        for k in range(many_vertices)
+    ]"""
+
+    left_vertices = temp_vertices
+    left_edges = first_temp_edges
+
+    return left_vertices, left_edges
+
+
+def __build_right_side(
+    many_to_one_index: int,
+    bottleneck_index: int,
+    bottleneck_left: str,
+) -> tuple[list[str], list[tuple[str, str, str]]]:
+    """Builds right side of parallel graph.
+
+    Args:
+        many_to_one_index (int): Index of many to one.
+        bottleneck_index (int): Index of amount of bottlenecks.
+        bottleneck_right (str): Bottleneck right name.
+        bottleneck_left (str): Bottleneck left name.
+
+    Returns:
+        tuple[list[str], list[tuple[str, str, str]]]: Vertices and edges.
+    """
+    temp_vertices: list[str] = [
+        str(many_to_one_index)
+        + str(bottleneck_index)
+        + str(k)
+        for k in range(many_vertices)
+    ]
+    # Edges from bottleneck
+    first_temp_edges: list[tuple[str, str, str]] = [
+        (temp_vertices[k], "hop", bottleneck_left)
+        for k in range(many_vertices)
+    ]
+    """# Edges to bottleneck
+    second_temp_edges: list[tuple[str, str, str]] = [
+        (
+            bottleneck_right,
+            "hop",
+            str(many_to_one_index)
+            + str(bottleneck_index + 1)
+            + str(k),
+        )
+        for k in range(many_vertices)
+    ]"""
+
+    right_vertices = temp_vertices
+    right_edges = first_temp_edges
+
+    return right_vertices, right_edges
+
+
 def construct_parallel(
     bottlenecks: int, many_vertices: int, many_to_one: int
 ) -> Graph:
@@ -83,93 +173,105 @@ def construct_parallel(
     Returns:
         Graph: _description_
     """
-    left_vertices: list[str] = []
-    right_vertices: list[str] = []
-    left_edges: list[tuple[str, str, str]] = []
-    right_edges: list[tuple[str, str, str]] = []
+    vertices: list[str] = []
+    edges: list[tuple[str, str, str]] = []
+
     # Left side
     for i in range(many_to_one):
+        bottleneck_right: str = str(i) + "br"
+        bottleneck_left: str = str(i) + "bl"
+        vertices.extend([bottleneck_left, bottleneck_right])
+        # Bottleneck edge
+        temp_bottleneck_edge: tuple[str, str, str] = (
+            bottleneck_left,
+            "hop",
+            bottleneck_right,
+        )
+        edges.append(temp_bottleneck_edge)
+
         for j in range(bottlenecks):
-            temp_vertices: list[str] = [
-                str(i) + str(j) + str(k)
-                for k in range(many_vertices)
-            ]
-            bottleneck_right: str = str(i) + str(j) + "br"
-            bottleneck_left: str = str(i) + str(j) + "bl"
-            # Edges from bottleneck
-            first_temp_edges: list[tuple[str, str, str]] = [
-                (bottleneck_right, "hop", temp_vertices[k])
-                for k in range(many_vertices)
-            ]
-            # Bottleneck edge
-            temp_bottleneck_edge: tuple[str, str, str] = (
-                bottleneck_left,
-                "hop",
-                bottleneck_right,
+            left_vertices, left_edges = __build_left_side(
+                i, j, bottleneck_right
             )
-            # Edges to bottleneck
-            second_temp_edges: list[
-                tuple[str, str, str]
-            ] = [
+        last_left_vertices, last_left_edges = (
+            __build_right_side(i, j + 1, bottleneck_left)
+        )
+
+        vertices.extend(left_vertices)
+        vertices.extend(last_left_vertices)
+        edges.extend(left_edges)
+        edges.extend(last_left_edges)
+
+    # Main bottleneck
+    bottleneck_right: str = "br"
+    bottleneck_left: str = "bl"
+    # Edges to bottleneck
+    left_main_edges: list[tuple[str, str, str]] = []
+    for i in range(many_to_one):
+        for j in range(many_vertices):
+            left_main_edges.append(
                 (
-                    str(i) + str(j + 1) + str(k),
+                    str(i) + "0" + str(j),
                     "hop",
                     bottleneck_left,
                 )
-                for k in range(many_vertices)
-            ]
-
-            left_vertices.extend(temp_vertices)
-            left_vertices.extend(
-                [bottleneck_left, bottleneck_right]
             )
-            left_edges.extend(first_temp_edges)
-            left_edges.append(temp_bottleneck_edge)
-            left_edges.extend(second_temp_edges)
+    # Edges from bottleneck
+    right_main_edges: list[tuple[str, str, str]] = []
+    for i in range(i + 1, i + 1 + many_to_one):
+        for j in range(many_vertices):
+            right_main_edges.append(
+                (
+                    bottleneck_right,
+                    "hop",
+                    str(i) + "0" + str(j),
+                )
+            )
+    main_edges: list[tuple[str, str, str]] = (
+        left_main_edges + right_main_edges
+    )
+    main_vertices: list[str] = [
+        bottleneck_left,
+        bottleneck_right,
+    ]
+    main_bottleneck_edge: tuple[str, str, str] = (
+        bottleneck_left,
+        "hop",
+        bottleneck_right,
+    )
+    main_edges.append(main_bottleneck_edge)
+    vertices.extend(main_vertices)
+    edges.extend(main_edges)
 
     # Right side
-    for i in range(i + 1, i + 1 + many_to_one):
-        for j in range(bottlenecks):
-            temp_vertices: list[str] = [
-                str(i) + str(j) + str(k)
-                for k in range(many_vertices)
-            ]
-            bottleneck_right: str = str(i) + str(j) + "br"
-            bottleneck_left: str = str(i) + str(j) + "bl"
-            # Edges from bottleneck
-            first_temp_edges: list[tuple[str, str, str]] = [
-                (temp_vertices[k], "hop", bottleneck_right)
-                for k in range(many_vertices)
-            ]
-            # Bottleneck edge
-            temp_bottleneck_edge: tuple[str, str, str] = (
-                bottleneck_left,
-                "hop",
-                bottleneck_right,
-            )
-            # Edges to bottleneck
-            second_temp_edges: list[
-                tuple[str, str, str]
-            ] = [
-                (
-                    bottleneck_left,
-                    "hop",
-                    str(i) + str(j + 1) + str(k),
-                )
-                for k in range(many_vertices)
-            ]
+    for i in range(many_to_one, many_to_one * 2):
+        bottleneck_right: str = str(i) + "br"
+        bottleneck_left: str = str(i) + "bl"
+        vertices.extend([bottleneck_left, bottleneck_right])
+        # Bottleneck edge
+        temp_bottleneck_edge: tuple[str, str, str] = (
+            bottleneck_left,
+            "hop",
+            bottleneck_right,
+        )
+        edges.append(temp_bottleneck_edge)
 
-            right_vertices.extend(temp_vertices)
-            right_vertices.extend(
-                [bottleneck_left, bottleneck_right]
+        for j in range(bottlenecks):
+            right_vertices, right_edges = (
+                __build_right_side(i, j, bottleneck_left)
             )
-            right_edges.extend(first_temp_edges)
-            right_edges.append(temp_bottleneck_edge)
-            right_edges.extend(second_temp_edges)
+        last_right_vertices, last_right_edges = (
+            __build_left_side(i, j + 1, bottleneck_right)
+        )
+
+        vertices.extend(right_vertices)
+        vertices.extend(last_right_vertices)
+        edges.extend(right_edges)
+        edges.extend(last_right_edges)
 
     return Graph(
-        left_vertices + right_vertices,
-        left_edges + right_edges,
+        vertices,
+        edges,
     )
 
 
@@ -195,19 +297,30 @@ if __name__ == "__main__":
         default=3,
         help="Amount of vertices between bottlenecks",
     )
+    parser.add_argument(
+        "-p",
+        "--many_to_one",
+        type=int,
+        default=2,
+        help="Amount of vertices connecting to one bottleneck",
+    )
 
     args = parser.parse_args()
 
     bottlenecks: int = args.bottlenecks
     many_vertices: int = args.many_vertices
+    many_to_one: int = args.many_to_one
 
     serial_graph = construct_serial(
         bottlenecks, many_vertices
     )
     print(serial_graph)
+    print()
 
     parallel_graph = construct_parallel(
-        bottlenecks, many_vertices, 2
+        bottlenecks,
+        many_vertices,
+        many_to_one,
     )
 
     print(parallel_graph)
