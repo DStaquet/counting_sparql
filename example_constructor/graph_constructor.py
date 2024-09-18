@@ -10,13 +10,33 @@ class Graph:
     def __str__(self):
         return f"Vertices: {self.vertices}, Edges: {self.edges}"
 
-    def graph_to_turtle(self) -> str:  # type: ignore
+    def graph_to_turtle(
+        self, vertices_uri: str, edges_uri: str
+    ) -> str:
         """Converts the graph to a turtle string.
 
         Returns:
             str: Turtle string.
         """
-        pass
+        turtle_string: str = ""
+
+        # Prefixes
+        turtle_string += f"@prefix : <{vertices_uri}> .\n"
+        turtle_string += (
+            f"@prefix edge: <{edges_uri}> .\n\n"
+        )
+
+        # Triples per vertex
+        for vertex in self.vertices:
+            turtle_string += f":{vertex}\n    a :Node"
+            for edge in self.edges:
+                if edge[0] == vertex:
+                    turtle_string += (
+                        f" ;\n    edge:{edge[1]} :{edge[2]}"
+                    )
+            turtle_string += " .\n\n"
+
+        return turtle_string
 
 
 def construct_serial(
@@ -277,6 +297,7 @@ def construct_parallel(
 
 if __name__ == "__main__":
     import argparse
+    from save_graph import save_graph_to_file
 
     parser = argparse.ArgumentParser(
         description="Construct a graph",
@@ -304,6 +325,13 @@ if __name__ == "__main__":
         default=2,
         help="Amount of vertices connecting to one bottleneck",
     )
+    parser.add_argument(
+        "-f",
+        "--file",
+        type=str,
+        default=None,
+        help="File to save the graph",
+    )
 
     args = parser.parse_args()
 
@@ -315,7 +343,12 @@ if __name__ == "__main__":
         bottlenecks, many_vertices
     )
     print(serial_graph)
-    print()
+    print(
+        serial_graph.graph_to_turtle(
+            "http://example.org/",
+            "http://example.org/edges/",
+        )
+    )
 
     parallel_graph = construct_parallel(
         bottlenecks,
@@ -324,3 +357,15 @@ if __name__ == "__main__":
     )
 
     print(parallel_graph)
+    print(
+        parallel_graph.graph_to_turtle(
+            "http://example.org/",
+            "http://example.org/edges/",
+        )
+    )
+
+    if args.file:
+        save_graph_to_file(
+            parallel_graph,
+            args.file,
+        )

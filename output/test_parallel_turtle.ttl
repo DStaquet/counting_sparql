@@ -1,0 +1,110 @@
+@prefix : <http://example.org/> .
+@prefix edge: <http://example.org/edges/> .
+
+:0bl
+    a :Node ;
+    edge:hop :0br .
+
+:0br
+    a :Node ;
+    edge:hop :000 ;
+    edge:hop :001 .
+
+:000
+    a :Node ;
+    edge:hop :bl .
+
+:001
+    a :Node ;
+    edge:hop :bl .
+
+:010
+    a :Node ;
+    edge:hop :0bl .
+
+:011
+    a :Node ;
+    edge:hop :0bl .
+
+:1bl
+    a :Node ;
+    edge:hop :1br .
+
+:1br
+    a :Node ;
+    edge:hop :100 ;
+    edge:hop :101 .
+
+:100
+    a :Node ;
+    edge:hop :bl .
+
+:101
+    a :Node ;
+    edge:hop :bl .
+
+:110
+    a :Node ;
+    edge:hop :1bl .
+
+:111
+    a :Node ;
+    edge:hop :1bl .
+
+:bl
+    a :Node ;
+    edge:hop :br .
+
+:br
+    a :Node ;
+    edge:hop :200 ;
+    edge:hop :201 ;
+    edge:hop :300 ;
+    edge:hop :301 .
+
+:2bl
+    a :Node ;
+    edge:hop :2br .
+
+:2br
+    a :Node ;
+    edge:hop :210 ;
+    edge:hop :211 .
+
+:200
+    a :Node ;
+    edge:hop :2bl .
+
+:201
+    a :Node ;
+    edge:hop :2bl .
+
+:210
+    a :Node .
+
+:211
+    a :Node .
+
+:3bl
+    a :Node ;
+    edge:hop :3br .
+
+:3br
+    a :Node ;
+    edge:hop :310 ;
+    edge:hop :311 .
+
+:300
+    a :Node ;
+    edge:hop :3bl .
+
+:301
+    a :Node ;
+    edge:hop :3bl .
+
+:310
+    a :Node .
+
+:311
+    a :Node .
+
