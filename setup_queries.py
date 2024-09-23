@@ -2,6 +2,7 @@ from incremental_query_parser import readQueryFile
 from eval_incremental.eval_incremental import (
     constructTablesRec,
     dropTablesRec,
+    deleteTablesRec,
 )
 from SQL_Constructor import SQL_initialize_queries
 from SQL_Constructor.SQL_Constructor import (
@@ -61,6 +62,8 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
 
     # Drop all the tables before the setup
     drop_queries: str = dropTablesRec(query)
+    # Delete all the tables before the setup
+    delete_queries: str = deleteTablesRec(query)
     # Construct the tables
     construct_queries: str = constructTablesRec(query)
 
@@ -69,6 +72,11 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
         output_dir,
         drop_queries,
         "drop_tables",
+    )
+    SQL_initialize_queries.write_query_to_output_dir(
+        output_dir,
+        delete_queries,
+        "delete_tables",
     )
     SQL_initialize_queries.write_query_to_output_dir(
         output_dir,

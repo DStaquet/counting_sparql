@@ -277,7 +277,7 @@ def setup_tables(
     """
     if not increm:
         with open(
-            join(query_input_dir, "drop_tables.sql"), "r"
+            join(query_input_dir, "delete_tables.sql"), "r"
         ) as f:
             for line in f.read().split(";"):
                 command = line + ";"

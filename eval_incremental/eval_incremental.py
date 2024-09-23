@@ -60,6 +60,40 @@ if TYPE_CHECKING:
 from eval_incremental import VALUES
 
 
+def delete_all_tables(part: CompValue) -> str:
+    """Deletes all data from the tables.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Returns the SQL query to delete all data from the tables.
+    """
+    (
+        delete_query,
+        delete_delta_query,
+        delete_nu_query,
+        delete_nu_prep_query,
+    ) = SQL_Constructor.delete_all_tables(part)
+    (
+        delta_table_delete_query,
+        delta_prep_table_delete_query,
+    ) = SQL_Constructor.delete_delta_table(part)
+    return (
+        delete_query
+        + "\n"
+        + delete_delta_query
+        + "\n"
+        + delete_nu_query
+        + "\n"
+        + delete_nu_prep_query
+        + "\n"
+        + delta_table_delete_query
+        + "\n"
+        + delta_prep_table_delete_query
+    )
+
+
 def drop_all_tables(part) -> str:
     (
         drop_query,
@@ -67,6 +101,9 @@ def drop_all_tables(part) -> str:
         drop_nu_query,
         drop_nu_prep_query,
     ) = SQL_Constructor.drop_all_tables(part)
+    delta_table_drop_query, delta_prep_table_drop_query = (
+        SQL_Constructor.drop_delta_table(part)
+    )
     return (
         drop_query
         + "\n"
@@ -76,13 +113,13 @@ def drop_all_tables(part) -> str:
         + "\n"
         + drop_nu_prep_query
         + "\n"
+        + delta_table_drop_query
+        + "\n"
+        + delta_prep_table_drop_query
     )
 
 
 def construct_tables(part) -> str:
-    delta_table_drop_query, delta_prep_table_drop_query = (
-        SQL_Constructor.drop_delta_table(part)
-    )
     (
         table_query,
         table_delta,
@@ -92,10 +129,6 @@ def construct_tables(part) -> str:
     ) = SQL_Constructor.make_tables(part, part._vars)
     return (
         table_query
-        + "\n"
-        + delta_table_drop_query
-        + "\n"
-        + delta_prep_table_drop_query
         + "\n"
         + table_delta
         + "\n"
@@ -279,6 +312,26 @@ def evalIncrServiceQuery(ctx: QueryContext, part) -> None:
 def evalIncrDescribeQuery(ctx: QueryContext, part) -> None:
     pass
 
+def deleteTablesRec(part: CompValue) -> str:
+    """Deletes the tables recursively.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Returns the SQL query to delete all data from the tables.
+    """
+    if part == None:
+        return ""
+    if "p" in part or part.name == "BGP":
+        return deleteTablesRec(part.p) + delete_all_tables(part)
+    elif "p1" in part and "p2" in part:
+        return (
+            deleteTablesRec(part.p1)
+            + deleteTablesRec(part.p2)
+            + delete_all_tables(part)
+        )
+    return ""
 
 def dropTablesRec(part) -> str:
     if part == None:

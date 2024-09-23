@@ -103,9 +103,9 @@ def run_queries(
     """Execute the BGP queries recursively.
 
     Args:
-        part (CompValue): _description_
-        output_dir (str): _description_
-        duckdb_conn (DuckDBPyConnection): _description_
+        part (CompValue): Current part of the query
+        output_dir (str): Directory to write the output to
+        duckdb_conn (DuckDBPyConnection): Connection to the database
     """
     from eval_incremental.eval_incremental import (
         get_query_string,

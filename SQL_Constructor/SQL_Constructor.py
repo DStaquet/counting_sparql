@@ -14,6 +14,24 @@ from pandas import DataFrame
 import json
 
 
+def delete_all_tables(part: CompValue) -> tuple[str, str, str, str]:
+    """Deletes all rows from the table.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Returns the SQL query to delete all rows from the table.
+    """
+    delete_query: str = "DELETE FROM " + __encode_table_name(part) + ";"
+    delete_delta_query: str = "DELETE FROM delta_" + __encode_table_name(part) + ";"
+    delete_nu_query: str = "DELETE FROM nu_" + __encode_table_name(part) + ";"
+    delete_nu_prep_query: str = "DELETE FROM nu_prep_" + __encode_table_name(part) + ";"
+
+    return (
+        delete_query, delete_delta_query, delete_nu_query, delete_nu_prep_query
+    )
+
 def drop_all_tables(part) -> tuple[str, str, str, str]:
     drop_query: str = (
         "DROP TABLE IF EXISTS "
@@ -232,6 +250,11 @@ def values_var(res: list) -> str:
     )
     return var_str
 
+def delete_delta_table(part: CompValue) -> tuple[str, str]:
+    return (
+        f"DELETE FROM delta_{__encode_table_name(part)};",
+        f"DELETE FROM delta_prep_{__encode_table_name(part)};",
+    )
 
 def drop_delta_table(part: CompValue) -> tuple[str, str]:
     return (
