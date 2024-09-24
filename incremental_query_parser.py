@@ -275,6 +275,12 @@ def setup_tables(
         part (CompValue): The query
         input_dir (str): Input directory
     """
+    with open(
+        join(query_input_dir, "construct_tables.sql"), "r"
+    ) as f:
+        for line in f.read().split(";\n"):
+            command = line + ";"
+            duckdb_conn.execute(command)
     if not increm:
         with open(
             join(query_input_dir, "delete_tables.sql"), "r"
@@ -282,12 +288,6 @@ def setup_tables(
             for line in f.read().split(";"):
                 command = line + ";"
                 duckdb_conn.execute(command)
-    with open(
-        join(query_input_dir, "construct_tables.sql"), "r"
-    ) as f:
-        for line in f.read().split(";\n"):
-            command = line + ";"
-            duckdb_conn.execute(command)
 
 
 def get_query_input(

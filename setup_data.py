@@ -114,12 +114,23 @@ def insert_nu_data(
     table_name: str = "nu_G"
     og_name: str = "G"
     delta_table_name: str = "delta_G"
-    db_conn.execute(f"DROP TABLE IF EXISTS {table_name};")
+
+    # Create the nu_G table
     db_conn.execute(
         f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
+    db_conn.execute(f"DELETE FROM {table_name};")
+    # Create the prep_nu_G table
+    db_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS prep_{table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
+    )
+    db_conn.execute(f"DELETE FROM prep_{table_name};")
+
+    '''original full outer join: f"insert into prep_{table_name} (s, p, o, k_count) select coalesce(r1.s, r2.s) as s, coalesce(r1.p, r2.p) as p, coalesce(r1.o, r2.o) as o, coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count from {og_name} as r1 FULL OUTER JOIN {delta_table_name} as r2 ON r1.s = r2.s and r1.p = r2.p and r1.o = r2.o where (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0;"'''
     insert_nu_query: str = (
-        f"insert into {table_name} (s, p, o, k_count) select coalesce(r1.s, r2.s) as s, coalesce(r1.p, r2.p) as p, coalesce(r1.o, r2.o) as o, coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count from {og_name} as r1 FULL OUTER JOIN {delta_table_name} as r2 ON r1.s = r2.s and r1.p = r2.p and r1.o = r2.o where (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0;"
+        f"insert into prep_{table_name} (s, p, o, k_count) select s, p, o, k_count from {og_name};"
+        + f"insert into prep_{table_name} (s, p, o, k_count) select s, p, o, k_count from {delta_table_name};"
+        + f"insert into {table_name} (s, p, o, k_count) select s, p, o, sum(k_count) from prep_{table_name} group by s, p, o;"
     )
     db_conn.execute(insert_nu_query)
 
