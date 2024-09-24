@@ -793,11 +793,11 @@ def bgp_table_query(
                         bgp_select_clause += "o"
                     bgp_select_clause += " AS " + var
                     known_vars.add(var)
-    bgp_select_clause += ", ("
+    """bgp_select_clause += ", ("
     bgp_select_clause += "*".join(
         f"{g}.k_count" for g in g_per_triple.values()
-    )
-    bgp_select_clause += ") AS k_count"
+    )"""
+    bgp_select_clause += f", G1.k_count AS k_count"
 
     # construct where clause
     where_clause: str = " WHERE "
