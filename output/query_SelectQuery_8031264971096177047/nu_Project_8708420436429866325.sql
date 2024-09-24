@@ -16,8 +16,5 @@ SELECT x,
        SUM(k_count) AS k_count
 FROM nu_prep_Project_8708420436429866325
 GROUP BY x,
-         z;
-
-DELETE
-FROM nu_Project_8708420436429866325
-WHERE k_count <= 0;
+         z
+HAVING SUM(k_count) > 0;

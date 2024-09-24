@@ -20,8 +20,5 @@ SELECT x,
 FROM nu_prep_BGP_8402537564714151730
 GROUP BY x,
          y,
-         z;
-
-DELETE
-FROM nu_BGP_8402537564714151730
-WHERE k_count <= 0;
+         z
+HAVING SUM(k_count) > 0;

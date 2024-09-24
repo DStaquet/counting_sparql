@@ -20,8 +20,5 @@ SELECT x,
 FROM nu_prep_SelectQuery_8031264971096177047
 GROUP BY x,
          y,
-         z;
-
-DELETE
-FROM nu_SelectQuery_8031264971096177047
-WHERE k_count <= 0;
+         z
+HAVING SUM(k_count) > 0;
