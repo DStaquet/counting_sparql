@@ -94,6 +94,7 @@ def __build_left_side(
     many_to_one_index: int,
     bottleneck_index: int,
     bottleneck_right: str,
+    bottleneck_left: str,
 ) -> tuple[list[str], list[tuple[str, str, str]]]:
     """Builds left side of parallel graph bottleneck.
 
@@ -117,7 +118,7 @@ def __build_left_side(
         (bottleneck_right, "hop", temp_vertices[k])
         for k in range(many_vertices)
     ]
-    """# Edges to bottleneck
+    # Edges to bottleneck
     second_temp_edges: list[tuple[str, str, str]] = [
         (
             str(many_to_one_index)
@@ -127,10 +128,10 @@ def __build_left_side(
             bottleneck_left,
         )
         for k in range(many_vertices)
-    ]"""
+    ]
 
     left_vertices = temp_vertices
-    left_edges = first_temp_edges
+    left_edges = first_temp_edges + second_temp_edges
 
     return left_vertices, left_edges
 
@@ -139,6 +140,7 @@ def __build_right_side(
     many_to_one_index: int,
     bottleneck_index: int,
     bottleneck_left: str,
+    bottleneck_right: str,
 ) -> tuple[list[str], list[tuple[str, str, str]]]:
     """Builds right side of parallel graph.
 
@@ -157,12 +159,12 @@ def __build_right_side(
         + str(k)
         for k in range(many_vertices)
     ]
-    # Edges from bottleneck
+    # Edges to bottleneck
     first_temp_edges: list[tuple[str, str, str]] = [
         (temp_vertices[k], "hop", bottleneck_left)
         for k in range(many_vertices)
     ]
-    """# Edges to bottleneck
+    # Edges from bottleneck
     second_temp_edges: list[tuple[str, str, str]] = [
         (
             bottleneck_right,
@@ -172,10 +174,10 @@ def __build_right_side(
             + str(k),
         )
         for k in range(many_vertices)
-    ]"""
+    ]
 
     right_vertices = temp_vertices
-    right_edges = first_temp_edges
+    right_edges = first_temp_edges + second_temp_edges
 
     return right_vertices, right_edges
 
@@ -198,29 +200,39 @@ def construct_parallel(
 
     # Left side
     for i in range(many_to_one):
-        bottleneck_right: str = str(i) + "br"
-        bottleneck_left: str = str(i) + "bl"
-        vertices.extend([bottleneck_left, bottleneck_right])
-        # Bottleneck edge
-        temp_bottleneck_edge: tuple[str, str, str] = (
-            bottleneck_left,
-            "hop",
-            bottleneck_right,
-        )
-        edges.append(temp_bottleneck_edge)
-
         for j in range(bottlenecks):
-            left_vertices, left_edges = __build_left_side(
-                i, j, bottleneck_right
+            bottleneck_right: str = str(i) + str(j) + "br"
+            bottleneck_left: str = str(i) + str(j) + "bl"
+            vertices.extend(
+                [bottleneck_left, bottleneck_right]
             )
-        last_left_vertices, last_left_edges = (
-            __build_right_side(i, j + 1, bottleneck_left)
-        )
+            # Bottleneck edge
+            temp_bottleneck_edge: tuple[str, str, str] = (
+                bottleneck_left,
+                "hop",
+                bottleneck_right,
+            )
+            edges.append(temp_bottleneck_edge)
 
-        vertices.extend(left_vertices)
+            left_vertices, left_edges = __build_left_side(
+                i, j, bottleneck_right, bottleneck_left
+            )
+            vertices.extend(left_vertices)
+            edges.extend(left_edges)
+
+        # Last left vertices
+        last_left_vertices: list[str] = [
+            str(i) + str(j + 1) + str(k)
+            for k in range(many_vertices)
+        ]
+        """# Edges to bottleneck
+        last_left_edges: list[tuple[str, str, str]] = [
+            (last_left_vertices[k], "hop", bottleneck_left)
+            for k in range(many_vertices)
+        ]"""
+
         vertices.extend(last_left_vertices)
-        edges.extend(left_edges)
-        edges.extend(last_left_edges)
+        # edges.extend(last_left_edges)
 
     # Main bottleneck
     bottleneck_right: str = "br"
@@ -265,29 +277,36 @@ def construct_parallel(
 
     # Right side
     for i in range(many_to_one, many_to_one * 2):
-        bottleneck_right: str = str(i) + "br"
-        bottleneck_left: str = str(i) + "bl"
-        vertices.extend([bottleneck_left, bottleneck_right])
-        # Bottleneck edge
-        temp_bottleneck_edge: tuple[str, str, str] = (
-            bottleneck_left,
-            "hop",
-            bottleneck_right,
-        )
-        edges.append(temp_bottleneck_edge)
-
         for j in range(bottlenecks):
-            right_vertices, right_edges = (
-                __build_right_side(i, j, bottleneck_left)
+            bottleneck_right: str = str(i) + str(j) + "br"
+            bottleneck_left: str = str(i) + str(j) + "bl"
+            vertices.extend(
+                [bottleneck_left, bottleneck_right]
             )
-        last_right_vertices, last_right_edges = (
-            __build_left_side(i, j + 1, bottleneck_right)
-        )
+            # Bottleneck edge
+            temp_bottleneck_edge: tuple[str, str, str] = (
+                bottleneck_left,
+                "hop",
+                bottleneck_right,
+            )
+            edges.append(temp_bottleneck_edge)
 
-        vertices.extend(right_vertices)
+            right_vertices, right_edges = (
+                __build_right_side(
+                    i, j, bottleneck_left, bottleneck_right
+                )
+            )
+
+            vertices.extend(right_vertices)
+            edges.extend(right_edges)
+
+        last_right_vertices: list[str] = [
+            str(i) + str(j + 1) + str(k)
+            for k in range(many_vertices)
+        ]
+
         vertices.extend(last_right_vertices)
-        edges.extend(right_edges)
-        edges.extend(last_right_edges)
+        # edges.extend(last_right_edges)
 
     return Graph(
         vertices,
@@ -354,14 +373,6 @@ if __name__ == "__main__":
         bottlenecks,
         many_vertices,
         many_to_one,
-    )
-
-    print(parallel_graph)
-    print(
-        parallel_graph.graph_to_turtle(
-            "http://example.org/",
-            "http://example.org/edges/",
-        )
     )
 
     if args.file:

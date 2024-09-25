@@ -1,161 +1,173 @@
 @prefix : <http://example.org/> .
 @prefix edge: <http://example.org/edges/> .
 
-:0bl
+:00bl
     a :Node ;
-    edge:hop :0br .
+    edge:hop :00br .
 
-:0br
+:00br
+    a :Node ;
+    edge:hop :000 ;
+    edge:hop :001 .
+
+:000
+    a :Node ;
+    edge:hop :bl .
+
+:001
+    a :Node ;
+    edge:hop :bl .
+
+:01bl
+    a :Node ;
+    edge:hop :01br .
+
+:01br
     a :Node ;
     edge:hop :010 ;
-    edge:hop :011 ;
-    edge:hop :012 ;
-    edge:hop :013 .
+    edge:hop :011 .
 
 :010
-    a :Node .
+    a :Node ;
+    edge:hop :00bl .
 
 :011
-    a :Node .
-
-:012
-    a :Node .
-
-:013
-    a :Node .
+    a :Node ;
+    edge:hop :00bl .
 
 :020
     a :Node ;
-    edge:hop :0bl .
+    edge:hop :01bl .
 
 :021
     a :Node ;
-    edge:hop :0bl .
+    edge:hop :01bl .
 
-:022
+:10bl
     a :Node ;
-    edge:hop :0bl .
+    edge:hop :10br .
 
-:023
+:10br
     a :Node ;
-    edge:hop :0bl .
+    edge:hop :100 ;
+    edge:hop :101 .
 
-:1bl
+:100
     a :Node ;
-    edge:hop :1br .
+    edge:hop :bl .
 
-:1br
+:101
+    a :Node ;
+    edge:hop :bl .
+
+:11bl
+    a :Node ;
+    edge:hop :11br .
+
+:11br
     a :Node ;
     edge:hop :110 ;
-    edge:hop :111 ;
-    edge:hop :112 ;
-    edge:hop :113 .
+    edge:hop :111 .
 
 :110
-    a :Node .
+    a :Node ;
+    edge:hop :10bl .
 
 :111
-    a :Node .
-
-:112
-    a :Node .
-
-:113
-    a :Node .
+    a :Node ;
+    edge:hop :10bl .
 
 :120
     a :Node ;
-    edge:hop :1bl .
+    edge:hop :11bl .
 
 :121
     a :Node ;
-    edge:hop :1bl .
+    edge:hop :11bl .
 
-:122
+:20bl
     a :Node ;
-    edge:hop :1bl .
+    edge:hop :20br .
 
-:123
+:20br
     a :Node ;
-    edge:hop :1bl .
+    edge:hop :200 ;
+    edge:hop :201 .
 
-:2bl
+:200
     a :Node ;
-    edge:hop :2br .
+    edge:hop :bl .
 
-:2br
+:201
+    a :Node ;
+    edge:hop :bl .
+
+:21bl
+    a :Node ;
+    edge:hop :21br .
+
+:21br
     a :Node ;
     edge:hop :210 ;
-    edge:hop :211 ;
-    edge:hop :212 ;
-    edge:hop :213 .
+    edge:hop :211 .
 
 :210
-    a :Node .
+    a :Node ;
+    edge:hop :20bl .
 
 :211
-    a :Node .
-
-:212
-    a :Node .
-
-:213
-    a :Node .
+    a :Node ;
+    edge:hop :20bl .
 
 :220
     a :Node ;
-    edge:hop :2bl .
+    edge:hop :21bl .
 
 :221
     a :Node ;
-    edge:hop :2bl .
+    edge:hop :21bl .
 
-:222
+:30bl
     a :Node ;
-    edge:hop :2bl .
+    edge:hop :30br .
 
-:223
+:30br
     a :Node ;
-    edge:hop :2bl .
+    edge:hop :300 ;
+    edge:hop :301 .
 
-:3bl
+:300
     a :Node ;
-    edge:hop :3br .
+    edge:hop :bl .
 
-:3br
+:301
+    a :Node ;
+    edge:hop :bl .
+
+:31bl
+    a :Node ;
+    edge:hop :31br .
+
+:31br
     a :Node ;
     edge:hop :310 ;
-    edge:hop :311 ;
-    edge:hop :312 ;
-    edge:hop :313 .
+    edge:hop :311 .
 
 :310
-    a :Node .
+    a :Node ;
+    edge:hop :30bl .
 
 :311
-    a :Node .
-
-:312
-    a :Node .
-
-:313
-    a :Node .
+    a :Node ;
+    edge:hop :30bl .
 
 :320
     a :Node ;
-    edge:hop :3bl .
+    edge:hop :31bl .
 
 :321
     a :Node ;
-    edge:hop :3bl .
-
-:322
-    a :Node ;
-    edge:hop :3bl .
-
-:323
-    a :Node ;
-    edge:hop :3bl .
+    edge:hop :31bl .
 
 :bl
     a :Node ;
@@ -165,47 +177,46 @@
     a :Node ;
     edge:hop :400 ;
     edge:hop :401 ;
-    edge:hop :402 ;
-    edge:hop :403 ;
     edge:hop :500 ;
     edge:hop :501 ;
-    edge:hop :502 ;
-    edge:hop :503 ;
     edge:hop :600 ;
     edge:hop :601 ;
-    edge:hop :602 ;
-    edge:hop :603 ;
     edge:hop :700 ;
-    edge:hop :701 ;
-    edge:hop :702 ;
-    edge:hop :703 .
+    edge:hop :701 .
 
-:4bl
+:40bl
     a :Node ;
-    edge:hop :4br .
+    edge:hop :40br .
 
-:4br
+:40br
+    a :Node ;
+    edge:hop :410 ;
+    edge:hop :411 .
+
+:400
+    a :Node ;
+    edge:hop :40bl .
+
+:401
+    a :Node ;
+    edge:hop :40bl .
+
+:41bl
+    a :Node ;
+    edge:hop :41br .
+
+:41br
     a :Node ;
     edge:hop :420 ;
-    edge:hop :421 ;
-    edge:hop :422 ;
-    edge:hop :423 .
+    edge:hop :421 .
 
 :410
     a :Node ;
-    edge:hop :4bl .
+    edge:hop :41bl .
 
 :411
     a :Node ;
-    edge:hop :4bl .
-
-:412
-    a :Node ;
-    edge:hop :4bl .
-
-:413
-    a :Node ;
-    edge:hop :4bl .
+    edge:hop :41bl .
 
 :420
     a :Node .
@@ -213,38 +224,39 @@
 :421
     a :Node .
 
-:422
-    a :Node .
-
-:423
-    a :Node .
-
-:5bl
+:50bl
     a :Node ;
-    edge:hop :5br .
+    edge:hop :50br .
 
-:5br
+:50br
+    a :Node ;
+    edge:hop :510 ;
+    edge:hop :511 .
+
+:500
+    a :Node ;
+    edge:hop :50bl .
+
+:501
+    a :Node ;
+    edge:hop :50bl .
+
+:51bl
+    a :Node ;
+    edge:hop :51br .
+
+:51br
     a :Node ;
     edge:hop :520 ;
-    edge:hop :521 ;
-    edge:hop :522 ;
-    edge:hop :523 .
+    edge:hop :521 .
 
 :510
     a :Node ;
-    edge:hop :5bl .
+    edge:hop :51bl .
 
 :511
     a :Node ;
-    edge:hop :5bl .
-
-:512
-    a :Node ;
-    edge:hop :5bl .
-
-:513
-    a :Node ;
-    edge:hop :5bl .
+    edge:hop :51bl .
 
 :520
     a :Node .
@@ -252,38 +264,39 @@
 :521
     a :Node .
 
-:522
-    a :Node .
-
-:523
-    a :Node .
-
-:6bl
+:60bl
     a :Node ;
-    edge:hop :6br .
+    edge:hop :60br .
 
-:6br
+:60br
+    a :Node ;
+    edge:hop :610 ;
+    edge:hop :611 .
+
+:600
+    a :Node ;
+    edge:hop :60bl .
+
+:601
+    a :Node ;
+    edge:hop :60bl .
+
+:61bl
+    a :Node ;
+    edge:hop :61br .
+
+:61br
     a :Node ;
     edge:hop :620 ;
-    edge:hop :621 ;
-    edge:hop :622 ;
-    edge:hop :623 .
+    edge:hop :621 .
 
 :610
     a :Node ;
-    edge:hop :6bl .
+    edge:hop :61bl .
 
 :611
     a :Node ;
-    edge:hop :6bl .
-
-:612
-    a :Node ;
-    edge:hop :6bl .
-
-:613
-    a :Node ;
-    edge:hop :6bl .
+    edge:hop :61bl .
 
 :620
     a :Node .
@@ -291,48 +304,43 @@
 :621
     a :Node .
 
-:622
-    a :Node .
-
-:623
-    a :Node .
-
-:7bl
+:70bl
     a :Node ;
-    edge:hop :7br .
+    edge:hop :70br .
 
-:7br
+:70br
+    a :Node ;
+    edge:hop :710 ;
+    edge:hop :711 .
+
+:700
+    a :Node ;
+    edge:hop :70bl .
+
+:701
+    a :Node ;
+    edge:hop :70bl .
+
+:71bl
+    a :Node ;
+    edge:hop :71br .
+
+:71br
     a :Node ;
     edge:hop :720 ;
-    edge:hop :721 ;
-    edge:hop :722 ;
-    edge:hop :723 .
+    edge:hop :721 .
 
 :710
     a :Node ;
-    edge:hop :7bl .
+    edge:hop :71bl .
 
 :711
     a :Node ;
-    edge:hop :7bl .
-
-:712
-    a :Node ;
-    edge:hop :7bl .
-
-:713
-    a :Node ;
-    edge:hop :7bl .
+    edge:hop :71bl .
 
 :720
     a :Node .
 
 :721
-    a :Node .
-
-:722
-    a :Node .
-
-:723
     a :Node .
 
