@@ -28,8 +28,5 @@ GROUP BY o,
          p,
          s,
          x,
-         y;
-
-DELETE
-FROM nu_SelectQuery_30433382729147415
-WHERE k_count <= 0;
+         y
+HAVING SUM(k_count) > 0;

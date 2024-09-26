@@ -181,3 +181,5 @@ output/debug_results.txt
 database/duckdb
 
 data/mtg_csv/*
+
+*.db.wal

@@ -28,8 +28,5 @@ GROUP BY o,
          p,
          s,
          x,
-         y;
-
-DELETE
-FROM nu_BGP_5631193804359433266
-WHERE k_count <= 0;
+         y
+HAVING SUM(k_count) > 0;

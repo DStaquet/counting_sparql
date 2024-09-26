@@ -36,7 +36,7 @@ def drop_delta_table(
         db_conn (duckdb.DuckDBPyConnection): Connection with the database.
         table_name (str): Name of the table to drop.
     """
-    db_conn.execute(f"DROP TABLE IF EXISTS {table_name};")
+    db_conn.execute(f"DELETE FROM {table_name};")
 
 
 def create_delta_table(
@@ -155,15 +155,11 @@ def insert_data(
         g, table_name
     )
 
-    db_conn.execute(f"DROP TABLE IF EXISTS {table_name};")
-    db_conn.execute(
+    """db_conn.execute(
         f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
+    db_conn.execute(f"DELETE FROM {table_name};")"""
     db_conn.execute(insert_data_query)
-
-    df: DataFrame = db_conn.sql(
-        f"SELECT * FROM {table_name};"
-    ).df()
 
 
 if __name__ == "__main__":
