@@ -351,6 +351,13 @@ if __name__ == "__main__":
         default=None,
         help="File to save the graph",
     )
+    parser.add_argument(
+        "-t",
+        "--type",
+        default="parallel",
+        help="Type of graph to construct",
+        choices=["parallel", "serial"],
+    )
 
     args = parser.parse_args()
 
@@ -358,25 +365,17 @@ if __name__ == "__main__":
     many_vertices: int = args.many_vertices
     many_to_one: int = args.many_to_one
 
-    serial_graph = construct_serial(
-        bottlenecks, many_vertices
-    )
-    print(serial_graph)
-    print(
-        serial_graph.graph_to_turtle(
-            "http://example.org/",
-            "http://example.org/edges/",
+    if args.type == "serial":
+        graph = construct_serial(bottlenecks, many_vertices)
+    elif args.type == "parallel":
+        graph = construct_parallel(
+            bottlenecks,
+            many_vertices,
+            many_to_one,
         )
-    )
-
-    parallel_graph = construct_parallel(
-        bottlenecks,
-        many_vertices,
-        many_to_one,
-    )
 
     if args.file:
         save_graph_to_file(
-            parallel_graph,
+            graph,
             args.file,
         )
