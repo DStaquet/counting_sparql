@@ -54,7 +54,9 @@ def create_delta_table(
 
 
 def insert_delete_delta_data(
-    db_conn: duckdb.DuckDBPyConnection, data: str
+    db_conn: duckdb.DuckDBPyConnection,
+    data: str,
+    table_name: str = "delta_G",
 ) -> None:
     """Builds up the data that gets changed in the table.
 
@@ -62,7 +64,7 @@ def insert_delete_delta_data(
         db_conn (duckdb.DuckDBPyConnection): Connection with the database.
         data (str): The data that gets changed
     """
-    table_name: str = "delta_G"
+    # table_name: str = "delta_G"
     g: Graph = Graph().parse(data=data)
     insert_data_query: str = build_query_string_for_data(
         g, table_name, -1
@@ -73,13 +75,11 @@ def insert_delete_delta_data(
     )
     db_conn.execute(insert_data_query)
 
-    df: DataFrame = db_conn.sql(
-        f"SELECT * FROM {table_name};"
-    ).df()
-
 
 def insert_insert_delta_data(
-    db_conn: duckdb.DuckDBPyConnection, data: str
+    db_conn: duckdb.DuckDBPyConnection,
+    data: str,
+    table_name: str = "delta_G",
 ) -> None:
     """Builds up the data that gets added to the table.
 
@@ -87,7 +87,7 @@ def insert_insert_delta_data(
         db_conn (duckdb.DuckDBPyConnection): Connection to the database
         data (str): The given data
     """
-    table_name: str = "delta_G"
+    # table_name: str = "delta_G"
     g: Graph = Graph().parse(data=data)
     insert_data_query: str = build_query_string_for_data(
         g, table_name, 1
@@ -147,7 +147,7 @@ def insert_nu_data(
 def insert_data(
     db_conn: duckdb.DuckDBPyConnection, data: str
 ) -> None:
-    """Build up a query string to insert data into a table.
+    """Build up a query string and inserts data into a table.
 
 
     Args:
