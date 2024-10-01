@@ -235,6 +235,8 @@ def run_queries_time(
 if __name__ == "__main__":
     from eval_incremental import duckdb_conn
     import argparse
+    from numpy import array, ndarray, append
+    from plots import build_compare_plot
 
     parser = argparse.ArgumentParser(
         description="Build up the full outer join query."
@@ -256,38 +258,69 @@ if __name__ == "__main__":
         help="The second table name.",
     )
     parser.add_argument(
-        "data_file", type=str, help="The data file."
+        "data_file",
+        type=str,
+        help="The data files to run.",
+        nargs="+",
     )
     parser.add_argument(
-        "-r", "--runs", type=int, default=5, dest="runs"
+        "-r",
+        "--runs",
+        type=int,
+        default=5,
+        help="The amount of times to run the query.",
+        dest="runs",
     )
     args = parser.parse_args()
 
+    time_arr_outer_join: ndarray = array([])
+    time_arr_group_by: ndarray = array([])
+
     query: str = build_up_full_outer_join("R1", "R2")
-
-    print("Running the full outer join query...")
-    run_time_full_outer_join: float = run_queries_time(
-        query,
-        args.data_file,
-        duckdb_conn,
-        args.t1,
-        args.t2,
-        args.runs,
-    )
-
     query_group_by: str = build_up_group_by_sum("R1", "R2")
 
-    print("\nRunning the group by sum query...")
-    run_time_group_by_sum: float = run_queries_time(
-        query_group_by,
-        args.data_file,
-        duckdb_conn,
-        args.t1,
-        args.t2,
-        args.runs,
-    )
+    for data_file in args.data_file:
+        print(f"\nRunning the queries with {data_file}...")
+        print("Running the full outer join query...")
+        run_time_full_outer_join: float = run_queries_time(
+            query,
+            data_file,
+            duckdb_conn,
+            args.t1,
+            args.t2,
+            args.runs,
+        )
+
+        time_arr_outer_join = append(
+            time_arr_outer_join, run_time_full_outer_join
+        )
+
+        print("\nRunning the group by sum query...")
+        run_time_group_by_sum: float = run_queries_time(
+            query_group_by,
+            data_file,
+            duckdb_conn,
+            args.t1,
+            args.t2,
+            args.runs,
+        )
+
+        time_arr_group_by = append(
+            time_arr_group_by, run_time_group_by_sum
+        )
 
     print(
-        "\nFull outer join time: ", run_time_full_outer_join
+        "Time array: ",
+        time_arr_outer_join,
+        time_arr_group_by,
     )
-    print("Group by sum time: ", run_time_group_by_sum)
+
+    build_compare_plot.compare_times_plot(
+        time_arr_outer_join,
+        time_arr_group_by,
+        "Full Outer Join",
+        "Group By Sum",
+        args.data_file,
+    )
+
+    print("Done.")
