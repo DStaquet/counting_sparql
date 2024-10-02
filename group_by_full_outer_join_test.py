@@ -94,18 +94,16 @@ def build_query_string_for_data(
 
 def insert_data(
     db_conn: DuckDBPyConnection,
-    data: str,
+    g: Graph,
     table_name: str = "G",
 ) -> None:
-    """Build up a query string and inserts data into a table.
-
+    """Inserts the data into the table.
 
     Args:
-        db_conn (duckdb.DuckDBPyConnection): Database connection object.
-        data (str): Given data to insert into the table.
+        db_conn (DuckDBPyConnection): Connection to the database.
+        g (Graph): Loaded graph.
+        table_name (str, optional): Name of the table. Defaults to "G".
     """
-    # table_name: str = "G"
-    g: Graph = Graph().parse(data=data)
     insert_data_query: str = build_query_string_for_data(
         g, table_name
     )
@@ -115,7 +113,7 @@ def insert_data(
 
 def insert_delete_delta_data(
     db_conn: DuckDBPyConnection,
-    data: str,
+    g: Graph,
     table_name: str = "delta_G",
     insert: bool = True,
 ) -> None:
@@ -123,10 +121,11 @@ def insert_delete_delta_data(
 
     Args:
         db_conn (duckdb.DuckDBPyConnection): Connection with the database.
+        g (rdflib.Graph): Graph with the data.
         data (str): The data that gets changed
+        insert (bool, optional): If the data is inserted or deleted. Defaults to True.
     """
     # table_name: str = "delta_G"
-    g: Graph = Graph().parse(data=data)
     if not insert:
         insert_data_query: str = (
             build_query_string_for_data(g, table_name, -1)
@@ -141,57 +140,71 @@ def insert_delete_delta_data(
 
 def build_up_data(
     duckdb_conn: DuckDBPyConnection,
-    data_file: str,
-    ins_file: str | None = None,
-    del_file: str | None = None,
+    data_graph: Graph,
+    ins_graph: Graph | None = None,
+    del_graph: Graph | None = None,
 ) -> None:
     """Builds up the data to compare in DuckDB.
 
     Args:
         duckdb_conn (DuckDBPyConnection): Connection to the DB.
-        data_file (str): File containing the initial data.
-        ins_file (str | None, optional): File regarding the insertions. Defaults to None.
-        del_file (str | None, optional): File regarding the deletions. Defaults to None.
+        data_graph (Graph): Graph with the data.
+        ins_graph (Graph, optional): Graph with the inserted data. Defaults to None.
+        del_graph (Graph, optional): Graph with the deleted data. Defaults to None.
     """
     import incremental_query_parser as iqp
 
     # Read the data file and put original data into the database
     build_table("R1", duckdb_conn)
     if data_file is not None:
-        data: str = iqp.readQueryFile(data_file)
-        insert_data(duckdb_conn, data, "R1")
+        insert_data(duckdb_conn, data_graph, "R1")
 
     build_table("R2", duckdb_conn)
     build_table("R2_prep", duckdb_conn)
     # Read the deleted data file and put deleted data into the database's delta G table.
-    if del_file is not None:
-        del_data: str = iqp.readQueryFile(del_file)
+    if del_graph is not None:
         insert_delete_delta_data(
-            duckdb_conn, del_data, "R2", insert=False
+            duckdb_conn, del_graph, "R2", insert=False
         )
 
     # Read the inserted data file and put inserted data into the database's delta G table.
-    if ins_file is not None:
-        ins_data: str = iqp.readQueryFile(ins_file)
+    if ins_graph is not None:
         insert_delete_delta_data(
-            duckdb_conn, ins_data, "R2", insert=True
+            duckdb_conn, ins_graph, "R2", insert=True
         )
+
+
+def load_graph(data_file: str) -> Graph:
+    """Loads the graphs from the data files.
+
+    Args:
+        data_files (str): Data files to load.
+
+    Returns:
+        list[Graph]: List of graphs.
+    """
+    import incremental_query_parser as iqp
+
+    data: str = iqp.readQueryFile(data_file)
+    return Graph().parse(data=data)
 
 
 def run_queries_time(
     query: str,
-    data_file: str,
+    data_graph: Graph,
     duckdb_conn: DuckDBPyConnection,
-    ins_file: str | None = None,
-    del_file: str | None = None,
+    ins_graph: Graph | None = None,
+    del_graph: Graph | None = None,
     runs: int = 5,
 ) -> float:
     """Runs the full outer join query for a given number of times.
 
     Args:
         query (str): Query to run.
-        data_file (str): Data file to use.
+        data_graph (Graph): Graph with the data.
         duckdb_conn (DuckDBPyConnection): Connection to the database.
+        ins_graph (Graph, optional): Graph with the inserted data. Defaults to None.
+        del_graph (Graph, optional): Graph with the deleted data. Defaults to None.
         runs (int, optional): Amount of times to run the query. Defaults to 5.
 
     Returns:
@@ -201,7 +214,7 @@ def run_queries_time(
 
     print("Building up data...")
     build_up_data(
-        duckdb_conn, data_file, ins_file, del_file
+        duckdb_conn, data_graph, ins_graph, del_graph
     )
 
     avg_time: float | None = None
@@ -211,9 +224,11 @@ def run_queries_time(
         duckdb_conn.execute(query)
         end = time.time()
         if avg_time is None:
-            avg_time = end - start
+            avg_time = (end - start) * 1000
         else:
-            avg_time = (avg_time + (end - start)) / 2
+            avg_time = (
+                avg_time + ((end - start) * 1000)
+            ) / 2
         print(
             "Time taken: ",
             end - start,
@@ -223,7 +238,10 @@ def run_queries_time(
         if i < runs - 1:
             print("Building up data...")
             build_up_data(
-                duckdb_conn, data_file, ins_file, del_file
+                duckdb_conn,
+                data_graph,
+                ins_graph,
+                del_graph,
             )
 
     if avg_time is None:
@@ -242,20 +260,20 @@ if __name__ == "__main__":
         description="Build up the full outer join query."
     )
     parser.add_argument(
-        "-t1",
-        "--table_name_one",
+        "-i",
+        "--insertion_file",
         type=str,
         default="R1",
         dest="t1",
-        help="The first table name.",
+        help="The file of the to insert data.",
     )
     parser.add_argument(
-        "-t2",
-        "--table_name_two",
+        "-d",
+        "--deletion_file",
         type=str,
         default="R2",
         dest="t2",
-        help="The second table name.",
+        help="The file of the to delete data.",
     )
     parser.add_argument(
         "data_file",
@@ -279,15 +297,24 @@ if __name__ == "__main__":
     query: str = build_up_full_outer_join("R1", "R2")
     query_group_by: str = build_up_group_by_sum("R1", "R2")
 
+    print("Loading insertion and deletion graphs...")
+    if args.t1 is not None:
+        ins_graph: Graph = load_graph(args.t1)
+    if args.t2 is not None:
+        del_graph: Graph = load_graph(args.t2)
+
     for data_file in args.data_file:
         print(f"\nRunning the queries with {data_file}...")
+        print(f"Loading graph from {data_file}...")
+        og_graph: Graph = load_graph(data_file)
+
         print("Running the full outer join query...")
         run_time_full_outer_join: float = run_queries_time(
             query,
-            data_file,
+            og_graph,
             duckdb_conn,
-            args.t1,
-            args.t2,
+            ins_graph,
+            del_graph,
             args.runs,
         )
 
@@ -298,10 +325,10 @@ if __name__ == "__main__":
         print("\nRunning the group by sum query...")
         run_time_group_by_sum: float = run_queries_time(
             query_group_by,
-            data_file,
+            og_graph,
             duckdb_conn,
-            args.t1,
-            args.t2,
+            ins_graph,
+            del_graph,
             args.runs,
         )
 

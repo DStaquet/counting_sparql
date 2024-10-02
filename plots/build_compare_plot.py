@@ -33,6 +33,7 @@ def compare_times_plot(
         index + bar_width,
         bins,
     )
+    plt.yscale("log")
     plt.xlabel("Data size")
     plt.ylabel("Time (s)")
     plt.legend()
