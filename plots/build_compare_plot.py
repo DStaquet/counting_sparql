@@ -35,7 +35,22 @@ def compare_times_plot(
     )
     plt.yscale("log")
     plt.xlabel("Data size")
-    plt.ylabel("Time (s)")
+    plt.ylabel("Time (ms)")
     plt.legend()
     plt.savefig(f"./plots/{name_one}_vs_{name_two}.png")
     plt.clf()
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Compare two arrays of times."
+    )
+    parser.add_argument(
+        "file",
+        type=str,
+        help="File with the times to compare.",
+    )
+
+    args = parser.parse_args()

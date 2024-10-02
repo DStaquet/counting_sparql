@@ -1,5 +1,6 @@
 from duckdb import DuckDBPyConnection
 from rdflib import Graph
+from numpy import ndarray
 
 
 def build_up_group_by_sum(
@@ -250,12 +251,31 @@ def run_queries_time(
     return avg_time
 
 
-if __name__ == "__main__":
-    from eval_incremental import duckdb_conn
-    import argparse
-    from numpy import array, ndarray, append
-    from plots import build_compare_plot
+def save_results_to_file(
+    file_name: str,
+    time_arr_outer_join: ndarray,
+    time_arr_group_by: ndarray,
+) -> None:
+    """Save the results to a file.
 
+    Args:
+        file_name (str): The file name to save the results to.
+        time_arr_outer_join (ndarray): Time array for the full outer join.
+        time_arr_group_by (ndarray): Time array for the group by sum.
+    """
+    with open(file_name, "w") as f:
+        f.write("Full Outer Join\n")
+        for time in time_arr_outer_join:
+            f.write(f"{time}\n")
+        f.write("Group By Sum\n")
+        for time in time_arr_group_by:
+            f.write(f"{time}\n")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    # Argument parser
     parser = argparse.ArgumentParser(
         description="Build up the full outer join query."
     )
@@ -263,17 +283,17 @@ if __name__ == "__main__":
         "-i",
         "--insertion_file",
         type=str,
-        default="R1",
         dest="t1",
         help="The file of the to insert data.",
+        nargs="*",
     )
     parser.add_argument(
         "-d",
         "--deletion_file",
         type=str,
-        default="R2",
         dest="t2",
         help="The file of the to delete data.",
+        nargs="*",
     )
     parser.add_argument(
         "data_file",
@@ -291,22 +311,46 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    # Import the necessary modules
+    from eval_incremental import duckdb_conn
+    from numpy import array, ndarray, append
+    from plots import build_compare_plot
+
+    # Initialize the time arrays
     time_arr_outer_join: ndarray = array([])
     time_arr_group_by: ndarray = array([])
 
+    # Build up the queries
     query: str = build_up_full_outer_join("R1", "R2")
     query_group_by: str = build_up_group_by_sum("R1", "R2")
 
-    print("Loading insertion and deletion graphs...")
-    if args.t1 is not None:
-        ins_graph: Graph = load_graph(args.t1)
-    if args.t2 is not None:
-        del_graph: Graph = load_graph(args.t2)
+    # Initialize insertion and deletion count
+    ins_count: int = 0
+    del_count: int = 0
 
+    # Run the queries for each data file
+    # Next insertion and deletion file get loaded with the next data file if multiple are present
+    # otherwise the last one that was loaded is used.
     for data_file in args.data_file:
         print(f"\nRunning the queries with {data_file}...")
-        print(f"Loading graph from {data_file}...")
+        print(f"Loading graphs from {data_file}...")
         og_graph: Graph = load_graph(data_file)
+        ins_graph: Graph | None = None
+        del_graph: Graph | None = None
+        if args.t1 is not None:
+            if ins_count < len(args.t1):
+                print(
+                    f"Loading insertion graph from {args.t1[ins_count]}..."
+                )
+                ins_graph = load_graph(args.t1[ins_count])
+                ins_count += 1
+        if args.t2 is not None:
+            if del_count < len(args.t2):
+                print(
+                    f"Loading deletion graph from {args.t2[del_count]}..."
+                )
+                del_graph = load_graph(args.t2[del_count])
+                del_count += 1
 
         print("Running the full outer join query...")
         run_time_full_outer_join: float = run_queries_time(
@@ -338,6 +382,11 @@ if __name__ == "__main__":
 
     print(
         "Time array: ",
+        time_arr_outer_join,
+        time_arr_group_by,
+    )
+    save_results_to_file(
+        "group_by_full_outer_join_results_same_size.txt",
         time_arr_outer_join,
         time_arr_group_by,
     )
