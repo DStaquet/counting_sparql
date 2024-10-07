@@ -72,6 +72,23 @@ def build_table(
     duckdb_conn.execute(f"DELETE FROM {table_name};")
 
 
+def build_table_drop(
+    table_name: str, duckdb_conn: DuckDBPyConnection
+) -> None:
+    """Builds the table in DuckDB.
+
+    Args:
+        table_name (str): Name of the table.
+        duckdb_conn (DuckDBPyConnection): Connection to the DB.
+    """
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS {table_name};"
+    )
+    duckdb_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS {table_name} (A TEXT, K INT);"
+    )
+
+
 def build_query_string_for_data(
     g: Graph, table_name: str, delete_count: int = 1
 ) -> str:
@@ -272,6 +289,54 @@ def save_results_to_file(
             f.write(f"{time}\n")
 
 
+def test_drop_vs_delete(
+    table_name: str,
+    g: Graph,
+    duckdb_conn: DuckDBPyConnection,
+    amount_of_tests: int = 10,
+) -> tuple[float, float]:
+    """Tests the drop table vs delete from table method.
+
+    Args:
+        table_name (str): Name of the table
+        g (Graph): Graph with data to be inserted.
+        duckdb_conn (DuckDBPyConnection): Connection to the database
+    """
+    import time
+
+    avg_time_drop: float | None = None
+    avg_time_delete: float | None = None
+
+    for i in range(amount_of_tests):
+        print(f"Run {i + 1} of {amount_of_tests}")
+        print("Running the drop table method...")
+        start = time.time()
+        build_table_drop(table_name, duckdb_conn)
+        end = time.time()
+        insert_data(duckdb_conn, g, table_name)
+        avg_time_drop = (
+            avg_time_drop + (end - start)
+            if avg_time_drop is not None
+            else (end - start)
+        )
+
+        print("Running the delete from table method...")
+        start = time.time()
+        build_table(table_name, duckdb_conn)
+        end = time.time()
+        insert_data(duckdb_conn, g, table_name)
+        avg_time_delete = (
+            avg_time_delete + (end - start)
+            if avg_time_delete is not None
+            else (end - start)
+        )
+
+    if avg_time_drop is None or avg_time_delete is None:
+        raise ValueError("Average time is None.")
+
+    return avg_time_drop, avg_time_delete
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -315,6 +380,37 @@ if __name__ == "__main__":
     from eval_incremental import duckdb_conn
     from numpy import array, ndarray, append
     from plots import build_compare_plot
+
+    drop_arr: ndarray = array([])
+    delete_arr: ndarray = array([])
+    # Run the test for the drop vs delete method
+    for data_file in args.data_file:
+        print(
+            f"\nRunning the drop vs delete test with {data_file}..."
+        )
+        print(f"Loading graphs from {data_file}...")
+        og_graph: Graph = load_graph(data_file)
+
+        print("Running the drop vs delete test...")
+        time_drop, time_delete = test_drop_vs_delete(
+            "Test_table", og_graph, duckdb_conn, args.runs
+        )
+
+        print(f"Time for drop: {time_drop}")
+        print(f"Time for delete: {time_delete}")
+
+        drop_arr = append(drop_arr, time_drop)
+        delete_arr = append(delete_arr, time_delete)
+
+    # Build the plot
+    build_compare_plot.compare_times_plot(
+        drop_arr,
+        delete_arr,
+        "Drop Table",
+        "Delete From Table",
+        args.data_file,
+    )
+    exit()
 
     # Initialize the time arrays
     time_arr_outer_join: ndarray = array([])
