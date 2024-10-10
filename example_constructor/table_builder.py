@@ -42,23 +42,48 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--rows",
         "-r",
+        "--rows",
         type=int,
         default=3,
         help="Number of rows in the table",
     )
 
-    args = parser.add_argument(
-        "--k_counts",
+    parser.add_argument(
         "-k",
+        "--k_counts",
         type=int,
         default=25,
         help="Number of average k counts",
     )
+
+    parser.add_argument(
+        "-o",
+        "--output",
+        dest="output",
+        type=str,
+        default="output.csv",
+        help="Output file name",
+    )
+
+    parser.add_argument(
+        "-p",
+        "--print",
+        action="store_true",
+        help="Print the output",
+        dest="print",
+    )
+
+    from save_to_file import save_table_to_file
 
     args = parser.parse_args()
 
     generated_k: list[tuple[str, int]] = build_table(
         args.rows, args.k_counts
     )
+
+    if args.print:
+        print(generated_k)
+
+    if args.output != None:
+        save_table_to_file(generated_k, args.output)

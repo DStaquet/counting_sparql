@@ -183,3 +183,5 @@ database/duckdb
 data/mtg_csv/*
 
 *.db.wal
+
+data/*
