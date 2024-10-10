@@ -410,7 +410,6 @@ if __name__ == "__main__":
         "Delete From Table",
         args.data_file,
     )
-    exit()
 
     # Initialize the time arrays
     time_arr_outer_join: ndarray = array([])
