@@ -57,6 +57,62 @@ def build_up_full_outer_join(
     return return_str
 
 
+def test_big_data_delete(
+    runs: int,
+    table_name: str,
+    data_file: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> float:
+    import time as t
+
+    avg_time: float | None = None
+
+    insert_data_query: str = (
+        f"COPY {table_name} FROM '{data_file}' (DELIMITER ',');"
+    )
+    test_query: str = f"SELECT * FROM {table_name};"
+    delete_query: str = f"DELETE FROM {table_name};"
+    for i in range(runs):
+        print(f"Run {i + 1} of {runs}")
+        print("Deleting data and inserting new data...")
+        start = t.time()
+        duckdb_conn.execute(
+            delete_query + insert_data_query
+        )
+        end = t.time()
+        if avg_time is None:
+            avg_time = (end - start) * 1000
+        else:
+            avg_time = (
+                avg_time + ((end - start) * 1000)
+            ) / 2
+        print(
+            "Time taken: ",
+            (end - start) * 1000,
+            "\nAverage time: ",
+            avg_time,
+        )
+
+    if avg_time is None:
+        raise ValueError("Average time is None.")
+
+    return avg_time
+
+
+def test_drop_vs_delete_big_data(
+    data_files: list[tuple[str, str]],
+    runs: int,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    for data_file, table_name in data_files:
+        print(
+            f"Running the delete test with {data_file}..."
+        )
+        test_big_data_delete(
+            runs, table_name, data_file, duckdb_conn
+        )
+
+
 def build_table(
     table_name: str, duckdb_conn: DuckDBPyConnection
 ) -> None:
@@ -174,7 +230,7 @@ def build_up_data(
 
     # Read the data file and put original data into the database
     build_table("R1", duckdb_conn)
-    if data_file is not None:
+    if data_graph is not None:
         insert_data(duckdb_conn, data_graph, "R1")
 
     build_table("R2", duckdb_conn)
@@ -337,6 +393,167 @@ def test_drop_vs_delete(
     return avg_time_drop, avg_time_delete
 
 
+def og_graph_test(
+    data_files: list[str],
+    runs: int,
+    t1: list[str] | None,
+    t2: list[str] | None,
+) -> None:
+    """Run the original graph test.
+
+    Args:
+        data_files (list[str]): List of data files.
+        runs (int): Amount of times to run the query.
+        t1 (list[str] | None): Insertion data files.
+        t2 (list[str] | None): Deletion data files.
+    """
+    # Initialize the time arrays
+    time_arr_outer_join: ndarray = array([])
+    time_arr_group_by: ndarray = array([])
+
+    # Build up the queries
+    query: str = build_up_full_outer_join("R1", "R2")
+    query_group_by: str = build_up_group_by_sum("R1", "R2")
+
+    # Initialize insertion and deletion count
+    ins_count: int = 0
+    del_count: int = 0
+
+    # Run the queries for each data file
+    # Next insertion and deletion file get loaded with the next data file if multiple are present
+    # otherwise the last one that was loaded is used.
+    for data_file in data_files:
+        print(f"\nRunning the queries with {data_file}...")
+        print(f"Loading graphs from {data_file}...")
+        og_graph: Graph = load_graph(data_file)
+        ins_graph: Graph | None = None
+        del_graph: Graph | None = None
+        if t1 is not None:
+            if ins_count < len(t1):
+                print(
+                    f"Loading insertion graph from {t1[ins_count]}..."
+                )
+                ins_graph = load_graph(t1[ins_count])
+                ins_count += 1
+        if t2 is not None:
+            if del_count < len(t2):
+                print(
+                    f"Loading deletion graph from {t2[del_count]}..."
+                )
+                del_graph = load_graph(t2[del_count])
+                del_count += 1
+
+        print("Running the full outer join query...")
+        run_time_full_outer_join: float = run_queries_time(
+            query,
+            og_graph,
+            duckdb_conn,
+            ins_graph,
+            del_graph,
+            runs,
+        )
+
+        time_arr_outer_join = append(
+            time_arr_outer_join, run_time_full_outer_join
+        )
+
+        print("\nRunning the group by sum query...")
+        run_time_group_by_sum: float = run_queries_time(
+            query_group_by,
+            og_graph,
+            duckdb_conn,
+            ins_graph,
+            del_graph,
+            runs,
+        )
+
+        time_arr_group_by = append(
+            time_arr_group_by, run_time_group_by_sum
+        )
+
+    print(
+        "Time array: ",
+        time_arr_outer_join,
+        time_arr_group_by,
+    )
+    save_results_to_file(
+        "group_by_full_outer_join_results_same_size.txt",
+        time_arr_outer_join,
+        time_arr_group_by,
+    )
+
+    build_compare_plot.compare_times_plot(
+        time_arr_outer_join,
+        time_arr_group_by,
+        "Full Outer Join",
+        "Group By Sum",
+        data_files,
+    )
+
+
+def og_delete_test(
+    data_files: list[str], runs: int
+) -> None:
+    """Runs the original delete test.
+
+    Args:
+        data_files (list[str]): List of data files.
+        runs (int): Amount of times to run the query.
+    """
+    drop_arr: ndarray = array([])
+    delete_arr: ndarray = array([])
+    # Run the test for the drop vs delete method
+    for data_file in data_files:
+        print(
+            f"\nRunning the drop vs delete test with {data_file}..."
+        )
+        print(f"Loading graphs from {data_file}...")
+        og_graph: Graph = load_graph(data_file)
+
+        print("Running the drop vs delete test...")
+        time_drop, time_delete = test_drop_vs_delete(
+            "Test_table", og_graph, duckdb_conn, runs
+        )
+
+        print(f"Time for drop: {time_drop}")
+        print(f"Time for delete: {time_delete}")
+
+        drop_arr = append(drop_arr, time_drop)
+        delete_arr = append(delete_arr, time_delete)
+
+    # Build the plot
+    build_compare_plot.compare_times_plot(
+        drop_arr,
+        delete_arr,
+        "Drop Table",
+        "Delete From Table",
+        data_files,
+    )
+
+
+def build_big_data_tuples(
+    data_files: list[str], table_names: list[str]
+) -> list[tuple[str, str]]:
+    """Builds the big data tuples.
+
+    Args:
+        data_files (list[str]): List of data files.
+        table_names (list[str]): List of table names.
+
+    Returns:
+        list[tuple[str, str]]: List of tuples with the data file and table name.
+    """
+    if len(data_files) != len(table_names):
+        raise ValueError(
+            "The amount of data files and table names do not match."
+        )
+
+    return [
+        (data_files[i], table_names[i])
+        for i in range(len(data_files))
+    ]
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -381,117 +598,22 @@ if __name__ == "__main__":
     from numpy import array, ndarray, append
     from plots import build_compare_plot
 
-    drop_arr: ndarray = array([])
-    delete_arr: ndarray = array([])
-    # Run the test for the drop vs delete method
-    for data_file in args.data_file:
-        print(
-            f"\nRunning the drop vs delete test with {data_file}..."
-        )
-        print(f"Loading graphs from {data_file}...")
-        og_graph: Graph = load_graph(data_file)
+    """# Run the original delete test
+    og_delete_test(args.data_file, args.runs)"""
 
-        print("Running the drop vs delete test...")
-        time_drop, time_delete = test_drop_vs_delete(
-            "Test_table", og_graph, duckdb_conn, args.runs
-        )
+    """# Original graph test
+    og_graph_test(
+        args.data_file, args.runs, args.t1, args.t2
+    )"""
 
-        print(f"Time for drop: {time_drop}")
-        print(f"Time for delete: {time_delete}")
-
-        drop_arr = append(drop_arr, time_drop)
-        delete_arr = append(delete_arr, time_delete)
-
-    # Build the plot
-    build_compare_plot.compare_times_plot(
-        drop_arr,
-        delete_arr,
-        "Drop Table",
-        "Delete From Table",
-        args.data_file,
-    )
-
-    # Initialize the time arrays
-    time_arr_outer_join: ndarray = array([])
-    time_arr_group_by: ndarray = array([])
-
-    # Build up the queries
-    query: str = build_up_full_outer_join("R1", "R2")
-    query_group_by: str = build_up_group_by_sum("R1", "R2")
-
-    # Initialize insertion and deletion count
-    ins_count: int = 0
-    del_count: int = 0
-
-    # Run the queries for each data file
-    # Next insertion and deletion file get loaded with the next data file if multiple are present
-    # otherwise the last one that was loaded is used.
-    for data_file in args.data_file:
-        print(f"\nRunning the queries with {data_file}...")
-        print(f"Loading graphs from {data_file}...")
-        og_graph: Graph = load_graph(data_file)
-        ins_graph: Graph | None = None
-        del_graph: Graph | None = None
-        if args.t1 is not None:
-            if ins_count < len(args.t1):
-                print(
-                    f"Loading insertion graph from {args.t1[ins_count]}..."
-                )
-                ins_graph = load_graph(args.t1[ins_count])
-                ins_count += 1
-        if args.t2 is not None:
-            if del_count < len(args.t2):
-                print(
-                    f"Loading deletion graph from {args.t2[del_count]}..."
-                )
-                del_graph = load_graph(args.t2[del_count])
-                del_count += 1
-
-        print("Running the full outer join query...")
-        run_time_full_outer_join: float = run_queries_time(
-            query,
-            og_graph,
-            duckdb_conn,
-            ins_graph,
-            del_graph,
-            args.runs,
-        )
-
-        time_arr_outer_join = append(
-            time_arr_outer_join, run_time_full_outer_join
-        )
-
-        print("\nRunning the group by sum query...")
-        run_time_group_by_sum: float = run_queries_time(
-            query_group_by,
-            og_graph,
-            duckdb_conn,
-            ins_graph,
-            del_graph,
-            args.runs,
-        )
-
-        time_arr_group_by = append(
-            time_arr_group_by, run_time_group_by_sum
-        )
-
-    print(
-        "Time array: ",
-        time_arr_outer_join,
-        time_arr_group_by,
-    )
-    save_results_to_file(
-        "group_by_full_outer_join_results_same_size.txt",
-        time_arr_outer_join,
-        time_arr_group_by,
-    )
-
-    build_compare_plot.compare_times_plot(
-        time_arr_outer_join,
-        time_arr_group_by,
-        "Full Outer Join",
-        "Group By Sum",
-        args.data_file,
+    # Big data delete vs drop test
+    test_drop_vs_delete_big_data(
+        build_big_data_tuples(
+            args.data_file,
+            ["one_mil_tbl", "five_mil_tbl", "ten_mil_tbl"],
+        ),
+        args.runs,
+        duckdb_conn,
     )
 
     print("Done.")
