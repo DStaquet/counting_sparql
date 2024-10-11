@@ -70,16 +70,58 @@ def test_big_data_delete(
     insert_data_query: str = (
         f"COPY {table_name} FROM '{data_file}' (DELIMITER ',');"
     )
-    test_query: str = f"SELECT * FROM {table_name};"
     delete_query: str = f"DELETE FROM {table_name};"
+    test_query: str = f"SELECT * FROM {table_name};"
+
     for i in range(runs):
         print(f"Run {i + 1} of {runs}")
         print("Deleting data and inserting new data...")
         start = t.time()
-        duckdb_conn.execute(
-            delete_query + insert_data_query
-        )
+        duckdb_conn.execute(delete_query)
         end = t.time()
+        duckdb_conn.execute(insert_data_query)
+        if avg_time is None:
+            avg_time = (end - start) * 1000
+        else:
+            avg_time = (
+                avg_time + ((end - start) * 1000)
+            ) / 2
+        print(
+            "Time taken: ",
+            (end - start) * 1000,
+            "\nAverage time: ",
+            avg_time,
+        )
+
+    if avg_time is None:
+        raise ValueError("Average time is None.")
+
+    return avg_time
+
+
+def test_big_data_drop(
+    runs: int,
+    data_file: str,
+    table_name: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> float:
+    import time as t
+
+    avg_time: float | None = None
+
+    drop_query: str = f"DROP TABLE IF EXISTS {table_name};"
+    create_query: str = (
+        f"CREATE TABLE IF NOT EXISTS {table_name} AS FROM '{data_file}';"
+    )
+    test_query: str = f"SELECT * FROM {table_name};"
+
+    for i in range(runs):
+        print(f"Run {i + 1} of {runs}")
+        print("Dropping table and inserting new data...")
+        start = t.time()
+        duckdb_conn.execute(drop_query)
+        end = t.time()
+        duckdb_conn.execute(create_query)
         if avg_time is None:
             avg_time = (end - start) * 1000
         else:
@@ -104,13 +146,32 @@ def test_drop_vs_delete_big_data(
     runs: int,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
+
+    delete_arr: ndarray = array([])
+    drop_arr: ndarray = array([])
+
     for data_file, table_name in data_files:
         print(
             f"Running the delete test with {data_file}..."
         )
-        test_big_data_delete(
+        delete_avg_time: float = test_big_data_delete(
             runs, table_name, data_file, duckdb_conn
         )
+        print(f"Running the drop test with {data_file}...")
+        drop_avg_time: float = test_big_data_drop(
+            runs, data_file, table_name, duckdb_conn
+        )
+
+        delete_arr = append(delete_arr, delete_avg_time)
+        drop_arr = append(drop_arr, drop_avg_time)
+
+    build_compare_plot.compare_times_plot(
+        drop_arr,
+        delete_arr,
+        "Drop Table",
+        "Delete From Table",
+        [data_file for _, data_file in data_files],
+    )
 
 
 def build_table(
@@ -554,6 +615,19 @@ def build_big_data_tuples(
     ]
 
 
+def set_up_tables(table_names: list[str]) -> None:
+    """Sets up the tables in DuckDB.
+
+    Args:
+        table_names (list[str]): List of table names.
+    """
+    for table_name in table_names:
+        duckdb_conn.execute(
+            f"CREATE TABLE IF NOT EXISTS {table_name} (A TEXT, K INT);"
+        )
+        duckdb_conn.execute(f"DELETE FROM {table_name};")
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -606,11 +680,20 @@ if __name__ == "__main__":
         args.data_file, args.runs, args.t1, args.t2
     )"""
 
+    table_names: list[str] = [
+        "one_mil_tbl",
+        "five_mil_tbl",
+        "ten_mil_tbl",
+    ]
+
+    # Set up the tables to make sure they exist
+    # set_up_tables(table_names)
+
     # Big data delete vs drop test
     test_drop_vs_delete_big_data(
         build_big_data_tuples(
             args.data_file,
-            ["one_mil_tbl", "five_mil_tbl", "ten_mil_tbl"],
+            table_names,
         ),
         args.runs,
         duckdb_conn,
