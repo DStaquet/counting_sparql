@@ -2,8 +2,8 @@ import numpy as np
 
 
 def build_table(
-    rows: int, k_counts: int
-) -> list[tuple[str, int]]:
+    rows: int, k_counts: int, combo_count: int = 1
+) -> tuple[list[tuple[str, int]], int]:
     """Builds up a table of rows and k counts
 
     Args:
@@ -21,7 +21,7 @@ def build_table(
     return_list: list[tuple[str, int]] = []
 
     k: int = 0
-    combo_count: int = 1
+    # combo_count: int = 1
     while k < rows:
         all_combinations = combinations(au, combo_count)
         for combo in all_combinations:
@@ -31,7 +31,39 @@ def build_table(
                 break
         combo_count += 1
 
-    return return_list
+    return return_list, combo_count
+
+
+def build_insert_table_arr(
+    insert_arr: list[int], N: int, combo_count: int = 2
+) -> list[list[tuple[str, int]]]:
+    insert_arr = [
+        (
+            int(float(i))
+            if int(float(i)) >= 1
+            else int(float(i) * N)
+        )
+        for i in insert_arr
+    ]
+
+    insert_tables: list[list[tuple[str, int]]] = []
+
+    for ins_rows in insert_arr:
+        if ins_rows > N:
+            raise ValueError(
+                f"Insertion rows must be less than or equal to {N}"
+            )
+
+        insert_table = build_table(
+            ins_rows, int(N * (1 / 10)), combo_count
+        )[0]
+        insert_table = [
+            (i[0], i[1] + 1) for i in insert_table
+        ]
+
+        insert_tables.append(insert_table)
+
+    return insert_tables
 
 
 if __name__ == "__main__":
@@ -74,16 +106,54 @@ if __name__ == "__main__":
         dest="print",
     )
 
+    parser.add_argument(
+        "-i",
+        "--insertion",
+        nargs="+",
+        type=str,
+        help="Make a small insertion for the table with the amount of insertions",
+        dest="insert",
+    )
+
+    parser.add_argument(
+        "-if",
+        "--insertion_file",
+        nargs="+",
+        type=str,
+        help="File to save the insertion to",
+        dest="insert_file",
+    )
+
     from save_to_file import save_table_to_file
 
     args = parser.parse_args()
 
-    generated_k: list[tuple[str, int]] = build_table(
+    generated_k, combo_count = build_table(
         args.rows, args.k_counts
     )
 
+    print(args.insert, args.insert_file)
+    if args.insert != None:
+        generated_s_arr: list[list[tuple[str, int]]] = (
+            build_insert_table_arr(
+                args.insert, args.rows, combo_count + 1
+            )
+        )
+
     if args.print:
         print(generated_k)
+        if args.insert != None:
+            print(generated_s_arr)
 
-    if args.output != None:
+    if args.output != None and type(generated_k) == list:
         save_table_to_file(generated_k, args.output)
+
+    if args.insert_file != None and args.insert != None:
+        if len(args.insert) != len(args.insert_file):
+            raise ValueError(
+                "Amount of insertions and files must be the same"
+            )
+        for i in range(len(args.insert)):
+            save_table_to_file(
+                generated_s_arr[i], args.insert_file[i]
+            )
