@@ -71,7 +71,6 @@ def test_big_data_delete(
         f"COPY {table_name} FROM '{data_file}' (DELIMITER ',');"
     )
     delete_query: str = f"DELETE FROM {table_name};"
-    test_query: str = f"SELECT * FROM {table_name};"
 
     for i in range(runs):
         print(f"Run {i + 1} of {runs}")
@@ -113,7 +112,6 @@ def test_big_data_drop(
     create_query: str = (
         f"CREATE TABLE IF NOT EXISTS {table_name} AS FROM '{data_file}';"
     )
-    test_query: str = f"SELECT * FROM {table_name};"
 
     for i in range(runs):
         print(f"Run {i + 1} of {runs}")
@@ -628,12 +626,48 @@ def set_up_tables(table_names: list[str]) -> None:
         duckdb_conn.execute(f"DELETE FROM {table_name};")
 
 
+def graph_test(
+    data_files: list[str],
+    runs: int,
+    ins_files: list[str],
+    del_files: list[str],
+) -> None:
+    pass
+
+
+def load_file_to_table_in_db(
+    file_name: str,
+    table_name: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Load the file into the table in the database.
+
+    Args:
+        file_name (str): The file name to load.
+        table_name (str): The table name to load the file into.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+    """
+    drop_query: str = f"DROP TABLE IF EXISTS {table_name};"
+    create_query: str = (
+        f"CREATE TABLE IF NOT EXISTS {table_name} AS FROM '{file_name}';"
+    )
+
+    duckdb_conn.execute(drop_query)
+    duckdb_conn.execute(create_query)
+
+
 if __name__ == "__main__":
     import argparse
 
     # Argument parser
     parser = argparse.ArgumentParser(
         description="Build up the full outer join query."
+    )
+    parser.add_argument(
+        "-nd",
+        "--no_drop",
+        action="store_true",
+        help="Do not run the drop test.",
     )
     parser.add_argument(
         "-i",
@@ -665,6 +699,13 @@ if __name__ == "__main__":
         help="The amount of times to run the query.",
         dest="runs",
     )
+    parser.add_argument(
+        "-l",
+        "--load",
+        nargs="+",
+        type=str,
+        help="Load the data into the table.",
+    )
     args = parser.parse_args()
 
     # Import the necessary modules
@@ -686,17 +727,30 @@ if __name__ == "__main__":
         "ten_mil_tbl",
     ]
 
+    if args.load is not None:
+        if len(args.load) % 2 != 0:
+            raise ValueError(
+                "The amount of arguments for the load flag must be even."
+            )
+        for i in range(0, len(args.load), 2):
+            load_file_to_table_in_db(
+                args.load[i], args.load[i+1], duckdb_conn
+            )
+
+        exit()
+
     # Set up the tables to make sure they exist
     # set_up_tables(table_names)
 
     # Big data delete vs drop test
-    test_drop_vs_delete_big_data(
-        build_big_data_tuples(
-            args.data_file,
-            table_names,
-        ),
-        args.runs,
-        duckdb_conn,
-    )
+    if not args.no_drop:
+        test_drop_vs_delete_big_data(
+            build_big_data_tuples(
+                args.data_file,
+                table_names,
+            ),
+            args.runs,
+            duckdb_conn,
+        )
 
     print("Done.")

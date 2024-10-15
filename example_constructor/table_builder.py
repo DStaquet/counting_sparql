@@ -14,18 +14,44 @@ def build_table(
         list[tuple[int, int]]: Generated tuples togeter with k counts
     """
     from string import ascii_uppercase as au
-    from itertools import combinations
+    from itertools import product
 
     s = np.random.poisson(k_counts, rows)
 
     return_list: list[tuple[str, int]] = []
 
-    k: int = 0
+    combo_list, combo_count = build_all_combos(rows)
+
+    for i in range(len(combo_list)):
+        return_list.append((combo_list[i], s[i]))
+
+    """k: int = 0
     # combo_count: int = 1
     while k < rows:
-        all_combinations = combinations(au, combo_count)
+        all_combinations = product(au, repeat=combo_count)
         for combo in all_combinations:
             return_list.append(("".join(combo), s[k]))
+            k += 1
+            if k == rows:
+                break
+        combo_count += 1"""
+
+    return return_list, combo_count
+
+
+def build_all_combos(
+    rows: int, combo_count: int = 1
+) -> tuple[list[str], int]:
+    from itertools import product
+    from string import ascii_uppercase as au
+
+    k: int = 0
+    # combo_count: int = 1
+    return_list: list[str] = []
+    while k < rows:
+        all_combinations = product(au, repeat=combo_count)
+        for combo in all_combinations:
+            return_list.append("".join(combo))
             k += 1
             if k == rows:
                 break
@@ -34,8 +60,55 @@ def build_table(
     return return_list, combo_count
 
 
+def build_all_combos_twice(rows: int) -> list[str]:
+    from itertools import product
+    from string import ascii_uppercase as au
+
+    combo_list, combo_count = build_all_combos(rows * 2)
+
+    return combo_list
+
+
+def build_del_table_arr(
+    del_arr: list[int],
+    N: int,
+    k_counts: int,
+    combo_count: int = 2,
+) -> list[list[tuple[str, int]]]:
+    combo_list = build_all_combos_twice(N)
+
+    del_arr = [
+        (
+            int(float(i))
+            if int(float(i)) >= 1
+            else int(float(i) * N)
+        )
+        for i in del_arr
+    ]
+
+    del_tables: list[list[tuple[str, int]]] = []
+
+    for del_rows in del_arr:
+        if del_rows > N:
+            raise ValueError(
+                f"Deletion rows must be less than or equal to {N}"
+            )
+
+        del_table = build_table(
+            del_rows, int(k_counts * (1 / 10)), combo_count
+        )[0]
+        del_table = [(i[0], i[1] + 1) for i in del_table]
+
+        del_tables.append(del_table)
+
+    return del_tables
+
+
 def build_insert_table_arr(
-    insert_arr: list[int], N: int, combo_count: int = 2
+    insert_arr: list[int],
+    N: int,
+    k_counts: int,
+    combo_count: int = 2,
 ) -> list[list[tuple[str, int]]]:
     insert_arr = [
         (
@@ -55,7 +128,7 @@ def build_insert_table_arr(
             )
 
         insert_table = build_table(
-            ins_rows, int(N * (1 / 10)), combo_count
+            ins_rows, int(k_counts * (1 / 10)), combo_count
         )[0]
         insert_table = [
             (i[0], i[1] + 1) for i in insert_table
@@ -116,6 +189,15 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-d",
+        "--deletion",
+        nargs="+",
+        type=str,
+        help="Make a small deletion for the table with the amount of deletions",
+        dest="delete",
+    )
+
+    parser.add_argument(
         "-if",
         "--insertion_file",
         nargs="+",
@@ -132,11 +214,23 @@ if __name__ == "__main__":
         args.rows, args.k_counts
     )
 
-    print(args.insert, args.insert_file)
     if args.insert != None:
         generated_s_arr: list[list[tuple[str, int]]] = (
             build_insert_table_arr(
-                args.insert, args.rows, combo_count + 1
+                args.insert,
+                args.rows,
+                args.k_counts,
+                combo_count,
+            )
+        )
+
+    if args.delete != None:
+        generated_d_arr: list[list[tuple[str, int]]] = (
+            build_del_table_arr(
+                args.delete,
+                args.rows,
+                args.k_counts,
+                combo_count,
             )
         )
 
