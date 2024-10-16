@@ -13,9 +13,6 @@ def build_table(
     Returns:
         list[tuple[int, int]]: Generated tuples togeter with k counts
     """
-    from string import ascii_uppercase as au
-    from itertools import product
-
     s = np.random.poisson(k_counts, rows)
 
     return_list: list[tuple[str, int]] = []
@@ -25,23 +22,24 @@ def build_table(
     for i in range(len(combo_list)):
         return_list.append((combo_list[i], s[i]))
 
-    """k: int = 0
-    # combo_count: int = 1
-    while k < rows:
-        all_combinations = product(au, repeat=combo_count)
-        for combo in all_combinations:
-            return_list.append(("".join(combo), s[k]))
-            k += 1
-            if k == rows:
-                break
-        combo_count += 1"""
-
     return return_list, combo_count
 
 
 def build_all_combos(
     rows: int, combo_count: int = 1
 ) -> tuple[list[str], int]:
+    """Builds all possible combinations of a table
+
+    Args:
+        rows (int): Amount of rows in the table
+        combo_count (int, optional): How much letters are
+            already in the identifier. Defaults to 1.
+
+    Returns:
+        tuple[list[str], int]: Gives back the list with the
+            combinations and last known amount of letters
+            in the identifier
+    """
     from itertools import product
     from string import ascii_uppercase as au
 
@@ -61,10 +59,8 @@ def build_all_combos(
 
 
 def build_all_combos_twice(rows: int) -> list[str]:
-    from itertools import product
-    from string import ascii_uppercase as au
-
-    combo_list, combo_count = build_all_combos(rows * 2)
+    """Builds all possible cominbations of the table for 2N rows"""
+    combo_list, _ = build_all_combos(rows * 2)
 
     return combo_list
 
@@ -75,7 +71,23 @@ def build_del_table_arr(
     k_counts: int,
     combo_count: int = 2,
 ) -> list[list[tuple[str, int]]]:
-    combo_list = build_all_combos_twice(N)
+    """Builds a deletion table
+
+    Args:
+        del_arr (list[int]): Deletion rows
+        N (int): Amount of rows in the table
+        k_counts (int): Average k counts
+        combo_count (int, optional): Amount of letters in the identifier. Defaults to 2.
+
+    Raises:
+        ValueError: Deletion rows must be less than the rows in the table.
+
+    Returns:
+        list[list[tuple[str, int]]]: List of list of deletion tables
+    """
+    from random import sample
+
+    combo_list, _ = build_all_combos(N)
 
     del_arr = [
         (
@@ -94,10 +106,17 @@ def build_del_table_arr(
                 f"Deletion rows must be less than or equal to {N}"
             )
 
-        del_table = build_table(
-            del_rows, int(k_counts * (1 / 10)), combo_count
-        )[0]
-        del_table = [(i[0], i[1] + 1) for i in del_table]
+        s = np.random.poisson(
+            int(k_counts * (1 / 10)), del_rows
+        )
+
+        del_table_sample: list[str] = sample(
+            combo_list, del_rows
+        )
+        del_table = [
+            (del_table_sample[i], -s[i])
+            for i in range(del_rows)
+        ]
 
         del_tables.append(del_table)
 
@@ -110,6 +129,20 @@ def build_insert_table_arr(
     k_counts: int,
     combo_count: int = 2,
 ) -> list[list[tuple[str, int]]]:
+    """Builds the insertion table
+
+    Args:
+        insert_arr (list[int]): Insertion rows
+        N (int): Amount of rows in the original table
+        k_counts (int): Average k counts
+        combo_count (int, optional): Amount of letters in the identifier. Defaults to 2.
+
+    Raises:
+        ValueError: Insertion rows must be less than the rows in the table.
+
+    Returns:
+        list[list[tuple[str, int]]]: List of list of insertion tables
+    """
     insert_arr = [
         (
             int(float(i))
@@ -167,7 +200,6 @@ if __name__ == "__main__":
         "--output",
         dest="output",
         type=str,
-        default="output.csv",
         help="Output file name",
     )
 
@@ -206,6 +238,15 @@ if __name__ == "__main__":
         dest="insert_file",
     )
 
+    parser.add_argument(
+        "-df",
+        "--deletion_file",
+        nargs="+",
+        type=str,
+        help="File to save the deletion to",
+        dest="delete_file",
+    )
+
     from save_to_file import save_table_to_file
 
     args = parser.parse_args()
@@ -238,6 +279,8 @@ if __name__ == "__main__":
         print(generated_k)
         if args.insert != None:
             print(generated_s_arr)
+        if args.delete != None:
+            print(generated_d_arr)
 
     if args.output != None and type(generated_k) == list:
         save_table_to_file(generated_k, args.output)
@@ -250,4 +293,14 @@ if __name__ == "__main__":
         for i in range(len(args.insert)):
             save_table_to_file(
                 generated_s_arr[i], args.insert_file[i]
+            )
+
+    if args.delete_file != None and args.delete != None:
+        if len(args.delete) != len(args.delete_file):
+            raise ValueError(
+                "Amount of deletions and files must be the same"
+            )
+        for i in range(len(args.delete)):
+            save_table_to_file(
+                generated_d_arr[i], args.delete_file[i]
             )
