@@ -8,6 +8,7 @@ def compare_times_plot(
     name_one: str,
     name_two: str,
     bins: list,
+    save_name: str | None = None,
 ) -> None:
     """Builds up a plot to compare the times of the times given in the array.
 
@@ -28,15 +29,20 @@ def compare_times_plot(
         width=bar_width,
         label=name_two,
     )
-    plt.title(f"{name_one} vs {name_two}")
+    if save_name is not None:
+        plt.title(f"{name_one} vs {name_two} - {save_name}")
+    else:
+        plt.title(f"{name_one} vs {name_two}")
     plt.xticks(
         index + bar_width,
         bins,
     )
-    # plt.yscale("log")
+    plt.yscale("log")
     plt.xlabel("Data size")
     plt.ylabel("Time (ms)")
     plt.legend()
+    if save_name is not None:
+        plt.savefig(f"./plots/{save_name}.png")
     plt.savefig(f"./plots/{name_one}_vs_{name_two}.png")
     plt.clf()
 

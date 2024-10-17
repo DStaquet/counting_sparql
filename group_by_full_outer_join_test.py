@@ -329,6 +329,7 @@ def run_queries_time(
     ins_graph: Graph | None = None,
     del_graph: Graph | None = None,
     runs: int = 5,
+    clean_table: str | None = None,
 ) -> float:
     """Runs the full outer join query for a given number of times.
 
@@ -378,6 +379,9 @@ def run_queries_time(
                     ins_graph,
                     del_graph,
                 )
+        elif clean_table is not None:
+            print(f"Cleaning up table {clean_table}...")
+            build_table(clean_table, duckdb_conn)
 
     if avg_time is None:
         raise ValueError("Average time is None.")
@@ -568,6 +572,9 @@ def graph_test(
         data_file: str = data_files[index]
         del_file: list[str] = delta_files[index]
 
+        avg_time_full_outer_join_arr: ndarray = array([])
+        avg_time_group_by_sum_arr: ndarray = array([])
+
         print(f"\nRunning the queries with {data_file}...")
         for delta_data in del_file:
 
@@ -577,8 +584,12 @@ def graph_test(
                     data_file, delta_data
                 )
             )
+            prep_table: str = (
+                f"{data_file}_{delta_data}_prep"
+            )
+            build_table(prep_table, duckdb_conn)
             group_by_sum_query: str = build_up_group_by_sum(
-                data_file, delta_data
+                data_file, delta_data, prep_table
             )
 
             print("Running the full outer join query...")
@@ -587,10 +598,31 @@ def graph_test(
                 duckdb_conn,
                 runs=runs,
             )
+            avg_time_full_outer_join_arr = append(
+                avg_time_full_outer_join_arr,
+                avg_time_full_outer_join,
+            )
+
             print("Running the group by sum query...")
             avg_time_group_by_sum = run_queries_time(
-                group_by_sum_query, duckdb_conn, runs=runs
+                group_by_sum_query,
+                duckdb_conn,
+                runs=runs,
+                clean_table=prep_table,
             )
+            avg_time_group_by_sum_arr = append(
+                avg_time_group_by_sum_arr,
+                avg_time_group_by_sum,
+            )
+
+        build_compare_plot.compare_times_plot(
+            avg_time_full_outer_join_arr,
+            avg_time_group_by_sum_arr,
+            f"Full Outer Join",
+            f"Group By Sum",
+            del_file,
+            f"{data_file}_results",
+        )
 
 
 def og_delete_test(
