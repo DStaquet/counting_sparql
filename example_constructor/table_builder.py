@@ -65,6 +65,40 @@ def build_all_combos_twice(rows: int) -> list[str]:
     return combo_list
 
 
+def build_big_S_table(
+    N: int,
+    k_counts: int,
+    combo_count: int = 1,
+    c: int = 10,
+) -> list[tuple[str, int]]:
+    """Builds a big S table
+
+    Args:
+        rows (int): Amount of rows in the table
+        k_counts (int): Average k counts
+        combo_count (int, optional): Amount of letters in the identifier. Defaults to 1.
+
+    Returns:
+        list[tuple[str, int]]: List of tuples with the identifier and k counts
+    """
+    s = np.random.poisson(k_counts, N * 2)
+
+    combo_list = build_all_combos_twice(N)
+    return_list: list[tuple[str, int]] = []
+
+    s_start: int = int(N - N / c)
+    s_end: int = int(N + N * ((c - 1) / c))
+
+    flip: int = -1
+    for index in range(s_start, s_end):
+        return_list.append(
+            (combo_list[index], s[index] * flip)
+        )
+        flip *= -1
+
+    return return_list
+
+
 def build_del_table_arr(
     del_arr: list[int],
     N: int,
@@ -184,7 +218,7 @@ if __name__ == "__main__":
         "--rows",
         type=int,
         default=3,
-        help="Number of rows in the table",
+        help="Number of rows in the table. Default is 3",
     )
 
     parser.add_argument(
@@ -192,7 +226,7 @@ if __name__ == "__main__":
         "--k_counts",
         type=int,
         default=25,
-        help="Number of average k counts",
+        help="Number of average k counts. Default is 25",
     )
 
     parser.add_argument(
@@ -247,6 +281,23 @@ if __name__ == "__main__":
         dest="delete_file",
     )
 
+    parser.add_argument(
+        "-c",
+        nargs="+",
+        type=int,
+        help="Overlapping modifier for big datasets",
+        dest="c",
+    )
+
+    parser.add_argument(
+        "-oS",
+        "--output_big_S",
+        nargs="+",
+        type=str,
+        help="Output file name for big S",
+        dest="output_big_S",
+    )
+
     from save_to_file import save_table_to_file
 
     args = parser.parse_args()
@@ -275,12 +326,32 @@ if __name__ == "__main__":
             )
         )
 
+    if args.c != None:
+        for index in range(0, len(args.c)):
+            generated_big_S = build_big_S_table(
+                args.rows,
+                args.k_counts,
+                combo_count,
+                args.c[index],
+            )
+            if args.output_big_S != None:
+                if len(args.c) != len(args.output_big_S):
+                    raise ValueError(
+                        "Amount of big S and output files must be the same"
+                    )
+                save_table_to_file(
+                    generated_big_S,
+                    args.output_big_S[index],
+                )
+
     if args.print:
         print(generated_k)
         if args.insert != None:
             print(generated_s_arr)
         if args.delete != None:
             print(generated_d_arr)
+        if args.c != None:
+            print(generated_big_S)
 
     if args.output != None and type(generated_k) == list:
         save_table_to_file(generated_k, args.output)
