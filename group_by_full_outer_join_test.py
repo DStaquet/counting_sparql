@@ -324,8 +324,8 @@ def load_graph(data_file: str) -> Graph:
 
 def run_queries_time(
     query: str,
-    data_graph: Graph,
     duckdb_conn: DuckDBPyConnection,
+    data_graph: Graph | None = None,
     ins_graph: Graph | None = None,
     del_graph: Graph | None = None,
     runs: int = 5,
@@ -345,10 +345,11 @@ def run_queries_time(
     """
     import time
 
-    print("Building up data...")
-    build_up_data(
-        duckdb_conn, data_graph, ins_graph, del_graph
-    )
+    if data_graph is not None:
+        print("Building up data...")
+        build_up_data(
+            duckdb_conn, data_graph, ins_graph, del_graph
+        )
 
     avg_time: float | None = None
     for i in range(runs):
@@ -364,18 +365,19 @@ def run_queries_time(
             ) / 2
         print(
             "Time taken: ",
-            end - start,
+            (end - start) * 1000,
             "\nAverage time: ",
             avg_time,
         )
-        if i < runs - 1:
-            print("Building up data...")
-            build_up_data(
-                duckdb_conn,
-                data_graph,
-                ins_graph,
-                del_graph,
-            )
+        if data_graph is not None:
+            if i < runs - 1:
+                print("Building up data...")
+                build_up_data(
+                    duckdb_conn,
+                    data_graph,
+                    ins_graph,
+                    del_graph,
+                )
 
     if avg_time is None:
         raise ValueError("Average time is None.")
@@ -505,8 +507,8 @@ def og_graph_test(
         print("Running the full outer join query...")
         run_time_full_outer_join: float = run_queries_time(
             query,
-            og_graph,
             duckdb_conn,
+            og_graph,
             ins_graph,
             del_graph,
             runs,
@@ -519,8 +521,8 @@ def og_graph_test(
         print("\nRunning the group by sum query...")
         run_time_group_by_sum: float = run_queries_time(
             query_group_by,
-            og_graph,
             duckdb_conn,
+            og_graph,
             ins_graph,
             del_graph,
             runs,
@@ -548,6 +550,47 @@ def og_graph_test(
         "Group By Sum",
         data_files,
     )
+
+
+def graph_test(
+    data_files: list[str],
+    runs: int,
+    delta_files: list[list[str]],
+) -> None:
+    import time as t
+
+    if len(delta_files) != len(data_files):
+        raise ValueError(
+            "The amount of insertion and deletion files must match the amount of data files."
+        )
+
+    for index in range(len(data_files)):
+        data_file: str = data_files[index]
+        del_file: list[str] = delta_files[index]
+
+        print(f"\nRunning the queries with {data_file}...")
+        for delta_data in del_file:
+
+            print(f"Comparing with {delta_data}...")
+            full_outer_join_query: str = (
+                build_up_full_outer_join(
+                    data_file, delta_data
+                )
+            )
+            group_by_sum_query: str = build_up_group_by_sum(
+                data_file, delta_data
+            )
+
+            print("Running the full outer join query...")
+            avg_time_full_outer_join = run_queries_time(
+                full_outer_join_query,
+                duckdb_conn,
+                runs=runs,
+            )
+            print("Running the group by sum query...")
+            avg_time_group_by_sum = run_queries_time(
+                group_by_sum_query, duckdb_conn, runs=runs
+            )
 
 
 def og_delete_test(
@@ -626,15 +669,6 @@ def set_up_tables(table_names: list[str]) -> None:
         duckdb_conn.execute(f"DELETE FROM {table_name};")
 
 
-def graph_test(
-    data_files: list[str],
-    runs: int,
-    ins_files: list[str],
-    del_files: list[str],
-) -> None:
-    pass
-
-
 def load_file_to_table_in_db(
     file_name: str,
     table_name: str,
@@ -654,6 +688,33 @@ def load_file_to_table_in_db(
 
     duckdb_conn.execute(drop_query)
     duckdb_conn.execute(create_query)
+
+
+def parse_delta_table_names(
+    table_names_input: list[str],
+) -> tuple[list[str], list[list[str]]]:
+    """Parses the table names and delta data table names.
+
+    Args:
+        table_names_input (list[str]): List of table names
+            given through arguments.
+
+    Returns:
+        tuple[list[str], list[list[str]]]: List of table names
+            and list of delta data table names.
+    """
+
+    table_names: list[str] = []
+    table_names_delta: list[list[str]] = []
+
+    for table_name in table_names_input:
+        tables = table_name.split(" ")
+        table_names.append(tables[0])
+        temp_delta: list[str] = []
+        temp_delta += tables[1:]
+        table_names_delta.append(temp_delta)
+
+    return table_names, table_names_delta
 
 
 if __name__ == "__main__":
@@ -686,7 +747,7 @@ if __name__ == "__main__":
         nargs="*",
     )
     parser.add_argument(
-        "data_file",
+        "--data_file",
         type=str,
         help="The data files to run.",
         nargs="+",
@@ -705,6 +766,13 @@ if __name__ == "__main__":
         nargs="+",
         type=str,
         help="Load the data into the table.",
+    )
+    parser.add_argument(
+        "-t",
+        "--tables",
+        nargs="+",
+        type=str,
+        help="The table names to use. Written in 'table_one table_two' format to group together with delta data.",
     )
     args = parser.parse_args()
 
@@ -734,7 +802,7 @@ if __name__ == "__main__":
             )
         for i in range(0, len(args.load), 2):
             load_file_to_table_in_db(
-                args.load[i], args.load[i+1], duckdb_conn
+                args.load[i], args.load[i + 1], duckdb_conn
             )
 
         exit()
@@ -743,7 +811,7 @@ if __name__ == "__main__":
     # set_up_tables(table_names)
 
     # Big data delete vs drop test
-    if not args.no_drop:
+    if not args.no_drop and args.data_file is not None:
         test_drop_vs_delete_big_data(
             build_big_data_tuples(
                 args.data_file,
@@ -751,6 +819,15 @@ if __name__ == "__main__":
             ),
             args.runs,
             duckdb_conn,
+        )
+
+    if args.tables is not None:
+        table_names, delta_table_names = (
+            parse_delta_table_names(args.tables)
+        )
+
+        graph_test(
+            table_names, args.runs, delta_table_names
         )
 
     print("Done.")
