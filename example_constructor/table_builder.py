@@ -81,7 +81,7 @@ def build_big_S_table(
     Returns:
         list[tuple[str, int]]: List of tuples with the identifier and k counts
     """
-    s = np.random.poisson(k_counts, N * 2)
+    s = np.random.poisson(int(k_counts * (1 / 10)), N * 2)
 
     combo_list = build_all_combos_twice(N)
     return_list: list[tuple[str, int]] = []
@@ -91,6 +91,8 @@ def build_big_S_table(
 
     flip: int = -1
     for index in range(s_start, s_end):
+        if s[index] == 0:
+            s[index] = 1
         return_list.append(
             (combo_list[index], s[index] * flip)
         )
