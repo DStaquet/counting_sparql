@@ -1,0 +1,116 @@
+{
+"SelectQuery_7326146391645809822": {
+    "p": {
+        "p": {
+            "triples": [
+                [
+                    "y1",
+                    "http://example.org/edges/link",
+                    "y2"
+                ],
+                [
+                    "x",
+                    "http://example.org/edges/link",
+                    "y1"
+                ],
+                [
+                    "y2",
+                    "http://example.org/edges/link",
+                    "z"
+                ]
+            ],
+            "_vars": [
+                "z",
+                "y1",
+                "x",
+                "y2"
+            ]
+        },
+        "PV": [
+            "x",
+            "z"
+        ],
+        "_vars": [
+            "z",
+            "y1",
+            "x",
+            "y2"
+        ]
+    },
+    "datasetClause": null,
+    "PV": [
+        "x",
+        "z"
+    ],
+    "_vars": [
+        "z",
+        "y1",
+        "x",
+        "y2"
+    ]
+}
+,
+"Project_1495894674729047430": {
+    "p": {
+        "triples": [
+            [
+                "y1",
+                "http://example.org/edges/link",
+                "y2"
+            ],
+            [
+                "x",
+                "http://example.org/edges/link",
+                "y1"
+            ],
+            [
+                "y2",
+                "http://example.org/edges/link",
+                "z"
+            ]
+        ],
+        "_vars": [
+            "z",
+            "y1",
+            "x",
+            "y2"
+        ]
+    },
+    "PV": [
+        "x",
+        "z"
+    ],
+    "_vars": [
+        "z",
+        "y1",
+        "x",
+        "y2"
+    ]
+}
+,
+"BGP_113119029616741403": {
+    "triples": [
+        [
+            "y1",
+            "http://example.org/edges/link",
+            "y2"
+        ],
+        [
+            "x",
+            "http://example.org/edges/link",
+            "y1"
+        ],
+        [
+            "y2",
+            "http://example.org/edges/link",
+            "z"
+        ]
+    ],
+    "_vars": [
+        "z",
+        "y1",
+        "x",
+        "y2"
+    ]
+}
+}

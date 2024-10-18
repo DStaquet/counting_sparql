@@ -61,18 +61,18 @@ def construct_serial(
         bottleneck_right: str = str(i) + "br"
         # Edges to bottleneck
         first_temp_edges: list[tuple[str, str, str]] = [
-            (temp_vertices[j], "hop", bottleneck_left)
+            (temp_vertices[j], "link", bottleneck_left)
             for j in range(many_vertices)
         ]
         # Bottleneck edge
         temp_bottleneck_edge: tuple[str, str, str] = (
             bottleneck_left,
-            "hop",
+            "link",
             bottleneck_right,
         )
         # Edges from bottleneck
         second_temp_edges: list[tuple[str, str, str]] = [
-            (bottleneck_right, "hop", str(i + 1) + str(j))
+            (bottleneck_right, "link", str(i + 1) + str(j))
             for j in range(many_vertices)
         ]
 
@@ -115,7 +115,7 @@ def __build_left_side(
     ]
     # Edges from bottleneck
     first_temp_edges: list[tuple[str, str, str]] = [
-        (bottleneck_right, "hop", temp_vertices[k])
+        (bottleneck_right, "link", temp_vertices[k])
         for k in range(many_vertices)
     ]
     # Edges to bottleneck
@@ -124,7 +124,7 @@ def __build_left_side(
             str(many_to_one_index)
             + str(bottleneck_index + 1)
             + str(k),
-            "hop",
+            "link",
             bottleneck_left,
         )
         for k in range(many_vertices)
@@ -161,14 +161,14 @@ def __build_right_side(
     ]
     # Edges to bottleneck
     first_temp_edges: list[tuple[str, str, str]] = [
-        (temp_vertices[k], "hop", bottleneck_left)
+        (temp_vertices[k], "link", bottleneck_left)
         for k in range(many_vertices)
     ]
     # Edges from bottleneck
     second_temp_edges: list[tuple[str, str, str]] = [
         (
             bottleneck_right,
-            "hop",
+            "link",
             str(many_to_one_index)
             + str(bottleneck_index + 1)
             + str(k),
@@ -209,7 +209,7 @@ def construct_parallel(
             # Bottleneck edge
             temp_bottleneck_edge: tuple[str, str, str] = (
                 bottleneck_left,
-                "hop",
+                "link",
                 bottleneck_right,
             )
             edges.append(temp_bottleneck_edge)
@@ -227,7 +227,7 @@ def construct_parallel(
         ]
         """# Edges to bottleneck
         last_left_edges: list[tuple[str, str, str]] = [
-            (last_left_vertices[k], "hop", bottleneck_left)
+            (last_left_vertices[k], "link", bottleneck_left)
             for k in range(many_vertices)
         ]"""
 
@@ -244,7 +244,7 @@ def construct_parallel(
             left_main_edges.append(
                 (
                     str(i) + "0" + str(j),
-                    "hop",
+                    "link",
                     bottleneck_left,
                 )
             )
@@ -255,7 +255,7 @@ def construct_parallel(
             right_main_edges.append(
                 (
                     bottleneck_right,
-                    "hop",
+                    "link",
                     str(i) + "0" + str(j),
                 )
             )
@@ -268,7 +268,7 @@ def construct_parallel(
     ]
     main_bottleneck_edge: tuple[str, str, str] = (
         bottleneck_left,
-        "hop",
+        "link",
         bottleneck_right,
     )
     main_edges.append(main_bottleneck_edge)
@@ -286,7 +286,7 @@ def construct_parallel(
             # Bottleneck edge
             temp_bottleneck_edge: tuple[str, str, str] = (
                 bottleneck_left,
-                "hop",
+                "link",
                 bottleneck_right,
             )
             edges.append(temp_bottleneck_edge)
