@@ -62,14 +62,35 @@ def test_big_data_delete(
     table_name: str,
     data_file: str,
     duckdb_conn: DuckDBPyConnection,
+    use_graph_table: bool = False,
 ) -> float:
+    """Tests the delete from table method with big data.
+
+    Args:
+        runs (int): Amount of runs to do.
+        table_name (str): Name of the table to delete from.
+        data_file (str): Name of the data file.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+        use_graph_table (bool, optional): Uses an existing graph instead of a CSV file if True. Defaults to False.
+
+    Raises:
+        ValueError: The average time is None.
+
+    Returns:
+        float: The average time taken to delete the data.
+    """
     import time as t
 
     avg_time: float | None = None
 
-    insert_data_query: str = (
-        f"COPY {table_name} FROM '{data_file}' (DELIMITER ',');"
-    )
+    if use_graph_table:
+        insert_data_query: str = (
+            f"INSERT INTO {table_name} SELECT * FROM {data_file};"
+        )
+    else:
+        insert_data_query: str = (
+            f"COPY {table_name} FROM '{data_file}' (DELIMITER ',');"
+        )
     delete_query: str = f"DELETE FROM {table_name};"
 
     for i in range(runs):
@@ -77,8 +98,8 @@ def test_big_data_delete(
         print("Deleting data and inserting new data...")
         start = t.time()
         duckdb_conn.execute(delete_query)
-        end = t.time()
         duckdb_conn.execute(insert_data_query)
+        end = t.time()
         if avg_time is None:
             avg_time = (end - start) * 1000
         else:
@@ -103,23 +124,44 @@ def test_big_data_drop(
     data_file: str,
     table_name: str,
     duckdb_conn: DuckDBPyConnection,
+    use_graph_table: bool = False,
 ) -> float:
+    """Tests the drop table method with big data.
+
+    Args:
+        runs (int): Amount of runs to do.
+        data_file (str): Name of the data file.
+        table_name (str): Name of the table to drop.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+        use_graph_table (bool, optional): Uses an existing graph instead of a CSV file if True. Defaults to False.
+
+    Raises:
+        ValueError: If the average time is None.
+
+    Returns:
+        float: The average time taken to drop the table.
+    """
     import time as t
 
     avg_time: float | None = None
 
     drop_query: str = f"DROP TABLE IF EXISTS {table_name};"
-    create_query: str = (
-        f"CREATE TABLE IF NOT EXISTS {table_name} AS FROM '{data_file}';"
-    )
+    if use_graph_table:
+        create_query: str = (
+            f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM {data_file};"
+        )
+    else:
+        create_query: str = (
+            f"CREATE TABLE IF NOT EXISTS {table_name} AS FROM '{data_file}';"
+        )
 
     for i in range(runs):
         print(f"Run {i + 1} of {runs}")
         print("Dropping table and inserting new data...")
         start = t.time()
         duckdb_conn.execute(drop_query)
-        end = t.time()
         duckdb_conn.execute(create_query)
+        end = t.time()
         if avg_time is None:
             avg_time = (end - start) * 1000
         else:
@@ -140,35 +182,71 @@ def test_big_data_drop(
 
 
 def test_drop_vs_delete_big_data(
-    data_files: list[tuple[str, str]],
+    data_files: list[tuple[str, str, str]],
     runs: int,
     duckdb_conn: DuckDBPyConnection,
+    save_name: str | None = None,
 ) -> None:
+    """Tests the drop vs delete method with big data.
+
+    Args:
+        data_files (list[tuple[str, str, str]]): List of tuples with the data file and table name.
+        runs (int): Amount of times to run the query.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+        save_name (str | None, optional): Name of the file to save to. Defaults to None.
+    """
 
     delete_arr: ndarray = array([])
+    delete_arr_tbl: ndarray = array([])
     drop_arr: ndarray = array([])
+    drop_arr_tbl: ndarray = array([])
 
-    for data_file, table_name in data_files:
+    for data_file, table_name, graph_tbl_name in data_files:
         print(
             f"Running the delete test with {data_file}..."
         )
         delete_avg_time: float = test_big_data_delete(
             runs, table_name, data_file, duckdb_conn
         )
+        delete_avg_time_tbl: float = test_big_data_delete(
+            runs,
+            table_name,
+            graph_tbl_name,
+            duckdb_conn,
+            True,
+        )
         print(f"Running the drop test with {data_file}...")
         drop_avg_time: float = test_big_data_drop(
             runs, data_file, table_name, duckdb_conn
         )
+        drop_avg_time_tbl: float = test_big_data_drop(
+            runs,
+            graph_tbl_name,
+            table_name,
+            duckdb_conn,
+            True,
+        )
 
         delete_arr = append(delete_arr, delete_avg_time)
         drop_arr = append(drop_arr, drop_avg_time)
+        delete_arr_tbl = append(
+            delete_arr_tbl, delete_avg_time_tbl
+        )
+        drop_arr_tbl = append(
+            drop_arr_tbl, drop_avg_time_tbl
+        )
 
     build_compare_plot.compare_times_plot(
         drop_arr,
+        drop_arr_tbl,
+        "Drop Table (file)",
+        "Drop Table (tbl)",
+        [data_file for _, data_file, _ in data_files],
+        save_name,
         delete_arr,
-        "Drop Table",
-        "Delete From Table",
-        [data_file for _, data_file in data_files],
+        "Delete From Table (file)",
+        delete_arr_tbl,
+        "Delete From Table (tbl)",
     )
 
 
@@ -666,8 +744,10 @@ def og_delete_test(
 
 
 def build_big_data_tuples(
-    data_files: list[str], table_names: list[str]
-) -> list[tuple[str, str]]:
+    data_files: list[str],
+    table_names: list[str],
+    graph_table_names: list[str],
+) -> list[tuple[str, str, str]]:
     """Builds the big data tuples.
 
     Args:
@@ -677,13 +757,19 @@ def build_big_data_tuples(
     Returns:
         list[tuple[str, str]]: List of tuples with the data file and table name.
     """
-    if len(data_files) != len(table_names):
+    if len(data_files) != len(table_names) or len(
+        data_files
+    ) != len(graph_table_names):
         raise ValueError(
-            "The amount of data files and table names do not match."
+            "The amount of data files, table names and/or graph table names do not match."
         )
 
     return [
-        (data_files[i], table_names[i])
+        (
+            data_files[i],
+            table_names[i],
+            graph_table_names[i],
+        )
         for i in range(len(data_files))
     ]
 
@@ -760,7 +846,7 @@ if __name__ == "__main__":
         "-nd",
         "--no_drop",
         action="store_true",
-        help="Do not run the drop test.",
+        help="Run the drop test.",
     )
     parser.add_argument(
         "-i",
@@ -826,6 +912,11 @@ if __name__ == "__main__":
         "five_mil_tbl",
         "ten_mil_tbl",
     ]
+    graph_table_names: list[str] = [
+        "one_mil_graph",
+        "five_mil_graph",
+        "ten_mil_graph",
+    ]
 
     if args.load is not None:
         if len(args.load) % 2 != 0:
@@ -843,11 +934,13 @@ if __name__ == "__main__":
     # set_up_tables(table_names)
 
     # Big data delete vs drop test
-    if not args.no_drop and args.data_file is not None:
+    if args.no_drop and args.data_file is not None:
+        print("Running the big data delete vs drop test...")
         test_drop_vs_delete_big_data(
             build_big_data_tuples(
                 args.data_file,
                 table_names,
+                graph_table_names,
             ),
             args.runs,
             duckdb_conn,

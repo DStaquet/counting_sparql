@@ -9,6 +9,10 @@ def compare_times_plot(
     name_two: str,
     bins: list,
     save_name: str | None = None,
+    cmp_arr_three: np.ndarray | None = None,
+    name_three: str | None = None,
+    cmp_arr_four: np.ndarray | None = None,
+    name_four: str | None = None,
 ) -> None:
     """Builds up a plot to compare the times of the times given in the array.
 
@@ -16,7 +20,7 @@ def compare_times_plot(
         cmp_arr (np.ndarray): Array with the times to compare.
     """
     index = np.arange(len(bins))
-    bar_width = 0.35
+    bar_width = 0.2
     plt.bar(
         index,
         cmp_arr_one,
@@ -29,21 +33,66 @@ def compare_times_plot(
         width=bar_width,
         label=name_two,
     )
-    if save_name is not None:
-        plt.title(f"{name_one} vs {name_two} - {save_name}")
+    if name_three is None and name_four is None:
+        if save_name is not None:
+            plt.title(
+                f"{name_one} vs {name_two} - {save_name}"
+            )
+        else:
+            plt.title(f"{name_one} vs {name_two}")
+    elif name_three is not None and name_four is None:
+        if save_name is not None:
+            plt.title(
+                f"{name_one} vs {name_two} vs {name_three} vs {name_four} - {save_name}"
+            )
+        else:
+            plt.title(
+                f"{name_one} vs {name_two} vs {name_three} vs {name_four}"
+            )
+    if name_three is not None and name_four is not None:
+        plt.xticks(
+            index + bar_width,
+            bins,
+        )
     else:
-        plt.title(f"{name_one} vs {name_two}")
-    plt.xticks(
-        index + bar_width,
-        bins,
-    )
-    plt.yscale("log")
+        plt.xticks(
+            index + bar_width,
+            bins,
+        )
+    if cmp_arr_three is not None:
+        if name_three is None:
+            raise ValueError(
+                "Name three is None whilst cmp_arr_three is not."
+            )
+        plt.bar(
+            index + bar_width * 2,
+            cmp_arr_three,
+            width=bar_width,
+            label=name_three,
+        )
+    if cmp_arr_four is not None:
+        if name_four is None:
+            raise ValueError(
+                "Name four is None whilst cmp_arr_four is not."
+            )
+        plt.bar(
+            index + bar_width * 3,
+            cmp_arr_four,
+            width=bar_width,
+            label=name_four,
+        )
+    # plt.yscale("log")
     plt.xlabel("Data size")
     plt.ylabel("Time (ms)")
     plt.legend()
+    if name_three is not None and name_four is not None:
+        plt.savefig(
+            f"./plots/{name_one}_vs_{name_two}_vs_{name_three}_vs_{name_four}.png"
+        )
+    else:
+        plt.savefig(f"./plots/{name_one}_vs_{name_two}.png")
     if save_name is not None:
         plt.savefig(f"./plots/{save_name}.png")
-    plt.savefig(f"./plots/{name_one}_vs_{name_two}.png")
     plt.clf()
 
 
