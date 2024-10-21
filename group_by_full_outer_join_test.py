@@ -7,6 +7,7 @@ def build_up_group_by_sum(
     table_name_one: str,
     table_name_two: str,
     prep_table: str = "R2_prep",
+    result_table: str = "R2_rslt",
 ) -> str:
     """Build up the group by sum query.
 
@@ -21,19 +22,21 @@ def build_up_group_by_sum(
 
     # INSERT INTO query
     insert_query: str = (
-        f"INSERT INTO {prep_table} SELECT A, K FROM {table_name_one};\n"
+        f"CREATE TABLE {prep_table} AS SELECT A, K FROM {table_name_one};\n"
     )
     insert_query += f"INSERT INTO {prep_table} SELECT A, K FROM {table_name_two};\n"
 
     # Sum and group by query
     return_str += insert_query
-    return_str += f"SELECT A, SUM(K) AS K FROM {prep_table} GROUP BY A HAVING SUM(K) > 0;"
+    return_str += f"CREATE TABLE IF NOT EXISTS {result_table} AS SELECT A, SUM(K) AS K FROM {prep_table} GROUP BY A HAVING SUM(K) > 0;"
 
     return return_str
 
 
 def build_up_full_outer_join(
-    table_name_one: str, table_name_two: str
+    table_name_one: str,
+    table_name_two: str,
+    result_table: str,
 ) -> str:
     """Build up the full outer join query.
 
@@ -45,6 +48,9 @@ def build_up_full_outer_join(
         str: The query string of the full outer join.
     """
     return_str: str = ""
+
+    # create clause
+    return_str += f"CREATE TABLE {result_table} AS "
 
     # select clause
     return_str += "SELECT "
@@ -408,6 +414,7 @@ def run_queries_time(
     del_graph: Graph | None = None,
     runs: int = 5,
     clean_table: str | None = None,
+    result_table: str | None = None,
 ) -> float:
     """Runs the full outer join query for a given number of times.
 
@@ -458,8 +465,17 @@ def run_queries_time(
                     del_graph,
                 )
         elif clean_table is not None:
-            print(f"Cleaning up table {clean_table}...")
-            build_table(clean_table, duckdb_conn)
+            print(
+                f"Cleaning/dropping up table {clean_table}..."
+            )
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {clean_table};"
+            )
+        if result_table is not None:
+            print(f"Dropping table {result_table}...")
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {result_table};"
+            )
 
     if avg_time is None:
         raise ValueError("Average time is None.")
@@ -555,7 +571,9 @@ def og_graph_test(
     time_arr_group_by: ndarray = array([])
 
     # Build up the queries
-    query: str = build_up_full_outer_join("R1", "R2")
+    query: str = build_up_full_outer_join(
+        "R1", "R2", "R1_R2_rslt"
+    )
     query_group_by: str = build_up_group_by_sum("R1", "R2")
 
     # Initialize insertion and deletion count
@@ -639,11 +657,19 @@ def graph_test(
     runs: int,
     delta_files: list[list[str]],
 ) -> None:
-    import time as t
+    """Runs the test between the outer join and group by sum.
 
+    Args:
+        data_files (list[str]): List of data files.
+        runs (int): Amount of times to run the query.
+        delta_files (list[list[str]]): List of lists with the delta data files.
+
+    Raises:
+        ValueError: Delta files must match the amount of data files.
+    """
     if len(delta_files) != len(data_files):
         raise ValueError(
-            "The amount of insertion and deletion files must match the amount of data files."
+            "The amount of delta files must match the amount of data files."
         )
 
     for index in range(len(data_files)):
@@ -656,18 +682,40 @@ def graph_test(
         print(f"\nRunning the queries with {data_file}...")
         for delta_data in del_file:
 
-            print(f"Comparing with {delta_data}...")
-            full_outer_join_query: str = (
-                build_up_full_outer_join(
-                    data_file, delta_data
-                )
+            # Preparing tables
+            result_tbl_outer_join: str = (
+                f"{data_file}_{delta_data}_rslt_outer_join"
+            )
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {result_tbl_outer_join};"
+            )
+            result_tbl_group_by: str = (
+                f"{data_file}_{delta_data}_rslt_group_by"
+            )
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {result_tbl_group_by};"
             )
             prep_table: str = (
                 f"{data_file}_{delta_data}_prep"
             )
-            build_table(prep_table, duckdb_conn)
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {prep_table};"
+            )
+
+            # Building up the queries
+            print(f"Comparing with {delta_data}...")
+            full_outer_join_query: str = (
+                build_up_full_outer_join(
+                    data_file,
+                    delta_data,
+                    result_tbl_outer_join,
+                )
+            )
             group_by_sum_query: str = build_up_group_by_sum(
-                data_file, delta_data, prep_table
+                data_file,
+                delta_data,
+                prep_table,
+                result_tbl_group_by,
             )
 
             print("Running the full outer join query...")
@@ -675,6 +723,7 @@ def graph_test(
                 full_outer_join_query,
                 duckdb_conn,
                 runs=runs,
+                result_table=result_tbl_outer_join,
             )
             avg_time_full_outer_join_arr = append(
                 avg_time_full_outer_join_arr,
@@ -687,6 +736,7 @@ def graph_test(
                 duckdb_conn,
                 runs=runs,
                 clean_table=prep_table,
+                result_table=result_tbl_group_by,
             )
             avg_time_group_by_sum_arr = append(
                 avg_time_group_by_sum_arr,
