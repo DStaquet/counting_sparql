@@ -440,6 +440,11 @@ def run_queries_time(
     avg_time: float | None = None
     for i in range(runs):
         print(f"Run {i + 1} of {runs}")
+        if result_table is not None:
+            print(f"Dropping table {result_table}...")
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {result_table};"
+            )
         start = time.time()
         duckdb_conn.execute(query)
         end = time.time()
@@ -470,11 +475,6 @@ def run_queries_time(
             )
             duckdb_conn.execute(
                 f"DROP TABLE IF EXISTS {clean_table};"
-            )
-        if result_table is not None:
-            print(f"Dropping table {result_table}...")
-            duckdb_conn.execute(
-                f"DROP TABLE IF EXISTS {result_table};"
             )
 
     if avg_time is None:

@@ -583,6 +583,42 @@ def delta_prep_sum_query(
     return update_query
 
 
+def outer_join_queries(
+    part: CompValue,
+    left_query: str,
+    right_query: str,
+    known_vars: set[str],
+) -> str:
+    """Generates a full outer join query between two tables
+
+    Args:
+        left_query (str): Left query to join
+        right_query (str): Right query to join
+        known_vars (set[str]): Set of known variables of both tables
+
+    Returns:
+        str: String with entire full outer join to add to the SQL file
+    """
+    join_query: str = (
+        "CREATE TEMP TABLE " + __encode_table_name(part)
+    )
+    join_query += " AS SELECT "
+    join_query += ", ".join(
+        f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}, "
+        for var in known_vars
+        if var != "k_count"
+    )
+    join_query += f"(CASE WHEN R1.k_count IS NULL THEN R2.k_count WHEN R2.k_count IS NULL THEN R1.k_count ELSE R1.k_count + R2.k_count END) AS k_count "
+    join_query += f"FROM ({left_query}) AS R1 FULL OUTER JOIN ({right_query}) AS R2 ON "
+    join_query += ", ".join(
+        f"R1.{var} = R2.{var}"
+        for var in known_vars
+        if var != "k_count"
+    )
+    join_query += f"WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;"
+    return join_query
+
+
 def bgp_delta_table_query(
     part: CompValue, triple_count: int
 ) -> tuple[str, set[str]]:
