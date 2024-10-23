@@ -1,10 +1,22 @@
 if __name__ == "__main__":
     import argparse
     from experiments import duckdb_conn
-    from incremental_query_parser import readQueryFile
-    from experiments.delta_bgp_join import (
-        join_delta_rules_bgp,
+    from incremental_query_parser import (
+        readQueryFile,
+        get_query_object,
     )
+    from setup_queries import get_query_output_dir
+    from experiments.delta_bgp_join import (
+        go_through_algebra_for_test,
+    )
+    import os, sys
+
+    hashseed = os.getenv("PYTHONHASHSEED")
+    if not hashseed:
+        os.environ["PYTHONHASHSEED"] = "0"
+        os.execv(
+            sys.executable, [sys.executable] + sys.argv
+        )
 
     """duckdb_conn = duckdb.connect(
         "./database/experiments_delta_bgp.db"
@@ -26,5 +38,15 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    read_query: str = readQueryFile(args.query_str)
-    join_delta_rules_bgp(read_query)
+    # Read the query file
+    query_str = readQueryFile(args.query_str)
+    # Make algebra
+    query_obj = get_query_object(query_str)
+    # Output directory
+    query_output_dir = get_query_output_dir(
+        args.query_dir, query_obj
+    )
+
+    go_through_algebra_for_test(
+        query_obj.algebra, query_output_dir, duckdb_conn
+    )

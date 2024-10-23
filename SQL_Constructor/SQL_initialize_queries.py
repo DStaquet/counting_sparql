@@ -37,7 +37,7 @@ def write_query_to_output_dir(
             f.write(query)
 
 
-def __delta_bgp_queries(part: CompValue) -> str:
+def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
     """Builds up the different delta BGP queries for the incremental query.
 
     Args:
@@ -47,6 +47,7 @@ def __delta_bgp_queries(part: CompValue) -> str:
         list[str]: List of the delta queries for the BGP
     """
     delta_queries: str = ""
+    delta_join_queries: str = ""
     last_delta_query_name: str = ""
     for triple_index in range(len(part.triples)):
         delta_query, known_vars = (
@@ -57,13 +58,29 @@ def __delta_bgp_queries(part: CompValue) -> str:
         delta_query_name = (
             "delta_join_"
             + SQL_Constructor.get_table_name(part)
+            + "_"
+            + str(triple_index + 1)
         )
-        if last_delta_query_name != "":
+        if last_delta_query_name != "" and (
+            triple_index + 1
+        ) < len(part.triples):
             delta_join_query = (
                 SQL_Constructor.outer_join_queries(
                     part,
-                    delta_query_name,
-                    delta_query,
+                    last_delta_query_name,
+                    "(" + delta_query + ")",
+                    known_vars,
+                    triple_index + 1,
+                )
+            )
+        elif (triple_index + 1) == len(
+            part.triples
+        ) and triple_index != 0:
+            delta_join_query = (
+                SQL_Constructor.final_outer_join_query(
+                    part,
+                    last_delta_query_name,
+                    "(" + delta_query + ")",
                     known_vars,
                 )
             )
@@ -73,16 +90,18 @@ def __delta_bgp_queries(part: CompValue) -> str:
                 + delta_query_name
                 + " AS "
                 + delta_query
+                + ";\n"
             )
         print(
             sqlparse.format(delta_join_query, reindent=True)
         )
+        delta_join_queries += delta_join_query
         last_delta_query_name = delta_query_name
         delta_queries += (
             SQL_Constructor.insert_into_w_select(
                 "delta_prep_"
                 + SQL_Constructor.get_table_name(part),
-                delta_query,
+                delta_query + ";\n",
                 list(known_vars),
             )
         )
@@ -94,7 +113,7 @@ def __delta_bgp_queries(part: CompValue) -> str:
         delta_prep_sum,
         list(part._vars),
     )
-    return delta_queries
+    return delta_queries, delta_join_queries
 
 
 def build_increm_queries(
@@ -115,11 +134,21 @@ def build_increm_queries(
     use_PV = False
     match part.name:
         case "BGP":
-            delta_queries = __delta_bgp_queries(part)
+            delta_queries, delta_join_queries = (
+                __delta_bgp_queries(part)
+            )
             write_query_to_output_dir(
                 output_dir,
                 delta_queries,
                 SQL_Constructor.get_table_name(part),
+                False,
+                "delta_",
+            )
+            write_query_to_output_dir(
+                output_dir,
+                delta_join_queries,
+                SQL_Constructor.get_table_name(part)
+                + "_join",
                 False,
                 "delta_",
             )

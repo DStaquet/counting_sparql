@@ -1,0 +1,179 @@
+{
+"SelectQuery_1965283482946732883": {
+    "p": {
+        "p": {
+            "triples": [
+                [
+                    "t1",
+                    "http://example.org/edges/link",
+                    "t2"
+                ],
+                [
+                    "t2",
+                    "http://example.org/edges/link",
+                    "t3"
+                ],
+                [
+                    "t3",
+                    "http://example.org/edges/link",
+                    "t4"
+                ],
+                [
+                    "t4",
+                    "http://example.org/edges/link",
+                    "t5"
+                ],
+                [
+                    "t5",
+                    "http://example.org/edges/link",
+                    "y"
+                ],
+                [
+                    "x",
+                    "http://example.org/edges/link",
+                    "t1"
+                ]
+            ],
+            "_vars": [
+                "t1",
+                "t2",
+                "t3",
+                "y",
+                "x",
+                "t4",
+                "t5"
+            ]
+        },
+        "PV": [
+            "x",
+            "y"
+        ],
+        "_vars": [
+            "y",
+            "t1",
+            "t3",
+            "x",
+            "t2",
+            "t4",
+            "t5"
+        ]
+    },
+    "datasetClause": null,
+    "PV": [
+        "x",
+        "y"
+    ],
+    "_vars": [
+        "y",
+        "t1",
+        "t3",
+        "x",
+        "t2",
+        "t4",
+        "t5"
+    ]
+}
+,
+"Project_6111485832092847760": {
+    "p": {
+        "triples": [
+            [
+                "t1",
+                "http://example.org/edges/link",
+                "t2"
+            ],
+            [
+                "t2",
+                "http://example.org/edges/link",
+                "t3"
+            ],
+            [
+                "t3",
+                "http://example.org/edges/link",
+                "t4"
+            ],
+            [
+                "t4",
+                "http://example.org/edges/link",
+                "t5"
+            ],
+            [
+                "t5",
+                "http://example.org/edges/link",
+                "y"
+            ],
+            [
+                "x",
+                "http://example.org/edges/link",
+                "t1"
+            ]
+        ],
+        "_vars": [
+            "t1",
+            "t2",
+            "t3",
+            "y",
+            "x",
+            "t4",
+            "t5"
+        ]
+    },
+    "PV": [
+        "x",
+        "y"
+    ],
+    "_vars": [
+        "y",
+        "t1",
+        "t3",
+        "x",
+        "t2",
+        "t4",
+        "t5"
+    ]
+}
+,
+"BGP_2874745891700759920": {
+    "triples": [
+        [
+            "t1",
+            "http://example.org/edges/link",
+            "t2"
+        ],
+        [
+            "t2",
+            "http://example.org/edges/link",
+            "t3"
+        ],
+        [
+            "t3",
+            "http://example.org/edges/link",
+            "t4"
+        ],
+        [
+            "t4",
+            "http://example.org/edges/link",
+            "t5"
+        ],
+        [
+            "t5",
+            "http://example.org/edges/link",
+            "y"
+        ],
+        [
+            "x",
+            "http://example.org/edges/link",
+            "t1"
+        ]
+    ],
+    "_vars": [
+        "t1",
+        "t2",
+        "t3",
+        "y",
+        "x",
+        "t4",
+        "t5"
+    ]
+}
+}
