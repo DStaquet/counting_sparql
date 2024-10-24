@@ -2,7 +2,10 @@ import numpy as np
 
 
 def build_table(
-    rows: int, k_counts: int, combo_count: int = 1
+    rows: int,
+    k_counts: int,
+    combo_count: int = 1,
+    triples_bool: bool = False,
 ) -> tuple[list[tuple[str, int]], int]:
     """Builds up a table of rows and k counts
 
@@ -13,20 +16,40 @@ def build_table(
     Returns:
         list[tuple[int, int]]: Generated tuples togeter with k counts
     """
+    from random import shuffle
+
     s = np.random.poisson(k_counts, rows)
 
     return_list: list[tuple[str, int]] = []
 
-    combo_list, combo_count = build_all_combos(rows)
+    if triples_bool:
+        combo_list, combo_count = build_all_combos(
+            rows, combo_count, triples_bool
+        )
+        object_combinations = combo_list.copy()
+        shuffle(object_combinations)
+        for index in range(0, len(combo_list)):
+            return_list.append(
+                (
+                    combo_list[index]
+                    + f'", "http://example.org/edges/link", "'
+                    + "".join(object_combinations[index]),
+                    s[index],
+                )
+            )
+    else:
+        combo_list, combo_count = build_all_combos(rows)
 
-    for i in range(len(combo_list)):
-        return_list.append((combo_list[i], s[i]))
+        for i in range(len(combo_list)):
+            return_list.append((combo_list[i], s[i]))
 
     return return_list, combo_count
 
 
 def build_all_combos(
-    rows: int, combo_count: int = 1
+    rows: int,
+    combo_count: int = 1,
+    triples_bool: bool = False,
 ) -> tuple[list[str], int]:
     """Builds all possible combinations of a table
 
@@ -42,12 +65,17 @@ def build_all_combos(
     """
     from itertools import product
     from string import ascii_uppercase as au
+    from random import shuffle
 
     k: int = 0
     # combo_count: int = 1
     return_list: list[str] = []
     while k < rows:
         all_combinations = product(au, repeat=combo_count)
+        all_combinations = [
+            f"http://example.org/{''.join(combo)}"
+            for combo in all_combinations
+        ]
         for combo in all_combinations:
             return_list.append("".join(combo))
             k += 1
@@ -106,6 +134,7 @@ def build_del_table_arr(
     N: int,
     k_counts: int,
     combo_count: int = 2,
+    input_list: list[tuple[str, int]] | None = None,
 ) -> list[list[tuple[str, int]]]:
     """Builds a deletion table
 
@@ -136,6 +165,9 @@ def build_del_table_arr(
 
     del_tables: list[list[tuple[str, int]]] = []
 
+    if input_list != None:
+        input_list_first = [i[0] for i in input_list]
+
     for del_rows in del_arr:
         if del_rows > N:
             raise ValueError(
@@ -146,15 +178,27 @@ def build_del_table_arr(
             int(k_counts * (1 / 10)), del_rows
         )
 
-        del_table_sample: list[str] = sample(
-            combo_list, del_rows
-        )
-        del_table = [
-            (del_table_sample[i], -s[i])
-            for i in range(del_rows)
-        ]
+        if input_list == None:
+            del_table_sample: list[str] = sample(
+                combo_list, del_rows
+            )
+            del_table = [
+                (del_table_sample[i], -s[i])
+                for i in range(del_rows)
+            ]
 
-        del_tables.append(del_table)
+            del_tables.append(del_table)
+
+        else:
+            del_table_sample: list[str] = sample(
+                input_list_first, del_rows
+            )
+            del_table = [
+                (del_table_sample[i], -s[i])
+                for i in range(del_rows)
+            ]
+
+            del_tables.append(del_table)
 
     return del_tables
 
@@ -299,13 +343,22 @@ if __name__ == "__main__":
         help="Output file name for big S",
         dest="output_big_S",
     )
+    parser.add_argument(
+        "-t",
+        "--triples",
+        action="store_true",
+        help="Make triples",
+    )
 
-    from save_to_file import save_table_to_file
+    from save_to_file import (
+        save_table_to_file,
+        replace_string_in_file,
+    )
 
     args = parser.parse_args()
 
     generated_k, combo_count = build_table(
-        args.rows, args.k_counts
+        args.rows, args.k_counts, triples_bool=args.triples
     )
 
     if args.insert != None:
@@ -319,14 +372,25 @@ if __name__ == "__main__":
         )
 
     if args.delete != None:
-        generated_d_arr: list[list[tuple[str, int]]] = (
-            build_del_table_arr(
-                args.delete,
-                args.rows,
-                args.k_counts,
-                combo_count,
+        if args.triples:
+            generated_d_arr: list[list[tuple[str, int]]] = (
+                build_del_table_arr(
+                    args.delete,
+                    args.rows,
+                    args.k_counts,
+                    combo_count,
+                    generated_k,
+                )
             )
-        )
+        else:
+            generated_d_arr: list[list[tuple[str, int]]] = (
+                build_del_table_arr(
+                    args.delete,
+                    args.rows,
+                    args.k_counts,
+                    combo_count,
+                )
+            )
 
     if args.c != None:
         for index in range(0, len(args.c)):
@@ -356,7 +420,18 @@ if __name__ == "__main__":
             print(generated_big_S)
 
     if args.output != None and type(generated_k) == list:
-        save_table_to_file(generated_k, args.output)
+        if args.triples:
+            save_table_to_file(
+                generated_k,
+                args.output,
+                ["s", "p", "o", "k_count"],
+            )
+            replace_string_in_file(args.output, '""', '"')
+        else:
+            save_table_to_file(
+                generated_k,
+                args.output,
+            )
 
     if args.insert_file != None and args.insert != None:
         if len(args.insert) != len(args.insert_file):
@@ -374,6 +449,16 @@ if __name__ == "__main__":
                 "Amount of deletions and files must be the same"
             )
         for i in range(len(args.delete)):
-            save_table_to_file(
-                generated_d_arr[i], args.delete_file[i]
-            )
+            if args.triples:
+                save_table_to_file(
+                    generated_d_arr[i],
+                    args.delete_file[i],
+                    ["s", "p", "o", "k_count"],
+                )
+                replace_string_in_file(
+                    args.delete_file[i], '""', '"'
+                )
+            else:
+                save_table_to_file(
+                    generated_d_arr[i], args.delete_file[i]
+                )

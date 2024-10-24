@@ -77,10 +77,37 @@ def get_bgp_delta_table_names(
     ), delta_table_names
 
 
+def run_query_time(
+    query: str, runs: int, duckdb_conn: DuckDBPyConnection
+) -> float:
+    import time as t
+
+    avg_time: float | None = None
+
+    for _ in range(runs):
+        start_time: float = t.time()
+        duckdb_conn.execute(query)
+        end_time: float = t.time()
+
+        measured_time: float = (
+            end_time - start_time
+        ) * 1000
+        if avg_time is None:
+            avg_time = measured_time
+        else:
+            avg_time += measured_time / 2
+
+    if avg_time is None:
+        raise ValueError("No time was measured.")
+
+    return avg_time
+
+
 def join_delta_rules_bgp_test(
     group_by_filename: str,
     join_filename: str,
     tables_to_drop: list[str],
+    runs: int,
     duckdb_conn: DuckDBPyConnection,
 ) -> tuple[list[float], list[float]]:
     """Compares the delta rules utilizing a join.
@@ -118,3 +145,13 @@ def join_delta_rules_bgp_test(
         duckdb_conn.execute(
             f"DROP TABLE IF EXISTS {table_name};"
         )
+
+    # Run the group by query
+    group_by_time: float = run_query_time(
+        group_by_query, runs, duckdb_conn
+    )
+
+    # Run the join query
+    join_time: float = run_query_time(
+        join_filename, runs, duckdb_conn
+    )
