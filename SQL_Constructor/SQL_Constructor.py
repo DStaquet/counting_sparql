@@ -605,11 +605,11 @@ def final_outer_join_query(
     )
     join_query += " AS SELECT "
     join_query += ", ".join(
-        f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}, "
+        f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}"
         for var in known_vars
         if var != "k_count"
     )
-    join_query += f"(CASE WHEN R1.k_count IS NULL THEN R2.k_count WHEN R2.k_count IS NULL THEN R1.k_count ELSE R1.k_count + R2.k_count END) AS k_count "
+    join_query += f", (CASE WHEN R1.k_count IS NULL THEN R2.k_count WHEN R2.k_count IS NULL THEN R1.k_count ELSE R1.k_count + R2.k_count END) AS k_count "
     join_query += f"FROM {left_query} AS R1 FULL OUTER JOIN {right_query} AS R2 ON "
     join_query += ", ".join(
         f"R1.{var} = R2.{var}"
@@ -644,11 +644,11 @@ def outer_join_queries(
     )
     join_query += " AS SELECT "
     join_query += ", ".join(
-        f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}, "
+        f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}"
         for var in known_vars
         if var != "k_count"
     )
-    join_query += f"(CASE WHEN R1.k_count IS NULL THEN R2.k_count WHEN R2.k_count IS NULL THEN R1.k_count ELSE R1.k_count + R2.k_count END) AS k_count "
+    join_query += f", (CASE WHEN R1.k_count IS NULL THEN R2.k_count WHEN R2.k_count IS NULL THEN R1.k_count ELSE R1.k_count + R2.k_count END) AS k_count "
     join_query += f"FROM {left_query} AS R1 FULL OUTER JOIN {right_query} AS R2 ON "
     join_query += ", ".join(
         f"R1.{var} = R2.{var}"

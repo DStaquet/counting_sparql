@@ -173,5 +173,5 @@ def join_delta_rules_bgp_test(
 
     # Run the join query
     join_time: float = run_query_time(
-        join_filename, runs, duckdb_conn
+        join_query, runs, duckdb_conn
     )

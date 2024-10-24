@@ -147,6 +147,12 @@ if __name__ == "__main__":
         help="The database to connect to",
         default="./database/k_values.db",
     )
+    parser.add_argument(
+        "-s",
+        "--setup",
+        action="store_true",
+        help="Set up the base graphs",
+    )
 
     args = parser.parse_args()
 
@@ -155,11 +161,12 @@ if __name__ == "__main__":
 
     setup_query_files(args.query, args.input, duckdb_conn)
 
-    build_data(
-        args.input,
-        args.query,
-        duckdb_conn,
-        args.data,
-        args.deletion_file,
-        args.insert_file,
-    )
+    if args.setup:
+        build_data(
+            args.input,
+            args.query,
+            duckdb_conn,
+            args.data,
+            args.deletion_file,
+            args.insert_file,
+        )
