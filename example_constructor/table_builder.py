@@ -182,23 +182,17 @@ def build_del_table_arr(
             del_table_sample: list[str] = sample(
                 combo_list, del_rows
             )
-            del_table = [
-                (del_table_sample[i], -s[i])
-                for i in range(del_rows)
-            ]
-
-            del_tables.append(del_table)
-
         else:
             del_table_sample: list[str] = sample(
                 input_list_first, del_rows
             )
-            del_table = [
-                (del_table_sample[i], -s[i])
-                for i in range(del_rows)
-            ]
 
-            del_tables.append(del_table)
+        del_table = [
+            (del_table_sample[i], -s[i])
+            for i in range(del_rows)
+        ]
+
+        del_tables.append(del_table)
 
     return del_tables
 
@@ -349,6 +343,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Make triples",
     )
+    parser.add_argument(
+        "-n",
+        "--nu",
+        type=str,
+        nargs="+",
+        help="Files to store the nu triples",
+    )
 
     from save_to_file import (
         save_table_to_file,
@@ -458,6 +459,29 @@ if __name__ == "__main__":
                 replace_string_in_file(
                     args.delete_file[i], '""', '"'
                 )
+                if args.nu != None:
+                    if len(args.nu) != len(
+                        args.delete_file
+                    ):
+                        raise ValueError(
+                            "Amount of nu files and deletion files must be the same"
+                        )
+                    gen_del_vals: set[str] = set(
+                        [i[0] for i in generated_d_arr[i]]
+                    )
+                    generated_nu_arr: list[
+                        tuple[str, int]
+                    ] = [
+                        generated_k[i]
+                        for i in range(0, len(generated_k))
+                        if generated_k[i][0]
+                        not in gen_del_vals
+                    ]
+                    save_table_to_file(
+                        generated_nu_arr,
+                        args.nu[i],
+                        ["s", "p", "o", "k_count"],
+                    )
             else:
                 save_table_to_file(
                     generated_d_arr[i], args.delete_file[i]

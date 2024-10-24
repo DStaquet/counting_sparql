@@ -942,10 +942,17 @@ if __name__ == "__main__":
         type=str,
         help="The table names to use. Written in 'table_one table_two' format to group together with delta data.",
     )
+    parser.add_argument(
+        "-db",
+        "--database",
+        type=str,
+        help="The database to connect to.",
+        default="./database/k_values.db",
+    )
     args = parser.parse_args()
 
     # Import the necessary modules
-    from eval_incremental import duckdb_conn
+    import duckdb
     from numpy import array, ndarray, append
     from plots import build_compare_plot
 
@@ -967,6 +974,10 @@ if __name__ == "__main__":
         "five_mil_graph",
         "ten_mil_graph",
     ]
+
+    duckdb_conn: DuckDBPyConnection = duckdb.connect(
+        args.database
+    )
 
     if args.load is not None:
         if len(args.load) % 2 != 0:

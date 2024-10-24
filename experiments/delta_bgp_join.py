@@ -7,6 +7,8 @@ from os.path import join
 def go_through_algebra_for_test(
     part: CompValue,
     output_dir: str,
+    runs: int,
+    table_args: list[str],
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Goes through the algebra and does the test for BGP's.
@@ -25,19 +27,33 @@ def go_through_algebra_for_test(
             join(output_dir, table_file_names[0]),
             join(output_dir, table_file_names[1]),
             to_drop_table_names,
+            runs,
+            table_args,
             duckdb_conn,
         )
     else:
         if "p" in part:
             go_through_algebra_for_test(
-                part.p, output_dir, duckdb_conn
+                part.p,
+                output_dir,
+                runs,
+                table_args,
+                duckdb_conn,
             )
         elif "p1" in part and "p2" in part:
             go_through_algebra_for_test(
-                part.p1, output_dir, duckdb_conn
+                part.p1,
+                output_dir,
+                runs,
+                table_args,
+                duckdb_conn,
             )
             go_through_algebra_for_test(
-                part.p2, output_dir, duckdb_conn
+                part.p2,
+                output_dir,
+                runs,
+                table_args,
+                duckdb_conn,
             )
         else:
             return
@@ -86,6 +102,7 @@ def run_query_time(
 
     for _ in range(runs):
         start_time: float = t.time()
+        print(query)
         duckdb_conn.execute(query)
         end_time: float = t.time()
 
@@ -108,6 +125,7 @@ def join_delta_rules_bgp_test(
     join_filename: str,
     tables_to_drop: list[str],
     runs: int,
+    table_args: list[str],
     duckdb_conn: DuckDBPyConnection,
 ) -> tuple[list[float], list[float]]:
     """Compares the delta rules utilizing a join.
@@ -125,6 +143,9 @@ def join_delta_rules_bgp_test(
             join queries.
     """
     import incremental_query_parser as iqp
+    from group_by_full_outer_join_test import (
+        parse_delta_table_names,
+    )
 
     # Read the query file
     group_by_query: str = iqp.readQueryFile(
@@ -134,17 +155,16 @@ def join_delta_rules_bgp_test(
     # Read the join query file
     join_query: str = iqp.readQueryFile(join_filename)
 
-    print("Delta Rules Query:")
-    print(group_by_query)
-    print("Join Query:")
-    print(join_query)
-
     # Drop the prep table and nu_table in case they exist
     for table_name in tables_to_drop:
         print(f"Dropping table {table_name}")
         duckdb_conn.execute(
             f"DROP TABLE IF EXISTS {table_name};"
         )
+
+    table_names, delta_table_names = (
+        parse_delta_table_names(table_args)
+    )
 
     # Run the group by query
     group_by_time: float = run_query_time(

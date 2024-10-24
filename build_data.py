@@ -109,7 +109,7 @@ if __name__ == "__main__":
         )
 
     # Connection to database
-    from eval_incremental import duckdb_conn
+    import duckdb
 
     # Parse the arguments
     parser = argparse.ArgumentParser(
@@ -140,8 +140,18 @@ if __name__ == "__main__":
         dest="insert_file",
         help="The file containing insertions",
     )
+    parser.add_argument(
+        "-db",
+        "--db",
+        dest="db",
+        help="The database to connect to",
+        default="./database/k_values.db",
+    )
 
     args = parser.parse_args()
+
+    # Connect to the database
+    duckdb_conn = duckdb.connect(args.db)
 
     setup_query_files(args.query, args.input, duckdb_conn)
 

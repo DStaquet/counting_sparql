@@ -1,6 +1,8 @@
 if __name__ == "__main__":
     import argparse
-    from experiments import duckdb_conn
+
+    # from experiments import duckdb_conn
+    import duckdb
     from incremental_query_parser import (
         readQueryFile,
         get_query_object,
@@ -18,9 +20,9 @@ if __name__ == "__main__":
             sys.executable, [sys.executable] + sys.argv
         )
 
-    """duckdb_conn = duckdb.connect(
+    duckdb_conn = duckdb.connect(
         "./database/experiments_delta_bgp.db"
-    )"""
+    )
 
     # Argument parser
     parser = argparse.ArgumentParser(
@@ -36,6 +38,30 @@ if __name__ == "__main__":
         type=str,
         help="the directory where the SQL queries are stored.",
     )
+    parser.add_argument(
+        "-r",
+        "--runs",
+        type=int,
+        default=10,
+        help="The number of runs to do.",
+        dest="runs",
+    )
+    parser.add_argument(
+        "-t",
+        "--table",
+        required=True,
+        type=str,
+        nargs="?",
+        help="The table to store in G.",
+    )
+    parser.add_argument(
+        "-d",
+        "--delta_table",
+        required=True,
+        type=str,
+        nargs="*",
+        help="The delta tables to store in delta_G.",
+    )
     args = parser.parse_args()
 
     # Read the query file
@@ -48,5 +74,9 @@ if __name__ == "__main__":
     )
 
     go_through_algebra_for_test(
-        query_obj.algebra, query_output_dir, duckdb_conn
+        query_obj.algebra,
+        query_output_dir,
+        args.runs,
+        args.table,
+        duckdb_conn,
     )
