@@ -155,12 +155,15 @@ def join_delta_rules_bgp_test(
     # Read the join query file
     join_query: str = iqp.readQueryFile(join_filename)
 
-    # Drop the prep table and nu_table in case they exist
-    for table_name in tables_to_drop:
-        print(f"Dropping table {table_name}")
-        duckdb_conn.execute(
-            f"DROP TABLE IF EXISTS {table_name};"
-        )
+    def drop_tables(tables: list[str]) -> None:
+        for table_name in tables:
+            print(f"Dropping table {table_name}")
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {table_name};"
+            )
+
+    # Drop the tables
+    drop_tables(tables_to_drop)
 
     table_names, delta_table_names = (
         parse_delta_table_names(table_args)
@@ -170,6 +173,8 @@ def join_delta_rules_bgp_test(
     group_by_time: float = run_query_time(
         group_by_query, runs, duckdb_conn
     )
+
+    drop_tables(tables_to_drop)
 
     # Run the join query
     join_time: float = run_query_time(
