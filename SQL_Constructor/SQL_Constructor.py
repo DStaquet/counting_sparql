@@ -1172,6 +1172,27 @@ def bgp_insert_query(
     return insert_str
 
 
+def create_table_w_select(
+    given_table: str,
+    select_query: str,
+    columns: list[str] | None = None,
+    temp_prefix: str = "",
+) -> str:
+    if columns is None:
+        return f"CREATE {temp_prefix} TABLE {given_table} AS\n{select_query}"
+    else:
+        create_str: str = (
+            f"CREATE {temp_prefix} TABLE {given_table} ("
+            + ", ".join(
+                key
+                for key in sorted(columns)
+                if key != "k_count"
+            )
+        )
+        create_str += ", k_count INT)\n" + select_query
+        return create_str
+
+
 def insert_into_w_select(
     given_table: str,
     select_query: str,

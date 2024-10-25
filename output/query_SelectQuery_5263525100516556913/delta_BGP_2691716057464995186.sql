@@ -1,5 +1,5 @@
-CREATE TEMP TABLE delta_prep_BGP_2691716057464995186
-AS SELECT G1.s AS x,
+CREATE TEMP TABLE delta_prep_BGP_2691716057464995186 AS
+SELECT G1.s AS x,
        G2.s AS y,
        G2.o AS z,
        G1.k_count
@@ -22,8 +22,8 @@ WHERE G1.p = 'http://example.org/edges/link'
   AND G2.p = 'http://example.org/edges/link';
 
 
-CREATE TABLE delta_BGP_2691716057464995186
-AS SELECT x,
+CREATE TABLE delta_BGP_2691716057464995186 AS
+SELECT x,
        y,
        z,
        SUM(k_count) AS k_count

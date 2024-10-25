@@ -1,15 +1,3 @@
-CREATE TEMP TABLE delta_join_BGP_2691716057464995186_1 AS
-SELECT G1.s AS x,
-       G2.s AS y,
-       G2.o AS z,
-       G1.k_count
-FROM delta_G G1,
-     G G2
-WHERE G1.p = 'http://example.org/edges/link'
-  AND G1.o = G2.s
-  AND G2.p = 'http://example.org/edges/link';
-
-
 CREATE TABLE delta_BGP_2691716057464995186 AS
 SELECT (CASE
             WHEN R1.y NOT NULL THEN R1.y

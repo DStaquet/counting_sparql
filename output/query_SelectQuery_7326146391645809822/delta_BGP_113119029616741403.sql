@@ -1,4 +1,4 @@
-INSERT INTO delta_prep_BGP_113119029616741403 (x, y1, y2, z, k_count)
+CREATE TEMP TABLE delta_prep_BGP_113119029616741403 AS
 SELECT G2.s AS x,
        G1.s AS y1,
        G3.s AS y2,

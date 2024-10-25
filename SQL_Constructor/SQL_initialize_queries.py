@@ -49,6 +49,7 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
     delta_queries: str = ""
     delta_join_queries: str = ""
     last_delta_query_name: str = ""
+    first_insert = True
     for triple_index in range(len(part.triples)):
         delta_query, known_vars = (
             SQL_Constructor.bgp_delta_table_query(
@@ -73,6 +74,13 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
                     triple_index + 1,
                 )
             )
+            delta_join_queries += delta_join_query
+            print(
+                sqlparse.format(
+                    delta_join_query, reindent=True
+                )
+            )
+            last_delta_query_name = delta_query_name
         elif (triple_index + 1) == len(
             part.triples
         ) and triple_index != 0:
@@ -84,34 +92,43 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
                     known_vars,
                 )
             )
+            delta_join_queries += delta_join_query
+            print(
+                sqlparse.format(
+                    delta_join_query, reindent=True
+                )
+            )
+            last_delta_query_name = delta_query_name
         else:
-            delta_join_query = (
-                "CREATE TEMP TABLE "
-                + delta_query_name
-                + " AS "
-                + delta_query
-                + ";\n"
+            # This is unconventional, but skips the first query making
+            last_delta_query_name = delta_query_name
+            delta_query_name = "(" + delta_query + ")"
+        if first_insert:
+            first_insert = False
+            delta_queries += (
+                SQL_Constructor.create_table_w_select(
+                    "delta_prep_"
+                    + SQL_Constructor.get_table_name(part),
+                    delta_query + ";\n",
+                    temp_prefix="TEMP",
+                )
             )
-        print(
-            sqlparse.format(delta_join_query, reindent=True)
-        )
-        delta_join_queries += delta_join_query
-        last_delta_query_name = delta_query_name
-        delta_queries += (
-            SQL_Constructor.insert_into_w_select(
-                "delta_prep_"
-                + SQL_Constructor.get_table_name(part),
-                delta_query + ";\n",
-                list(known_vars),
+        else:
+            delta_queries += (
+                SQL_Constructor.insert_into_w_select(
+                    "delta_prep_"
+                    + SQL_Constructor.get_table_name(part),
+                    delta_query + ";\n",
+                    list(known_vars),
+                )
             )
-        )
+
     delta_prep_sum: str = (
         SQL_Constructor.delta_prep_sum_query(part)
     )
-    delta_queries += SQL_Constructor.insert_into_w_select(
+    delta_queries += SQL_Constructor.create_table_w_select(
         "delta_" + SQL_Constructor.get_table_name(part),
         delta_prep_sum,
-        list(part._vars),
     )
     return delta_queries, delta_join_queries
 
