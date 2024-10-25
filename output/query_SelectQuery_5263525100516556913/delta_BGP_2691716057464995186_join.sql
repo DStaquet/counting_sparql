@@ -16,7 +16,16 @@ SELECT (CASE
             WHEN R2.k_count IS NULL THEN R1.k_count
             ELSE R1.k_count + R2.k_count
         END) AS k_count
-FROM delta_join_BGP_2691716057464995186_1 AS R1
+FROM
+  (SELECT G1.s AS x,
+          G2.s AS y,
+          G2.o AS z,
+          G1.k_count
+   FROM delta_G G1,
+        G G2
+   WHERE G1.p = 'http://example.org/edges/link'
+     AND G1.o = G2.s
+     AND G2.p = 'http://example.org/edges/link') AS R1
 FULL OUTER JOIN
   (SELECT G1.s AS x,
           G2.s AS y,

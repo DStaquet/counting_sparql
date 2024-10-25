@@ -62,6 +62,7 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
             + "_"
             + str(triple_index + 1)
         )
+        print(part.triples)
         if last_delta_query_name != "" and (
             triple_index + 1
         ) < len(part.triples):
@@ -75,11 +76,6 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
                 )
             )
             delta_join_queries += delta_join_query
-            print(
-                sqlparse.format(
-                    delta_join_query, reindent=True
-                )
-            )
             last_delta_query_name = delta_query_name
         elif (triple_index + 1) == len(
             part.triples
@@ -101,8 +97,7 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
             last_delta_query_name = delta_query_name
         else:
             # This is unconventional, but skips the first query making
-            last_delta_query_name = delta_query_name
-            delta_query_name = "(" + delta_query + ")"
+            last_delta_query_name = "(" + delta_query + ")"
         if first_insert:
             first_insert = False
             delta_queries += (
