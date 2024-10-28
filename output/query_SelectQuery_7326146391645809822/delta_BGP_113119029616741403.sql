@@ -46,7 +46,7 @@ WHERE G1.p = 'http://example.org/edges/link'
   AND G3.p = 'http://example.org/edges/link';
 
 
-INSERT INTO delta_BGP_113119029616741403 (x, y1, y2, z, k_count)
+CREATE TABLE delta_BGP_113119029616741403 AS
 SELECT x,
        y1,
        y2,

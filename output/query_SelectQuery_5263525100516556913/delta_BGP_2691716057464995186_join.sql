@@ -37,5 +37,4 @@ FULL OUTER JOIN
      AND G1.o = G2.s
      AND G2.p = 'http://example.org/edges/link') AS R2 ON R1.y = R2.y
 AND R1.z = R2.z
-AND R1.x = R2.x
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+AND R1.x = R2.x;

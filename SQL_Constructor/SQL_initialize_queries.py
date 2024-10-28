@@ -37,7 +37,9 @@ def write_query_to_output_dir(
             f.write(query)
 
 
-def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
+def __delta_bgp_queries(
+    part: CompValue,
+) -> tuple[str, str, str]:
     """Builds up the different delta BGP queries for the incremental query.
 
     Args:
@@ -113,6 +115,16 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
                 )
             )
 
+    delta_long_join_query: str = (
+        SQL_Constructor.delta_outer_join_long_query(part)
+    )
+    delta_long_w_create = (
+        SQL_Constructor.create_table_w_select(
+            "delta_" + SQL_Constructor.get_table_name(part),
+            delta_long_join_query,
+        )
+    )
+
     delta_prep_sum: str = (
         SQL_Constructor.delta_prep_sum_query(part)
     )
@@ -120,7 +132,11 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
         "delta_" + SQL_Constructor.get_table_name(part),
         delta_prep_sum,
     )
-    return delta_queries, delta_join_queries
+    return (
+        delta_queries,
+        delta_join_queries,
+        delta_long_w_create,
+    )
 
 
 def build_increm_queries(
@@ -141,9 +157,11 @@ def build_increm_queries(
     use_PV = False
     match part.name:
         case "BGP":
-            delta_queries, delta_join_queries = (
-                __delta_bgp_queries(part)
-            )
+            (
+                delta_queries,
+                delta_join_queries,
+                delta_long_join_query,
+            ) = __delta_bgp_queries(part)
             write_query_to_output_dir(
                 output_dir,
                 delta_queries,
@@ -156,6 +174,14 @@ def build_increm_queries(
                 delta_join_queries,
                 SQL_Constructor.get_table_name(part)
                 + "_join",
+                False,
+                "delta_",
+            )
+            write_query_to_output_dir(
+                output_dir,
+                delta_long_join_query,
+                SQL_Constructor.get_table_name(part)
+                + "_long_join",
                 False,
                 "delta_",
             )

@@ -583,6 +583,71 @@ def delta_prep_sum_query(
     return update_query
 
 
+def __from_clause_long_outer_join(
+    part: CompValue, index: int
+) -> str:
+    """Recursive part to build the FROM clause for the long outer join query.
+
+    Args:
+        part (CompValue): Current part of the query
+        index (int): Index to use in the query
+
+    Returns:
+        str: From clause for the long outer join query.
+    """
+    full_outer_join_part_query, _ = bgp_delta_table_query(
+        part, index + 1
+    )
+
+    if index == len(part.triples):
+        return full_outer_join_part_query
+    else:
+        double_index: str = (
+            str(index) + "_" + str(index + 1)
+        )
+        return (
+            "("
+            + full_outer_join_part_query
+            + f") AS R{index} FULL OUTER JOIN ("
+            + __from_clause_long_outer_join(part, index + 1)
+            + f") AS R{double_index} ON "
+            + " AND ".join(
+                f"R{double_index}.{var} = R{index}.{var}"
+                for var in sorted(part._vars)
+                if var != "k_count"
+            )
+        )
+
+
+def delta_outer_join_long_query(part: CompValue) -> str:
+    """Builds up the query to join the delta tables together fully without
+        intermediate tables.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Query to join the delta tables together fully.
+    """
+    _, known_vars = bgp_delta_table_query(part, 1)
+    index: int = 0
+    double_index: str = str(index) + "_" + str(index + 1)
+
+    from_part = " FROM " + __from_clause_long_outer_join(
+        part, index
+    )
+
+    select_part = f"SELECT "
+    select_part += ", ".join(
+        f"(CASE WHEN R{index}.{var} NOT NULL THEN R{index}.{var} ELSE R{double_index}.{var} END) AS {var}"
+        for var in known_vars
+        if var != "k_count"
+    )
+    select_part += f", (CASE WHEN R{index}.k_count IS NULL THEN R{double_index}.k_count WHEN R{double_index}.k_count IS NULL THEN R{index}.k_count ELSE R{index}.k_count + R{double_index}.k_count END) AS k_count "
+
+    return select_part + from_part + ";"
+
+
 def final_outer_join_query(
     part: CompValue,
     left_query: str,

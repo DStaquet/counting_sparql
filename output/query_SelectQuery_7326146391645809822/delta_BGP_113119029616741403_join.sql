@@ -1,4 +1,4 @@
-CREATE TEMP TABLE BGP_1131190296167414032 AS
+CREATE TEMP TABLE delta_join_BGP_113119029616741403_2 AS
 SELECT (CASE
             WHEN R1.z NOT NULL THEN R1.z
             ELSE R2.z
@@ -47,8 +47,10 @@ FULL OUTER JOIN
      AND G2.p = 'http://example.org/edges/link'
      AND G1.s = G2.o
      AND G1.o = G3.s
-     AND G3.p = 'http://example.org/edges/link') AS R2 ON R1.z = R2.zAND R1.y1 = R2.y1AND R1.x = R2.xAND R1.y2 = R2.y2
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+     AND G3.p = 'http://example.org/edges/link') AS R2 ON R1.z = R2.z
+AND R1.y1 = R2.y1
+AND R1.x = R2.x
+AND R1.y2 = R2.y2;
 
 CREATE TABLE delta_BGP_113119029616741403 AS
 SELECT (CASE
@@ -89,5 +91,4 @@ FULL OUTER JOIN
      AND G3.p = 'http://example.org/edges/link') AS R2 ON R1.z = R2.z
 AND R1.y1 = R2.y1
 AND R1.x = R2.x
-AND R1.y2 = R2.y2
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+AND R1.y2 = R2.y2;
