@@ -62,7 +62,6 @@ def __delta_bgp_queries(part: CompValue) -> tuple[str, str]:
             + "_"
             + str(triple_index + 1)
         )
-        print(delta_query_name)
         if last_delta_query_name != "" and (
             triple_index + 1
         ) < len(part.triples):

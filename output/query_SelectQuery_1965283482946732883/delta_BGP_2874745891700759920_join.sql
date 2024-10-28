@@ -83,8 +83,13 @@ FULL OUTER JOIN
      AND G4.o = G5.s
      AND G5.p = 'http://example.org/edges/link'
      AND G6.p = 'http://example.org/edges/link'
-     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1AND R1.t3 = R2.t3AND R1.x = R2.xAND R1.t4 = R2.t4AND R1.t2 = R2.t2AND R1.t5 = R2.t5AND R1.y = R2.y
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1
+AND R1.t3 = R2.t3
+AND R1.x = R2.x
+AND R1.t4 = R2.t4
+AND R1.t2 = R2.t2
+AND R1.t5 = R2.t5
+AND R1.y = R2.y;
 
 CREATE TEMP TABLE delta_join_BGP_2874745891700759920_3 AS
 SELECT (CASE
@@ -146,8 +151,13 @@ FULL OUTER JOIN
      AND G4.o = G5.s
      AND G5.p = 'http://example.org/edges/link'
      AND G6.p = 'http://example.org/edges/link'
-     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1AND R1.t3 = R2.t3AND R1.x = R2.xAND R1.t4 = R2.t4AND R1.t2 = R2.t2AND R1.t5 = R2.t5AND R1.y = R2.y
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1
+AND R1.t3 = R2.t3
+AND R1.x = R2.x
+AND R1.t4 = R2.t4
+AND R1.t2 = R2.t2
+AND R1.t5 = R2.t5
+AND R1.y = R2.y;
 
 CREATE TEMP TABLE delta_join_BGP_2874745891700759920_4 AS
 SELECT (CASE
@@ -209,8 +219,13 @@ FULL OUTER JOIN
      AND G4.o = G5.s
      AND G5.p = 'http://example.org/edges/link'
      AND G6.p = 'http://example.org/edges/link'
-     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1AND R1.t3 = R2.t3AND R1.x = R2.xAND R1.t4 = R2.t4AND R1.t2 = R2.t2AND R1.t5 = R2.t5AND R1.y = R2.y
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1
+AND R1.t3 = R2.t3
+AND R1.x = R2.x
+AND R1.t4 = R2.t4
+AND R1.t2 = R2.t2
+AND R1.t5 = R2.t5
+AND R1.y = R2.y;
 
 CREATE TEMP TABLE delta_join_BGP_2874745891700759920_5 AS
 SELECT (CASE
@@ -272,10 +287,15 @@ FULL OUTER JOIN
      AND G4.o = G5.s
      AND G5.p = 'http://example.org/edges/link'
      AND G6.p = 'http://example.org/edges/link'
-     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1AND R1.t3 = R2.t3AND R1.x = R2.xAND R1.t4 = R2.t4AND R1.t2 = R2.t2AND R1.t5 = R2.t5AND R1.y = R2.y
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+     AND G1.s = G6.o) AS R2 ON R1.t1 = R2.t1
+AND R1.t3 = R2.t3
+AND R1.x = R2.x
+AND R1.t4 = R2.t4
+AND R1.t2 = R2.t2
+AND R1.t5 = R2.t5
+AND R1.y = R2.y;
 
-CREATE TABLE delta_BGP_2874745891700759920 AS
+CREATE TABLE delta_BGP_2874745891700759920_join AS
 SELECT (CASE
             WHEN R1.t1 NOT NULL THEN R1.t1
             ELSE R2.t1
@@ -341,5 +361,4 @@ AND R1.x = R2.x
 AND R1.t4 = R2.t4
 AND R1.t2 = R2.t2
 AND R1.t5 = R2.t5
-AND R1.y = R2.y
-WHERE COALESCE(R1.k_count, 0) + COALESCE(R2.k_count, 0) > 0;
+AND R1.y = R2.y;

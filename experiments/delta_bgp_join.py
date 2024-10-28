@@ -115,6 +115,12 @@ def get_bgp_delta_table_names(
 
     delta_table_name += ".sql"
 
+    # Build to drop table names for join
+    for i in range(2, len(part.triples)):
+        delta_table_names.append(
+            f"delta_join_{table_name}_{i}"
+        )
+
     return (
         delta_table_name,
         delta_table_join_name,
@@ -134,8 +140,8 @@ def run_query_time(
     for i in range(runs):
         print(f"Run {i + 1} of {runs}")
 
+        print("Dropping tables")
         for table_name in tables_to_drop:
-            print(f"Dropping table {table_name}")
             duckdb_conn.execute(
                 f"DROP TABLE IF EXISTS {table_name};"
             )

@@ -13,6 +13,7 @@ def compare_times_plot(
     name_three: str | None = None,
     cmp_arr_four: np.ndarray | None = None,
     name_four: str | None = None,
+    log: bool = False,
 ) -> None:
     """Builds up a plot to compare the times of the times given in the array.
 
@@ -81,7 +82,8 @@ def compare_times_plot(
             width=bar_width,
             label=name_four,
         )
-    plt.yscale("log")
+    if log:
+        plt.yscale("log")
     plt.xlabel("Data size")
     plt.ylabel("Time (ms)")
     plt.legend()
