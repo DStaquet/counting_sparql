@@ -81,7 +81,7 @@ def compare_times_plot(
             width=bar_width,
             label=name_four,
         )
-    # plt.yscale("log")
+    plt.yscale("log")
     plt.xlabel("Data size")
     plt.ylabel("Time (ms)")
     plt.legend()

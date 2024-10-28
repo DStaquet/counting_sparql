@@ -2,13 +2,16 @@ from SQL_Constructor.SQL_Constructor import get_table_name
 from rdflib.plugins.sparql.parserutils import CompValue
 from duckdb import DuckDBPyConnection
 from os.path import join
+from numpy import ndarray
 
 
 def go_through_algebra_for_test(
     part: CompValue,
     output_dir: str,
     runs: int,
-    table_args: list[str],
+    table_args: str,
+    delta_tables: list[str],
+    nu_tables: list[str],
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Goes through the algebra and does the test for BGP's.
@@ -18,18 +21,37 @@ def go_through_algebra_for_test(
         output_dir (str): The output directory.
         duckdb_conn (DuckDBPyConnection): Connection to the database.
     """
+    from plots.build_compare_plot import compare_times_plot
+    from SQL_Constructor.SQL_Constructor import (
+        get_table_name,
+    )
+
     if part.name == "BGP":
         table_file_names, to_drop_table_names = (
             get_bgp_delta_table_names(part)
         )
         # Run the test
-        join_delta_rules_bgp_test(
-            join(output_dir, table_file_names[0]),
-            join(output_dir, table_file_names[1]),
-            to_drop_table_names,
-            runs,
-            table_args,
-            duckdb_conn,
+        avg_groupby_time, avg_join_time = (
+            join_delta_rules_bgp_test(
+                join(output_dir, table_file_names[0]),
+                join(output_dir, table_file_names[1]),
+                to_drop_table_names,
+                runs,
+                table_args,
+                delta_tables,
+                nu_tables,
+                duckdb_conn,
+            )
+        )
+
+        # Plot the results
+        compare_times_plot(
+            avg_join_time,
+            avg_groupby_time,
+            "Full outer join",
+            "Group by",
+            ["50", "100", "200", "0.001"],
+            f"delta_{get_table_name(part)}",
         )
     else:
         if "p" in part:
@@ -38,6 +60,8 @@ def go_through_algebra_for_test(
                 output_dir,
                 runs,
                 table_args,
+                delta_tables,
+                nu_tables,
                 duckdb_conn,
             )
         elif "p1" in part and "p2" in part:
@@ -46,6 +70,8 @@ def go_through_algebra_for_test(
                 output_dir,
                 runs,
                 table_args,
+                delta_tables,
+                nu_tables,
                 duckdb_conn,
             )
             go_through_algebra_for_test(
@@ -53,6 +79,8 @@ def go_through_algebra_for_test(
                 output_dir,
                 runs,
                 table_args,
+                delta_tables,
+                nu_tables,
                 duckdb_conn,
             )
         else:
@@ -94,15 +122,25 @@ def get_bgp_delta_table_names(
 
 
 def run_query_time(
-    query: str, runs: int, duckdb_conn: DuckDBPyConnection
+    query: str,
+    runs: int,
+    tables_to_drop: list[str],
+    duckdb_conn: DuckDBPyConnection,
 ) -> float:
     import time as t
 
     avg_time: float | None = None
 
-    for _ in range(runs):
+    for i in range(runs):
+        print(f"Run {i + 1} of {runs}")
+
+        for table_name in tables_to_drop:
+            print(f"Dropping table {table_name}")
+            duckdb_conn.execute(
+                f"DROP TABLE IF EXISTS {table_name};"
+            )
+
         start_time: float = t.time()
-        print(query)
         duckdb_conn.execute(query)
         end_time: float = t.time()
 
@@ -112,7 +150,10 @@ def run_query_time(
         if avg_time is None:
             avg_time = measured_time
         else:
-            avg_time += measured_time / 2
+            avg_time = (avg_time + measured_time) / 2
+
+        print(f"Measured time: {measured_time}")
+        print(f"Average time: {avg_time}")
 
     if avg_time is None:
         raise ValueError("No time was measured.")
@@ -120,14 +161,60 @@ def run_query_time(
     return avg_time
 
 
+def load_delta_table_in_graph(
+    delta_table: str,
+    duckdb_conn: DuckDBPyConnection,
+    nu_table: str,
+) -> None:
+    """Loads the delta table into the graph.
+
+    Args:
+        delta_table (str): The given delta table.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+        nu_table (str): The given nu table.
+    """
+    # DROP THE TABLES BEFORE MAKING THEM ANEW
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_G;")
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS nu_G;")
+
+    # CREATE THE TABLES
+    duckdb_conn.execute(
+        f"CREATE TABLE delta_G AS FROM '{delta_table}';"
+    )
+    duckdb_conn.execute(
+        f"CREATE TABLE nu_G AS FROM '{nu_table}';"
+    )
+
+
+def load_table_in_graph(
+    table: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Loads the table into the graph.
+
+    Args:
+        table (str): The given table.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+    """
+    # DROP THE TABLES BEFORE MAKING THEM ANEW
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS G;")
+
+    # CREATE THE TABLES
+    duckdb_conn.execute(
+        f"CREATE TABLE G AS FROM '{table}';"
+    )
+
+
 def join_delta_rules_bgp_test(
     group_by_filename: str,
     join_filename: str,
     tables_to_drop: list[str],
     runs: int,
-    table_args: list[str],
+    table_args: str,
+    delta_tables: list[str],
+    nu_tables: list[str],
     duckdb_conn: DuckDBPyConnection,
-) -> tuple[list[float], list[float]]:
+) -> tuple[ndarray, ndarray]:
     """Compares the delta rules utilizing a join.
 
     Args:
@@ -143,9 +230,7 @@ def join_delta_rules_bgp_test(
             join queries.
     """
     import incremental_query_parser as iqp
-    from group_by_full_outer_join_test import (
-        parse_delta_table_names,
-    )
+    from numpy import append, array
 
     # Read the query file
     group_by_query: str = iqp.readQueryFile(
@@ -155,28 +240,49 @@ def join_delta_rules_bgp_test(
     # Read the join query file
     join_query: str = iqp.readQueryFile(join_filename)
 
-    def drop_tables(tables: list[str]) -> None:
-        for table_name in tables:
-            print(f"Dropping table {table_name}")
-            duckdb_conn.execute(
-                f"DROP TABLE IF EXISTS {table_name};"
+    avg_group_by_time: ndarray = array([])
+    avg_join_time: ndarray = array([])
+
+    print(f"Loading the table {table_args}")
+    load_table_in_graph(table_args, duckdb_conn)
+
+    for index in range(0, len(delta_tables)):
+        if len(delta_tables) != len(nu_tables):
+            raise ValueError(
+                "The number of delta tables and nu tables must be the same."
             )
 
-    # Drop the tables
-    drop_tables(tables_to_drop)
+        print(
+            f"Running with delta table {delta_tables[index]} and nu table {nu_tables[index]}"
+        )
 
-    table_names, delta_table_names = (
-        parse_delta_table_names(table_args)
-    )
+        # Load the delta table into the graph
+        load_delta_table_in_graph(
+            delta_tables[index],
+            duckdb_conn,
+            nu_tables[index],
+        )
 
-    # Run the group by query
-    group_by_time: float = run_query_time(
-        group_by_query, runs, duckdb_conn
-    )
+        # Run the group by query
+        print(f"Running the group by query")
+        group_by_time: float = run_query_time(
+            group_by_query,
+            runs,
+            tables_to_drop,
+            duckdb_conn,
+        )
+        avg_group_by_time = append(
+            avg_group_by_time, group_by_time
+        )
 
-    drop_tables(tables_to_drop)
+        # Run the join query
+        print(f"Running the join query")
+        join_time: float = run_query_time(
+            join_query, runs, tables_to_drop, duckdb_conn
+        )
+        avg_join_time = append(avg_join_time, join_time)
 
-    # Run the join query
-    join_time: float = run_query_time(
-        join_query, runs, duckdb_conn
-    )
+    print(f"Group by average time: {avg_group_by_time}")
+    print(f"Join average time: {avg_join_time}")
+
+    return avg_group_by_time, avg_join_time

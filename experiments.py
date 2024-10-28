@@ -12,6 +12,7 @@ if __name__ == "__main__":
         go_through_algebra_for_test,
     )
     import os, sys
+    from plots import build_compare_plot
 
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
@@ -62,6 +63,14 @@ if __name__ == "__main__":
         nargs="*",
         help="The delta tables to store in delta_G.",
     )
+    parser.add_argument(
+        "-n",
+        "--nu",
+        required=True,
+        type=str,
+        nargs="*",
+        help="The nu tables.",
+    )
     args = parser.parse_args()
 
     # Read the query file
@@ -78,5 +87,7 @@ if __name__ == "__main__":
         query_output_dir,
         args.runs,
         args.table,
+        args.delta_table,
+        args.nu,
         duckdb_conn,
     )

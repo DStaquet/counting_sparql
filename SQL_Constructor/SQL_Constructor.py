@@ -622,6 +622,7 @@ def final_outer_join_query(
 
 def outer_join_queries(
     part: CompValue,
+    delta_table_name: str,
     left_query: str,
     right_query: str,
     known_vars: set[str],
@@ -638,9 +639,7 @@ def outer_join_queries(
         str: String with entire full outer join to add to the SQL file
     """
     join_query: str = (
-        "CREATE TEMP TABLE "
-        + __encode_table_name(part)
-        + str(index)
+        "CREATE TEMP TABLE " + delta_table_name
     )
     join_query += " AS SELECT "
     join_query += ", ".join(
