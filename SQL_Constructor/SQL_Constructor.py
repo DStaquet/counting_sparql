@@ -599,7 +599,7 @@ def __from_clause_long_outer_join(
         part, index + 1
     )
 
-    if index == len(part.triples):
+    if index == len(part.triples) - 1:
         return full_outer_join_part_query
     else:
         double_index: str = (

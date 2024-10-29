@@ -162,64 +162,32 @@ FULL OUTER JOIN (
                                                                          AND G5.p = 'http://example.org/edges/link'
                                                                          AND G6.p = 'http://example.org/edges/link'
                                                                          AND G1.s = G6.o) AS R4
-                                                                    FULL OUTER JOIN (
-                                                                                       (SELECT G1.s AS t1,
-                                                                                               G2.s AS t2,
-                                                                                               G3.s AS t3,
-                                                                                               G4.s AS t4,
-                                                                                               G5.s AS t5,
-                                                                                               G6.s AS x,
-                                                                                               G5.o AS y,
-                                                                                               G6.k_count
-                                                                                        FROM nu_G G1,
-                                                                                             nu_G G2,
-                                                                                             nu_G G3,
-                                                                                             nu_G G4,
-                                                                                             nu_G G5,
-                                                                                             delta_G G6
-                                                                                        WHERE G1.p = 'http://example.org/edges/link'
-                                                                                          AND G1.o = G2.s
-                                                                                          AND G2.p = 'http://example.org/edges/link'
-                                                                                          AND G2.o = G3.s
-                                                                                          AND G3.p = 'http://example.org/edges/link'
-                                                                                          AND G3.o = G4.s
-                                                                                          AND G4.p = 'http://example.org/edges/link'
-                                                                                          AND G4.o = G5.s
-                                                                                          AND G5.p = 'http://example.org/edges/link'
-                                                                                          AND G6.p = 'http://example.org/edges/link'
-                                                                                          AND G1.s = G6.o) AS R5
-                                                                                     FULL OUTER JOIN
-                                                                                       (SELECT G1.s AS t1,
-                                                                                               G2.s AS t2,
-                                                                                               G3.s AS t3,
-                                                                                               G4.s AS t4,
-                                                                                               G5.s AS t5,
-                                                                                               G6.s AS x,
-                                                                                               G5.o AS y,
-                                                                                               G7.k_count
-                                                                                        FROM nu_G G1,
-                                                                                             nu_G G2,
-                                                                                             nu_G G3,
-                                                                                             nu_G G4,
-                                                                                             nu_G G5,
-                                                                                             nu_G G6
-                                                                                        WHERE G1.p = 'http://example.org/edges/link'
-                                                                                          AND G1.o = G2.s
-                                                                                          AND G2.p = 'http://example.org/edges/link'
-                                                                                          AND G2.o = G3.s
-                                                                                          AND G3.p = 'http://example.org/edges/link'
-                                                                                          AND G3.o = G4.s
-                                                                                          AND G4.p = 'http://example.org/edges/link'
-                                                                                          AND G4.o = G5.s
-                                                                                          AND G5.p = 'http://example.org/edges/link'
-                                                                                          AND G6.p = 'http://example.org/edges/link'
-                                                                                          AND G1.s = G6.o) AS R5_6 ON R5_6.t1 = R5.t1
-                                                                                     AND R5_6.t2 = R5.t2
-                                                                                     AND R5_6.t3 = R5.t3
-                                                                                     AND R5_6.t4 = R5.t4
-                                                                                     AND R5_6.t5 = R5.t5
-                                                                                     AND R5_6.x = R5.x
-                                                                                     AND R5_6.y = R5.y) AS R4_5 ON R4_5.t1 = R4.t1
+                                                                    FULL OUTER JOIN
+                                                                      (SELECT G1.s AS t1,
+                                                                              G2.s AS t2,
+                                                                              G3.s AS t3,
+                                                                              G4.s AS t4,
+                                                                              G5.s AS t5,
+                                                                              G6.s AS x,
+                                                                              G5.o AS y,
+                                                                              G6.k_count
+                                                                       FROM nu_G G1,
+                                                                            nu_G G2,
+                                                                            nu_G G3,
+                                                                            nu_G G4,
+                                                                            nu_G G5,
+                                                                            delta_G G6
+                                                                       WHERE G1.p = 'http://example.org/edges/link'
+                                                                         AND G1.o = G2.s
+                                                                         AND G2.p = 'http://example.org/edges/link'
+                                                                         AND G2.o = G3.s
+                                                                         AND G3.p = 'http://example.org/edges/link'
+                                                                         AND G3.o = G4.s
+                                                                         AND G4.p = 'http://example.org/edges/link'
+                                                                         AND G4.o = G5.s
+                                                                         AND G5.p = 'http://example.org/edges/link'
+                                                                         AND G6.p = 'http://example.org/edges/link'
+                                                                         AND G1.s = G6.o) AS R4_5 ON R4_5.t1 = R4.t1
                                                                     AND R4_5.t2 = R4.t2
                                                                     AND R4_5.t3 = R4.t3
                                                                     AND R4_5.t4 = R4.t4

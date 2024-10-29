@@ -44,22 +44,21 @@ def compare_times_plot(
     elif name_three is not None and name_four is None:
         if save_name is not None:
             plt.title(
+                f"{name_one} vs {name_two} vs {name_three} - {save_name}"
+            )
+        else:
+            plt.title(f"{name_one} vs {name_two}")
+    elif name_three is not None and name_four is not None:
+        if save_name is not None:
+            plt.title(
                 f"{name_one} vs {name_two} vs {name_three} vs {name_four} - {save_name}"
             )
         else:
-            plt.title(
-                f"{name_one} vs {name_two} vs {name_three} vs {name_four}"
-            )
-    if name_three is not None and name_four is not None:
-        plt.xticks(
-            index + bar_width,
-            bins,
-        )
-    else:
-        plt.xticks(
-            index + bar_width,
-            bins,
-        )
+            plt.title(f"{name_one} vs {name_two}")
+    plt.xticks(
+        index + bar_width,
+        bins,
+    )
     if cmp_arr_three is not None:
         if name_three is None:
             raise ValueError(

@@ -26,27 +26,15 @@ FROM
    WHERE G1.p = 'http://example.org/edges/link'
      AND G1.o = G2.s
      AND G2.p = 'http://example.org/edges/link') AS R0
-FULL OUTER JOIN (
-                   (SELECT G1.s AS x,
-                           G2.s AS y,
-                           G2.o AS z,
-                           G2.k_count
-                    FROM nu_G G1,
-                         delta_G G2
-                    WHERE G1.p = 'http://example.org/edges/link'
-                      AND G1.o = G2.s
-                      AND G2.p = 'http://example.org/edges/link') AS R1
-                 FULL OUTER JOIN
-                   (SELECT G1.s AS x,
-                           G2.s AS y,
-                           G2.o AS z,
-                           G3.k_count
-                    FROM nu_G G1,
-                         nu_G G2
-                    WHERE G1.p = 'http://example.org/edges/link'
-                      AND G1.o = G2.s
-                      AND G2.p = 'http://example.org/edges/link') AS R1_2 ON R1_2.x = R1.x
-                 AND R1_2.y = R1.y
-                 AND R1_2.z = R1.z) AS R0_1 ON R0_1.x = R0.x
+FULL OUTER JOIN
+  (SELECT G1.s AS x,
+          G2.s AS y,
+          G2.o AS z,
+          G2.k_count
+   FROM nu_G G1,
+        delta_G G2
+   WHERE G1.p = 'http://example.org/edges/link'
+     AND G1.o = G2.s
+     AND G2.p = 'http://example.org/edges/link') AS R0_1 ON R0_1.x = R0.x
 AND R0_1.y = R0.y
 AND R0_1.z = R0.z;

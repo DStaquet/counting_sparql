@@ -48,37 +48,20 @@ FULL OUTER JOIN (
                       AND G1.s = G2.o
                       AND G1.o = G3.s
                       AND G3.p = 'http://example.org/edges/link') AS R1
-                 FULL OUTER JOIN (
-                                    (SELECT G2.s AS x,
-                                            G1.s AS y1,
-                                            G3.s AS y2,
-                                            G3.o AS z,
-                                            G3.k_count
-                                     FROM nu_G G1,
-                                          nu_G G2,
-                                          delta_G G3
-                                     WHERE G1.p = 'http://example.org/edges/link'
-                                       AND G2.p = 'http://example.org/edges/link'
-                                       AND G1.s = G2.o
-                                       AND G1.o = G3.s
-                                       AND G3.p = 'http://example.org/edges/link') AS R2
-                                  FULL OUTER JOIN
-                                    (SELECT G2.s AS x,
-                                            G1.s AS y1,
-                                            G3.s AS y2,
-                                            G3.o AS z,
-                                            G4.k_count
-                                     FROM nu_G G1,
-                                          nu_G G2,
-                                          nu_G G3
-                                     WHERE G1.p = 'http://example.org/edges/link'
-                                       AND G2.p = 'http://example.org/edges/link'
-                                       AND G1.s = G2.o
-                                       AND G1.o = G3.s
-                                       AND G3.p = 'http://example.org/edges/link') AS R2_3 ON R2_3.x = R2.x
-                                  AND R2_3.y1 = R2.y1
-                                  AND R2_3.y2 = R2.y2
-                                  AND R2_3.z = R2.z) AS R1_2 ON R1_2.x = R1.x
+                 FULL OUTER JOIN
+                   (SELECT G2.s AS x,
+                           G1.s AS y1,
+                           G3.s AS y2,
+                           G3.o AS z,
+                           G3.k_count
+                    FROM nu_G G1,
+                         nu_G G2,
+                         delta_G G3
+                    WHERE G1.p = 'http://example.org/edges/link'
+                      AND G2.p = 'http://example.org/edges/link'
+                      AND G1.s = G2.o
+                      AND G1.o = G3.s
+                      AND G3.p = 'http://example.org/edges/link') AS R1_2 ON R1_2.x = R1.x
                  AND R1_2.y1 = R1.y1
                  AND R1_2.y2 = R1.y2
                  AND R1_2.z = R1.z) AS R0_1 ON R0_1.x = R0.x

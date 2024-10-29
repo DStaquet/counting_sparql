@@ -31,17 +31,20 @@ def go_through_algebra_for_test(
             get_bgp_delta_table_names(part)
         )
         # Run the test
-        avg_groupby_time, avg_join_time = (
-            join_delta_rules_bgp_test(
-                join(output_dir, table_file_names[0]),
-                join(output_dir, table_file_names[1]),
-                to_drop_table_names,
-                runs,
-                table_args,
-                delta_tables,
-                nu_tables,
-                duckdb_conn,
-            )
+        (
+            avg_groupby_time,
+            avg_join_time,
+            avg_long_join_time,
+        ) = join_delta_rules_bgp_test(
+            join(output_dir, table_file_names[0]),
+            join(output_dir, table_file_names[1]),
+            join(output_dir, table_file_names[2]),
+            to_drop_table_names,
+            runs,
+            table_args,
+            delta_tables,
+            nu_tables,
+            duckdb_conn,
         )
 
         # Plot the results
@@ -52,6 +55,8 @@ def go_through_algebra_for_test(
             "Group by",
             ["50", "100", "200", "0.001"],
             f"delta_{get_table_name(part)}",
+            name_three="Long join",
+            cmp_arr_three=avg_long_join_time,
         )
     else:
         if "p" in part:
@@ -89,7 +94,7 @@ def go_through_algebra_for_test(
 
 def get_bgp_delta_table_names(
     part: CompValue,
-) -> tuple[tuple[str, str], list[str]]:
+) -> tuple[tuple[str, str, str], list[str]]:
     """Gets the table names for the BGP's delta tables.
 
     Args:
@@ -108,6 +113,9 @@ def get_bgp_delta_table_names(
     delta_table_join_name: str = (
         f"delta_{table_name}_join.sql"
     )
+    delta_table_long_join_name: str = (
+        f"delta_{table_name}_long_join.sql"
+    )
     prep_table_name: str = f"delta_prep_{table_name}"
 
     delta_table_names.append(delta_table_name)
@@ -124,6 +132,7 @@ def get_bgp_delta_table_names(
     return (
         delta_table_name,
         delta_table_join_name,
+        delta_table_long_join_name,
     ), delta_table_names
 
 
@@ -214,13 +223,14 @@ def load_table_in_graph(
 def join_delta_rules_bgp_test(
     group_by_filename: str,
     join_filename: str,
+    long_join_filename: str,
     tables_to_drop: list[str],
     runs: int,
     table_args: str,
     delta_tables: list[str],
     nu_tables: list[str],
     duckdb_conn: DuckDBPyConnection,
-) -> tuple[ndarray, ndarray]:
+) -> tuple[ndarray, ndarray, ndarray]:
     """Compares the delta rules utilizing a join.
 
     Args:
@@ -248,6 +258,7 @@ def join_delta_rules_bgp_test(
 
     avg_group_by_time: ndarray = array([])
     avg_join_time: ndarray = array([])
+    avg_long_join_time: ndarray = array([])
 
     print(f"Loading the table {table_args}")
     load_table_in_graph(table_args, duckdb_conn)
@@ -288,7 +299,24 @@ def join_delta_rules_bgp_test(
         )
         avg_join_time = append(avg_join_time, join_time)
 
+        # Run the long join query
+        print(f"Running the long join query")
+        long_join_time: float = run_query_time(
+            iqp.readQueryFile(long_join_filename),
+            runs,
+            tables_to_drop,
+            duckdb_conn,
+        )
+        avg_long_join_time = append(
+            avg_long_join_time, long_join_time
+        )
+
     print(f"Group by average time: {avg_group_by_time}")
     print(f"Join average time: {avg_join_time}")
+    print(f"Long join average time: {avg_long_join_time}")
 
-    return avg_group_by_time, avg_join_time
+    return (
+        avg_group_by_time,
+        avg_join_time,
+        avg_long_join_time,
+    )
