@@ -672,6 +672,9 @@ def graph_test(
             "The amount of delta files must match the amount of data files."
         )
 
+    all_avg_time_full_outer_join: ndarray = array([])
+    all_avg_time_group_by_sum: ndarray = array([])
+
     for index in range(len(data_files)):
         data_file: str = data_files[index]
         del_file: list[str] = delta_files[index]
@@ -751,6 +754,25 @@ def graph_test(
             del_file,
             f"{data_file}_results",
         )
+
+        all_avg_time_full_outer_join = append(
+            all_avg_time_full_outer_join,
+            avg_time_full_outer_join_arr,
+        )
+
+        all_avg_time_group_by_sum = append(
+            all_avg_time_group_by_sum,
+            avg_time_group_by_sum_arr,
+        )
+
+    build_compare_plot.compare_times_plot(
+        all_avg_time_full_outer_join,
+        all_avg_time_group_by_sum,
+        "Full Outer Join",
+        "Group By Sum",
+        data_files,
+        f"all_results",
+    )
 
 
 def og_delete_test(

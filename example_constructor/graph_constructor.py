@@ -314,6 +314,61 @@ def construct_parallel(
     )
 
 
+def build_hop_graph(
+    fraction: int, N: int, groups: int
+) -> Graph:
+    """Builds a hop graph.
+
+    Args:
+        fraction (int): Fraction of how much vertices need to connect groups.
+        N (int): Amount of vertices in a group.
+        groups (int): Amount of groups.
+
+    Returns:
+        Graph: Graph object.
+    """
+    from random import sample
+    from itertools import product
+
+    vertices: list[list[str]] = []
+    edges: list[tuple[str, str, str]] = []
+
+    for i in range(groups):
+        # Build vertices
+        temp_vertices: list[str] = []
+        for j in range(N):
+            temp_vertices.append(f"{str(i)}_{str(j)}")
+        vertices.append(temp_vertices)
+
+    # Build edges
+    if fraction == 0:
+        amount_of_edges = N**2
+    else:
+        amount_of_edges = int((N**2) / fraction)
+    for i in range(0, groups - 1):
+        all_temp_vertices = list(
+            product(vertices[i], vertices[i + 1])
+        )
+        temp_edges = sample(
+            all_temp_vertices, amount_of_edges
+        )
+        for j in range(amount_of_edges):
+            edges.append(
+                (
+                    temp_edges[j][0],
+                    "link",
+                    temp_edges[j][1],
+                )
+            )
+
+    nodes: list[str] = []
+    for vertice_group in vertices:
+        for node in vertice_group:
+            nodes.append(node)
+
+    return Graph(nodes, edges)
+
+
 if __name__ == "__main__":
     import argparse
     from save_graph import save_graph_to_file
@@ -356,7 +411,14 @@ if __name__ == "__main__":
         "--type",
         default="parallel",
         help="Type of graph to construct",
-        choices=["parallel", "serial"],
+        choices=["parallel", "serial", "hop"],
+    )
+    parser.add_argument(
+        "-fr",
+        "--fraction",
+        type=int,
+        default=1,
+        help="Fraction of how much vertices need to connect groups",
     )
 
     args = parser.parse_args()
@@ -372,6 +434,13 @@ if __name__ == "__main__":
             bottlenecks,
             many_vertices,
             many_to_one,
+        )
+
+    if args.type == "hop":
+        graph = build_hop_graph(
+            args.fraction,
+            many_vertices,
+            bottlenecks,
         )
 
     if args.file:

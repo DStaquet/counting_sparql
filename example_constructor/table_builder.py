@@ -1,4 +1,6 @@
 import numpy as np
+from itertools import product
+from string import ascii_uppercase as au
 
 
 def build_table(
@@ -34,7 +36,7 @@ def build_table(
                     combo_list[index]
                     + f'", "http://example.org/edges/link", "'
                     + "".join(object_combinations[index]),
-                    s[index],
+                    1,
                 )
             )
     else:
@@ -63,8 +65,6 @@ def build_all_combos(
             combinations and last known amount of letters
             in the identifier
     """
-    from itertools import product
-    from string import ascii_uppercase as au
     from random import shuffle
 
     k: int = 0
@@ -72,10 +72,10 @@ def build_all_combos(
     return_list: list[str] = []
     while k < rows:
         all_combinations = product(au, repeat=combo_count)
-        all_combinations = [
+        """all_combinations = [
             f"http://example.org/{''.join(combo)}"
             for combo in all_combinations
-        ]
+        ]"""
         for combo in all_combinations:
             return_list.append("".join(combo))
             k += 1
@@ -109,22 +109,44 @@ def build_big_S_table(
     Returns:
         list[tuple[str, int]]: List of tuples with the identifier and k counts
     """
+
     s = np.random.poisson(int(k_counts * (1 / 10)), N * 2)
 
-    combo_list = build_all_combos_twice(N)
+    # combo_list = build_all_combos_twice(N)
     return_list: list[tuple[str, int]] = []
 
-    s_start: int = int(N - N / c)
-    s_end: int = int(N + N * ((c - 1) / c))
+    if c == 0:
+        s_start: int = N
+        s_end: int = N * 2
+    else:
+        s_start: int = int(N - N / c)
+        s_end: int = int(N + N * ((c - 1) / c))
 
-    flip: int = -1
-    for index in range(s_start, s_end):
+    """for index in range(s_start, s_end):
         if s[index] == 0:
             s[index] = 1
         return_list.append(
             (combo_list[index], s[index] * flip)
         )
-        flip *= -1
+        flip *= -1"""
+    flip: int = -1
+    s_index: int = 0
+    k = s_start
+    while k < s_end:
+        all_combinations = product(au, repeat=combo_count)
+        """all_combinations = [
+            f"http://example.org/{''.join(combo)}"
+            for combo in all_combinations
+        ]"""
+        for combo in all_combinations:
+            return_list.append(
+                ("".join(combo), s[s_index] * flip)
+            )
+            k += 1
+            s_index += 1
+            if k == s_end:
+                break
+        combo_count += 1
 
     return return_list
 
