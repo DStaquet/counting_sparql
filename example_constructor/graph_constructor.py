@@ -40,21 +40,22 @@ class Graph:
 
     def graph_to_triple_list(
         self, vertices_uri: str, edges_uri: str
-    ) -> list[tuple[str, str, str]]:
+    ) -> list[tuple[str, str, str, str]]:
         """Converts the graph to a list of triples.
 
         Returns:
             list[tuple[str, str, str]]: List of triples.
         """
-        triples: list[tuple[str, str, str]] = []
+        triples: list[tuple[str, str, str, str]] = []
 
         # Triples per vertex
         for vertex in self.vertices:
             triples.append(
                 (
                     f"'{vertices_uri}{vertex}'",
-                    "a",
+                    "'https://www.w3.org/1999/02/22-rdf-syntax-ns#type'",
                     f"'{vertices_uri}Node'",
+                    "1",
                 )
             )
             for edge in self.edges:
@@ -64,6 +65,7 @@ class Graph:
                             f"'{vertices_uri}{vertex}'",
                             f"'{edges_uri}{edge[1]}'",
                             f"'{vertices_uri}{edge[2]}'",
+                            f"1",
                         )
                     )
 
@@ -358,7 +360,9 @@ def build_hop_graph(
     Returns:
         Graph: Graph object.
     """
-    from random import sample
+    from random import sample, seed
+
+    seed(13)
     from itertools import product
 
     vertices: list[list[str]] = []

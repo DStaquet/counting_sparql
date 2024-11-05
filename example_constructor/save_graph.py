@@ -28,7 +28,9 @@ def save_graph_to_file(
             from csv import writer
 
             write_handle = writer(file)
-            write_handle.writerow(["s", "p", "o"])
+            write_handle.writerow(
+                ["s", "p", "o", "k_count"]
+            )
             for triple in graph.graph_to_triple_list(
                 vertices_uri, edges_uri
             ):
