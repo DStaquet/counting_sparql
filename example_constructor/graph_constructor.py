@@ -38,6 +38,37 @@ class Graph:
 
         return turtle_string
 
+    def graph_to_triple_list(
+        self, vertices_uri: str, edges_uri: str
+    ) -> list[tuple[str, str, str]]:
+        """Converts the graph to a list of triples.
+
+        Returns:
+            list[tuple[str, str, str]]: List of triples.
+        """
+        triples: list[tuple[str, str, str]] = []
+
+        # Triples per vertex
+        for vertex in self.vertices:
+            triples.append(
+                (
+                    f"'{vertices_uri}{vertex}'",
+                    "a",
+                    f"'{vertices_uri}Node'",
+                )
+            )
+            for edge in self.edges:
+                if edge[0] == vertex:
+                    triples.append(
+                        (
+                            f"'{vertices_uri}{vertex}'",
+                            f"'{edges_uri}{edge[1]}'",
+                            f"'{vertices_uri}{edge[2]}'",
+                        )
+                    )
+
+        return triples
+
 
 def construct_serial(
     bottlenecks: int, many_vertices: int
@@ -420,6 +451,13 @@ if __name__ == "__main__":
         default=1,
         help="Fraction of how much vertices need to connect groups",
     )
+    parser.add_argument(
+        "-csv",
+        "--csv",
+        type=str,
+        default=None,
+        help="CSV file to save the graph",
+    )
 
     args = parser.parse_args()
 
@@ -447,4 +485,10 @@ if __name__ == "__main__":
         save_graph_to_file(
             graph,
             args.file,
+        )
+    if args.csv:
+        save_graph_to_file(
+            graph,
+            args.csv,
+            csv=True,
         )
