@@ -39,7 +39,7 @@ def write_query_to_output_dir(
 
 def __delta_bgp_queries(
     part: CompValue,
-) -> tuple[str, str, str]:
+) -> tuple[str, str, str, str]:
     """Builds up the different delta BGP queries for the incremental query.
 
     Args:
@@ -50,6 +50,7 @@ def __delta_bgp_queries(
     """
     delta_queries: str = ""
     delta_join_queries: str = ""
+    delta_join_tables: str = ""
     last_delta_query_name: str = ""
     first_insert = True
     for triple_index in range(len(part.triples)):
@@ -59,10 +60,17 @@ def __delta_bgp_queries(
             )
         )
         delta_query_name = (
-            "delta_join_"
+            "delta_"
             + SQL_Constructor.get_table_name(part)
             + "_"
             + str(triple_index + 1)
+        )
+        delta_join_tables += (
+            SQL_Constructor.create_table_w_select(
+                delta_query_name,
+                delta_query + ";\n",
+                temp_prefix="TEMP",
+            )
         )
         if last_delta_query_name != "" and (
             triple_index + 1
@@ -72,7 +80,7 @@ def __delta_bgp_queries(
                     part,
                     delta_query_name,
                     last_delta_query_name,
-                    "(" + delta_query + ")",
+                    delta_query_name,
                     known_vars,
                     triple_index + 1,
                 )
@@ -86,7 +94,7 @@ def __delta_bgp_queries(
                 SQL_Constructor.final_outer_join_query(
                     part,
                     last_delta_query_name,
-                    "(" + delta_query + ")",
+                    delta_query_name,
                     known_vars,
                 )
             )
@@ -94,7 +102,7 @@ def __delta_bgp_queries(
             last_delta_query_name = delta_query_name
         else:
             # This is unconventional, but skips the first query making
-            last_delta_query_name = "(" + delta_query + ")"
+            last_delta_query_name = delta_query_name
         if first_insert:
             first_insert = False
             delta_queries += (
@@ -125,17 +133,11 @@ def __delta_bgp_queries(
         )
     )
 
-    delta_prep_sum: str = (
-        SQL_Constructor.delta_prep_sum_query(part)
-    )
-    delta_queries += SQL_Constructor.create_table_w_select(
-        "delta_" + SQL_Constructor.get_table_name(part),
-        delta_prep_sum,
-    )
     return (
         delta_queries,
         delta_join_queries,
         delta_long_w_create,
+        delta_join_tables,
     )
 
 
@@ -161,11 +163,38 @@ def build_increm_queries(
                 delta_queries,
                 delta_join_queries,
                 delta_long_join_query,
+                delta_join_tables,
             ) = __delta_bgp_queries(part)
+            write_query_to_output_dir(
+                output_dir,
+                delta_join_tables,
+                SQL_Constructor.get_table_name(part)
+                + "_tables",
+                False,
+                "delta_",
+            )
             write_query_to_output_dir(
                 output_dir,
                 delta_queries,
                 SQL_Constructor.get_table_name(part),
+                False,
+                "delta_",
+            )
+            delta_prep_sum: str = (
+                SQL_Constructor.delta_prep_sum_query(part)
+            )
+            delta_queries_sum = (
+                SQL_Constructor.create_table_w_select(
+                    "delta_"
+                    + SQL_Constructor.get_table_name(part),
+                    delta_prep_sum,
+                )
+            )
+            write_query_to_output_dir(
+                output_dir,
+                delta_queries_sum,
+                SQL_Constructor.get_table_name(part)
+                + "_sum",
                 False,
                 "delta_",
             )

@@ -595,8 +595,11 @@ def __from_clause_long_outer_join(
     Returns:
         str: From clause for the long outer join query.
     """
-    full_outer_join_part_query, _ = bgp_delta_table_query(
-        part, index + 1
+    full_outer_join_part_query = (
+        "delta_"
+        + __encode_table_name(part)
+        + "_"
+        + str(index + 1)
     )
 
     if index == len(part.triples) - 1:
@@ -608,14 +611,15 @@ def __from_clause_long_outer_join(
         return (
             "("
             + full_outer_join_part_query
-            + f") AS R{index} FULL OUTER JOIN ("
+            + f" AS R{index} FULL OUTER JOIN "
             + __from_clause_long_outer_join(part, index + 1)
-            + f") AS R{double_index} ON "
+            + f" AS R{double_index} ON "
             + " AND ".join(
                 f"R{double_index}.{var} = R{index}.{var}"
                 for var in sorted(part._vars)
                 if var != "k_count"
             )
+            + ")"
         )
 
 

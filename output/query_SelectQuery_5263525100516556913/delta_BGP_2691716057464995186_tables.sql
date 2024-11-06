@@ -1,4 +1,4 @@
-CREATE TEMP TABLE delta_prep_BGP_2691716057464995186 AS
+CREATE TEMP TABLE delta_BGP_2691716057464995186_1 AS
 SELECT G1.s AS x,
        G2.s AS y,
        G2.o AS z,
@@ -10,7 +10,7 @@ WHERE G1.p = 'http://example.org/edges/link'
   AND G2.p = 'http://example.org/edges/link';
 
 
-INSERT INTO delta_prep_BGP_2691716057464995186 (x, y, z, k_count)
+CREATE TEMP TABLE delta_BGP_2691716057464995186_2 AS
 SELECT G1.s AS x,
        G2.s AS y,
        G2.o AS z,

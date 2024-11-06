@@ -1,4 +1,4 @@
-CREATE TEMP TABLE delta_join_BGP_113119029616741403_2 AS
+CREATE TEMP TABLE delta_BGP_113119029616741403_2 AS
 SELECT (CASE
             WHEN R1.z NOT NULL THEN R1.z
             ELSE R2.z
@@ -20,34 +20,8 @@ SELECT (CASE
             WHEN R2.k_count IS NULL THEN R1.k_count
             ELSE R1.k_count + R2.k_count
         END) AS k_count
-FROM
-  (SELECT G2.s AS x,
-          G1.s AS y1,
-          G3.s AS y2,
-          G3.o AS z,
-          G1.k_count
-   FROM delta_G G1,
-        G G2,
-        G G3
-   WHERE G1.p = 'http://example.org/edges/link'
-     AND G2.p = 'http://example.org/edges/link'
-     AND G1.s = G2.o
-     AND G1.o = G3.s
-     AND G3.p = 'http://example.org/edges/link') AS R1
-FULL OUTER JOIN
-  (SELECT G2.s AS x,
-          G1.s AS y1,
-          G3.s AS y2,
-          G3.o AS z,
-          G2.k_count
-   FROM nu_G G1,
-        delta_G G2,
-        G G3
-   WHERE G1.p = 'http://example.org/edges/link'
-     AND G2.p = 'http://example.org/edges/link'
-     AND G1.s = G2.o
-     AND G1.o = G3.s
-     AND G3.p = 'http://example.org/edges/link') AS R2 ON R1.z = R2.z
+FROM delta_BGP_113119029616741403_1 AS R1
+FULL OUTER JOIN delta_BGP_113119029616741403_2 AS R2 ON R1.z = R2.z
 AND R1.y1 = R2.y1
 AND R1.x = R2.x
 AND R1.y2 = R2.y2;
@@ -74,21 +48,8 @@ SELECT (CASE
             WHEN R2.k_count IS NULL THEN R1.k_count
             ELSE R1.k_count + R2.k_count
         END) AS k_count
-FROM delta_join_BGP_113119029616741403_2 AS R1
-FULL OUTER JOIN
-  (SELECT G2.s AS x,
-          G1.s AS y1,
-          G3.s AS y2,
-          G3.o AS z,
-          G3.k_count
-   FROM nu_G G1,
-        nu_G G2,
-        delta_G G3
-   WHERE G1.p = 'http://example.org/edges/link'
-     AND G2.p = 'http://example.org/edges/link'
-     AND G1.s = G2.o
-     AND G1.o = G3.s
-     AND G3.p = 'http://example.org/edges/link') AS R2 ON R1.z = R2.z
+FROM delta_BGP_113119029616741403_2 AS R1
+FULL OUTER JOIN delta_BGP_113119029616741403_3 AS R2 ON R1.z = R2.z
 AND R1.y1 = R2.y1
 AND R1.x = R2.x
 AND R1.y2 = R2.y2;

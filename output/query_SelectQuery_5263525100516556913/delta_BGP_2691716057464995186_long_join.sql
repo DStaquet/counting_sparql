@@ -16,25 +16,7 @@ SELECT (CASE
             WHEN R0_1.k_count IS NULL THEN R0.k_count
             ELSE R0.k_count + R0_1.k_count
         END) AS k_count
-FROM
-  (SELECT G1.s AS x,
-          G2.s AS y,
-          G2.o AS z,
-          G1.k_count
-   FROM delta_G G1,
-        G G2
-   WHERE G1.p = 'http://example.org/edges/link'
-     AND G1.o = G2.s
-     AND G2.p = 'http://example.org/edges/link') AS R0
-FULL OUTER JOIN
-  (SELECT G1.s AS x,
-          G2.s AS y,
-          G2.o AS z,
-          G2.k_count
-   FROM nu_G G1,
-        delta_G G2
-   WHERE G1.p = 'http://example.org/edges/link'
-     AND G1.o = G2.s
-     AND G2.p = 'http://example.org/edges/link') AS R0_1 ON R0_1.x = R0.x
-AND R0_1.y = R0.y
-AND R0_1.z = R0.z;
+FROM (delta_BGP_2691716057464995186_1 AS R0
+      FULL OUTER JOIN delta_BGP_2691716057464995186_2 AS R0_1 ON R0_1.x = R0.x
+      AND R0_1.y = R0.y
+      AND R0_1.z = R0.z);
