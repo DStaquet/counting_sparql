@@ -227,7 +227,13 @@ def build_increm_queries(
         case "Project":
             use_PV = True
             project_query: str = (
-                SQL_Constructor.delta_project_query(part)
+                SQL_Constructor.create_table_w_select(
+                    "delta_"
+                    + SQL_Constructor.get_table_name(part),
+                    SQL_Constructor.delta_project_query(
+                        part
+                    ),
+                )
             )
             write_query_to_output_dir(
                 output_dir,
@@ -320,7 +326,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 SQL_Constructor.bgp_table_query(part)
             )
             bgp_query: str = (
-                SQL_Constructor.insert_into_w_select(
+                SQL_Constructor.create_table_w_select(
                     SQL_Constructor.get_table_name(part),
                     bgp_query,
                     list(known_vars),
@@ -342,7 +348,10 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             )
         case "Project":
             project_query: str = (
-                SQL_Constructor.project_query(part)
+                SQL_Constructor.create_table_w_select(
+                    SQL_Constructor.get_table_name(part),
+                    SQL_Constructor.project_query(part),
+                )
             )
             write_query_to_output_dir(
                 output_dir,

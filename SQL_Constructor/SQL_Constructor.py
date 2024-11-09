@@ -1257,7 +1257,7 @@ def create_table_w_select(
                 if key != "k_count"
             )
         )
-        create_str += ", k_count INT)\n" + select_query
+        create_str += ", k_count INT) AS\n" + select_query
         return create_str
 
 
@@ -1560,13 +1560,7 @@ def delta_project_query(part: CompValue) -> str:
     """
     table_name: str = "delta_" + __encode_table_name(part.p)
     project_str: str = (
-        "INSERT INTO "
-        + "delta_"
-        + __encode_table_name(part)
-        + "("
-        + ", ".join(var for var in sorted(part.PV))
-        + ", k_count)\n"
-        + "SELECT "
+        "SELECT "
         + ", ".join(var for var in sorted(part.PV))
         + ", SUM(k_count) AS k_count\nFROM "
         + table_name
@@ -2196,12 +2190,7 @@ def project_query(part: CompValue) -> str:
         str: Query string for the project operation.
     """
     project_str: str = (
-        "INSERT INTO "
-        + __encode_table_name(part)
-        + "("
-        + ", ".join(var for var in sorted(part.PV))
-        + ", k_count)\n"
-        + "SELECT "
+        "SELECT "
         + ", ".join(var for var in sorted(part.PV))
         + ", SUM(k_count) AS k_count\nFROM "
         + __encode_table_name(part.p)
@@ -2467,10 +2456,11 @@ def nu_queries(
         + __encode_table_name(part)
         + ";"
     )
-    nu_query = insert_into_w_select(
+    nu_query = create_table_w_select(
         "nu_prep_" + __encode_table_name(part),
         nu_query_original,
         variables,
+        temp_prefix="TEMP",
     )
 
     # Query to add the delta
@@ -2496,7 +2486,7 @@ def nu_queries(
         + " GROUP BY "
         + ", ".join(var for var in sorted(variables))
     )
-    sum_query_w_insert = insert_into_w_select(
+    sum_query_w_insert = create_table_w_select(
         "nu_" + __encode_table_name(part),
         sum_query,
         variables,

@@ -1,4 +1,4 @@
-INSERT INTO nu_prep_Project_8025848657704693069 (x, z, k_count)
+CREATE TEMP TABLE nu_prep_Project_8025848657704693069 (x, z, k_count INT) AS
 SELECT x,
        z,
        k_count
@@ -10,7 +10,7 @@ SELECT x,
        k_count
 FROM delta_Project_8025848657704693069;
 
-INSERT INTO nu_Project_8025848657704693069 (x, z, k_count)
+CREATE TABLE nu_Project_8025848657704693069 (x, z, k_count INT) AS
 SELECT x,
        z,
        SUM(k_count) AS k_count

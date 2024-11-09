@@ -1,4 +1,4 @@
-INSERT INTO nu_prep_BGP_2691716057464995186 (x, y, z, k_count)
+CREATE TEMP TABLE nu_prep_BGP_2691716057464995186 (x, y, z, k_count INT) AS
 SELECT x,
        y,
        z,
@@ -12,7 +12,7 @@ SELECT x,
        k_count
 FROM delta_BGP_2691716057464995186;
 
-INSERT INTO nu_BGP_2691716057464995186 (x, y, z, k_count)
+CREATE TABLE nu_BGP_2691716057464995186 (x, y, z, k_count INT) AS
 SELECT x,
        y,
        z,

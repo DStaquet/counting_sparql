@@ -1,4 +1,4 @@
-INSERT INTO BGP_2691716057464995186 (x, y, z, k_count)
+CREATE TABLE BGP_2691716057464995186 (x, y, z, k_count INT) AS
 SELECT G1.s AS x,
        G2.s AS y,
        G2.o AS z,

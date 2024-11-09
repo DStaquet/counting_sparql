@@ -1,4 +1,4 @@
-INSERT INTO Project_8025848657704693069(x, z, k_count)
+CREATE TABLE Project_8025848657704693069 AS
 SELECT x,
        z,
        SUM(k_count) AS k_count
