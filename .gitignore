@@ -166,6 +166,8 @@ cython_debug/
 data/*.csv
 data/*.nt
 data/*.ttl
+data/*
+database/*
 
 # VS code
 .vscode/
