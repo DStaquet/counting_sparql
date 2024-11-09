@@ -2182,6 +2182,47 @@ def project_query(part: CompValue) -> str:
     return project_str
 
 
+def join_query(
+    part: CompValue,
+    table_name_one: str,
+    table_name_two: str,
+) -> str:
+    """Generates the join part according to two parts in the parse tree.
+
+    Args:
+        part (CompValue): Current part of the algebra.
+
+    Returns:
+        str: The SQL query to join both parts.
+    """
+    join_query: str = (
+        "SELECT "
+        + ", ".join(
+            f"r1.{var} AS {var}"
+            for var in sorted(
+                part.p1._vars.union(part.p2._vars)
+            )
+        )
+        + ", r1.k_count * r2.k_count as k_count\n"
+    )
+    join_query += "FROM "
+    join_query += table_name_one
+    join_query += " AS r1 JOIN "
+    join_query += table_name_two
+    join_query += " AS r2 "
+    if part.p1._vars.intersection(part.p2._vars) != set():
+        join_query += "ON "
+        join_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in sorted(
+                part.p1._vars.intersection(part.p2._vars)
+            )
+        )
+    join_query += ";\n"
+
+    return join_query
+
+
 def __join_query(part: CompValue) -> str:
     """Generates the join query.
 

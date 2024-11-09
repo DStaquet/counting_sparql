@@ -141,6 +141,58 @@ def __delta_bgp_queries(
     )
 
 
+def __delta_join_queries(part: CompValue) -> str:
+    """Constructs the delta join queries
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: SQL query for the delta join
+    """
+    first_delta_query: str = (
+        SQL_Constructor.create_table_w_select(
+            "delta_" + SQL_Constructor.get_table_name(part),
+            SQL_Constructor.join_query(
+                part,
+                "delta_"
+                + SQL_Constructor.get_table_name(part.p1),
+                SQL_Constructor.get_table_name(part.p2),
+            ),
+        )
+    )
+
+    second_delta_query: str = (
+        SQL_Constructor.insert_into_w_select(
+            "delta_" + SQL_Constructor.get_table_name(part),
+            SQL_Constructor.join_query(
+                part,
+                "nu_"
+                + SQL_Constructor.get_table_name(part.p1),
+                "delta_"
+                + SQL_Constructor.get_table_name(part.p2),
+            ),
+            list(part.p1._vars.union(part.p2._vars)),
+        )
+    )
+
+    delta_prep_sum: str = (
+        SQL_Constructor.delta_prep_sum_query(part)
+    )
+    delta_queries_sum = (
+        SQL_Constructor.create_table_w_select(
+            "delta_" + SQL_Constructor.get_table_name(part),
+            delta_prep_sum,
+        )
+    )
+
+    return (
+        first_delta_query
+        + second_delta_query
+        + delta_queries_sum
+    )
+
+
 def build_increm_queries(
     part: CompValue, output_dir: str
 ) -> None:
@@ -229,6 +281,14 @@ def build_increm_queries(
                 filter_query,
                 SQL_Constructor.get_table_name(part),
                 name="delta_",
+            )
+        case "Join":
+            join_query: str = __delta_join_queries(part)
+            write_query_to_output_dir(
+                output_dir,
+                join_query,
+                "delta_"
+                + SQL_Constructor.get_table_name(part),
             )
         case "Project":
             use_PV = True
@@ -374,6 +434,26 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             write_query_to_output_dir(
                 output_dir,
                 left_join_query,
+                SQL_Constructor.get_table_name(part),
+            )
+        case "Join":
+            join_query: str = (
+                SQL_Constructor.create_table_w_select(
+                    SQL_Constructor.get_table_name(part),
+                    SQL_Constructor.join_query(
+                        part,
+                        SQL_Constructor.get_table_name(
+                            part.p1
+                        ),
+                        SQL_Constructor.get_table_name(
+                            part.p2
+                        ),
+                    ),
+                )
+            )
+            write_query_to_output_dir(
+                output_dir,
+                join_query,
                 SQL_Constructor.get_table_name(part),
             )
         case "Minus":
