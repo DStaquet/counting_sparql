@@ -1,0 +1,346 @@
+@prefix : <http://example.org/> .
+@prefix edge: <http://example.org/edges/> .
+
+:00bl
+    a :Node ;
+    edge:hop :00br .
+
+:00br
+    a :Node ;
+    edge:hop :000 ;
+    edge:hop :001 .
+
+:000
+    a :Node ;
+    edge:hop :bl .
+
+:001
+    a :Node ;
+    edge:hop :bl .
+
+:01bl
+    a :Node ;
+    edge:hop :01br .
+
+:01br
+    a :Node ;
+    edge:hop :010 ;
+    edge:hop :011 .
+
+:010
+    a :Node ;
+    edge:hop :00bl .
+
+:011
+    a :Node ;
+    edge:hop :00bl .
+
+:020
+    a :Node ;
+    edge:hop :01bl .
+
+:021
+    a :Node ;
+    edge:hop :01bl .
+
+:10bl
+    a :Node ;
+    edge:hop :10br .
+
+:10br
+    a :Node ;
+    edge:hop :100 ;
+    edge:hop :101 .
+
+:100
+    a :Node ;
+    edge:hop :bl .
+
+:101
+    a :Node ;
+    edge:hop :bl .
+
+:11bl
+    a :Node ;
+    edge:hop :11br .
+
+:11br
+    a :Node ;
+    edge:hop :110 ;
+    edge:hop :111 .
+
+:110
+    a :Node ;
+    edge:hop :10bl .
+
+:111
+    a :Node ;
+    edge:hop :10bl .
+
+:120
+    a :Node ;
+    edge:hop :11bl .
+
+:121
+    a :Node ;
+    edge:hop :11bl .
+
+:20bl
+    a :Node ;
+    edge:hop :20br .
+
+:20br
+    a :Node ;
+    edge:hop :200 ;
+    edge:hop :201 .
+
+:200
+    a :Node ;
+    edge:hop :bl .
+
+:201
+    a :Node ;
+    edge:hop :bl .
+
+:21bl
+    a :Node ;
+    edge:hop :21br .
+
+:21br
+    a :Node ;
+    edge:hop :210 ;
+    edge:hop :211 .
+
+:210
+    a :Node ;
+    edge:hop :20bl .
+
+:211
+    a :Node ;
+    edge:hop :20bl .
+
+:220
+    a :Node ;
+    edge:hop :21bl .
+
+:221
+    a :Node ;
+    edge:hop :21bl .
+
+:30bl
+    a :Node ;
+    edge:hop :30br .
+
+:30br
+    a :Node ;
+    edge:hop :300 ;
+    edge:hop :301 .
+
+:300
+    a :Node ;
+    edge:hop :bl .
+
+:301
+    a :Node ;
+    edge:hop :bl .
+
+:31bl
+    a :Node ;
+    edge:hop :31br .
+
+:31br
+    a :Node ;
+    edge:hop :310 ;
+    edge:hop :311 .
+
+:310
+    a :Node ;
+    edge:hop :30bl .
+
+:311
+    a :Node ;
+    edge:hop :30bl .
+
+:320
+    a :Node ;
+    edge:hop :31bl .
+
+:321
+    a :Node ;
+    edge:hop :31bl .
+
+:bl
+    a :Node ;
+    edge:hop :br .
+
+:br
+    a :Node ;
+    edge:hop :400 ;
+    edge:hop :401 ;
+    edge:hop :500 ;
+    edge:hop :501 ;
+    edge:hop :600 ;
+    edge:hop :601 ;
+    edge:hop :700 ;
+    edge:hop :701 .
+
+:40bl
+    a :Node ;
+    edge:hop :40br .
+
+:40br
+    a :Node ;
+    edge:hop :410 ;
+    edge:hop :411 .
+
+:400
+    a :Node ;
+    edge:hop :40bl .
+
+:401
+    a :Node ;
+    edge:hop :40bl .
+
+:41bl
+    a :Node ;
+    edge:hop :41br .
+
+:41br
+    a :Node ;
+    edge:hop :420 ;
+    edge:hop :421 .
+
+:410
+    a :Node ;
+    edge:hop :41bl .
+
+:411
+    a :Node ;
+    edge:hop :41bl .
+
+:420
+    a :Node .
+
+:421
+    a :Node .
+
+:50bl
+    a :Node ;
+    edge:hop :50br .
+
+:50br
+    a :Node ;
+    edge:hop :510 ;
+    edge:hop :511 .
+
+:500
+    a :Node ;
+    edge:hop :50bl .
+
+:501
+    a :Node ;
+    edge:hop :50bl .
+
+:51bl
+    a :Node ;
+    edge:hop :51br .
+
+:51br
+    a :Node ;
+    edge:hop :520 ;
+    edge:hop :521 .
+
+:510
+    a :Node ;
+    edge:hop :51bl .
+
+:511
+    a :Node ;
+    edge:hop :51bl .
+
+:520
+    a :Node .
+
+:521
+    a :Node .
+
+:60bl
+    a :Node ;
+    edge:hop :60br .
+
+:60br
+    a :Node ;
+    edge:hop :610 ;
+    edge:hop :611 .
+
+:600
+    a :Node ;
+    edge:hop :60bl .
+
+:601
+    a :Node ;
+    edge:hop :60bl .
+
+:61bl
+    a :Node ;
+    edge:hop :61br .
+
+:61br
+    a :Node ;
+    edge:hop :620 ;
+    edge:hop :621 .
+
+:610
+    a :Node ;
+    edge:hop :61bl .
+
+:611
+    a :Node ;
+    edge:hop :61bl .
+
+:620
+    a :Node .
+
+:621
+    a :Node .
+
+:70bl
+    a :Node ;
+    edge:hop :70br .
+
+:70br
+    a :Node ;
+    edge:hop :710 ;
+    edge:hop :711 .
+
+:700
+    a :Node ;
+    edge:hop :70bl .
+
+:701
+    a :Node ;
+    edge:hop :70bl .
+
+:71bl
+    a :Node ;
+    edge:hop :71br .
+
+:71br
+    a :Node ;
+    edge:hop :720 ;
+    edge:hop :721 .
+
+:710
+    a :Node ;
+    edge:hop :71bl .
+
+:711
+    a :Node ;
+    edge:hop :71bl .
+
+:720
+    a :Node .
+
+:721
+    a :Node .
+

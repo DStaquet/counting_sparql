@@ -11,7 +11,10 @@ from typing import (
 import collections
 from rdflib.term import Identifier, Variable, URIRef
 from rdflib.plugins.sparql import parser
-from rdflib.plugins.sparql.parserutils import value
+from rdflib.plugins.sparql.parserutils import (
+    value,
+    CompValue,
+)
 from rdflib.plugins.sparql.aggregates import Aggregator
 
 from pyparsing import ParseException
@@ -43,6 +46,8 @@ from urllib.request import Request, urlopen
 import itertools
 import re
 
+from os.path import join
+
 from SQL_Constructor import SQL_Constructor
 
 from eval_incremental import duckdb_conn
@@ -55,26 +60,85 @@ if TYPE_CHECKING:
 from eval_incremental import VALUES
 
 
-def drop_all_tables(part) -> None:
-    drop_query, drop_delta_query, drop_nu_query = (
-        SQL_Constructor.drop_all_tables(part)
+def delete_all_tables(part: CompValue) -> str:
+    """Deletes all data from the tables.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Returns the SQL query to delete all data from the tables.
+    """
+    (
+        delete_query,
+        delete_delta_query,
+        delete_nu_query,
+        delete_nu_prep_query,
+    ) = SQL_Constructor.delete_all_tables(part)
+    (
+        delta_table_delete_query,
+        delta_prep_table_delete_query,
+    ) = SQL_Constructor.delete_delta_table(part)
+    return (
+        delete_query
+        + "\n"
+        + delete_delta_query
+        + "\n"
+        + delete_nu_query
+        + "\n"
+        + delete_nu_prep_query
+        + "\n"
+        + delta_table_delete_query
+        + "\n"
+        + delta_prep_table_delete_query
     )
-    duckdb_conn.sql(drop_query)
-    duckdb_conn.sql(drop_delta_query)
-    duckdb_conn.sql(drop_nu_query)
 
 
-def construct_tables(part) -> None:
-    delta_table_drop_query: str = (
+def drop_all_tables(part) -> str:
+    (
+        drop_query,
+        drop_delta_query,
+        drop_nu_query,
+        drop_nu_prep_query,
+    ) = SQL_Constructor.drop_all_tables(part)
+    delta_table_drop_query, delta_prep_table_drop_query = (
         SQL_Constructor.drop_delta_table(part)
     )
-    table_query, table_delta, table_nu = (
-        SQL_Constructor.make_tables(part, part._vars)
+    return (
+        drop_query
+        + "\n"
+        + drop_delta_query
+        + "\n"
+        + drop_nu_query
+        + "\n"
+        + drop_nu_prep_query
+        + "\n"
+        + delta_table_drop_query
+        + "\n"
+        + delta_prep_table_drop_query
     )
-    duckdb_conn.sql(table_query)
-    duckdb_conn.sql(delta_table_drop_query)
-    duckdb_conn.sql(table_delta)
-    duckdb_conn.sql(table_nu)
+
+
+def construct_tables(part) -> str:
+    (
+        table_query,
+        table_delta,
+        table_delta_prep,
+        table_nu,
+        table_nu_prep,
+    ) = SQL_Constructor.make_tables(part, part._vars)
+    return (
+        table_query
+        + "\n"
+        + table_delta
+        + "\n"
+        + table_delta_prep
+        + "\n"
+        + table_nu
+        + "\n"
+        + table_nu_prep
+        + "\n"
+    )
 
 
 # TODO: Implement join incrementally
@@ -248,27 +312,108 @@ def evalIncrServiceQuery(ctx: QueryContext, part) -> None:
 def evalIncrDescribeQuery(ctx: QueryContext, part) -> None:
     pass
 
+def deleteTablesRec(part: CompValue) -> str:
+    """Deletes the tables recursively.
 
-def dropTablesRec(part) -> None:
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Returns the SQL query to delete all data from the tables.
+    """
     if part == None:
-        return
+        return ""
     if "p" in part or part.name == "BGP":
-        dropTablesRec(part.p)
+        return deleteTablesRec(part.p) + delete_all_tables(part)
     elif "p1" in part and "p2" in part:
-        dropTablesRec(part.p1)
-        dropTablesRec(part.p2)
-    drop_all_tables(part)
+        return (
+            deleteTablesRec(part.p1)
+            + deleteTablesRec(part.p2)
+            + delete_all_tables(part)
+        )
+    return ""
 
-
-def constructTablesRec(part) -> None:
+def dropTablesRec(part) -> str:
     if part == None:
-        return
+        return ""
     if "p" in part or part.name == "BGP":
-        constructTablesRec(part.p)
+        return dropTablesRec(part.p) + drop_all_tables(part)
     elif "p1" in part and "p2" in part:
-        constructTablesRec(part.p1)
-        constructTablesRec(part.p2)
-    construct_tables(part)
+        return (
+            dropTablesRec(part.p1)
+            + dropTablesRec(part.p2)
+            + drop_all_tables(part)
+        )
+    return ""
+
+
+def constructTablesRec(part) -> str:
+    if part == None:
+        return ""
+    if "p" in part or part.name == "BGP":
+        return constructTablesRec(
+            part.p
+        ) + construct_tables(part)
+    elif "p1" in part and "p2" in part:
+        return (
+            constructTablesRec(part.p1)
+            + constructTablesRec(part.p2)
+            + construct_tables(part)
+        )
+    return ""
+
+
+def get_query_string(
+    part: CompValue, input_dir: str, prefix: str = ""
+) -> str:
+    """Gets the SQL query string for the given part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        input_dir (str): Where to read the SQL queries from.
+
+    Returns:
+        str: Query string
+    """
+    query_file_path: str = join(
+        input_dir,
+        prefix
+        + SQL_Constructor.get_table_name(part)
+        + ".sql",
+    )
+    with open(query_file_path, "r") as query_file:
+        return query_file.read()
+
+
+def evalPremIncrPart(
+    part: CompValue, input_dir: str, increm: bool = False
+) -> DataFrame | None:
+    """Goes through the algebra, executing each given SQL query.
+
+    Args:
+        part (CompValue): Current part of the query
+        input_dir (str): Where to read the SQL queries from.
+    """
+    if "p" in part:
+        evalPremIncrPart(part.p, input_dir, increm)
+    elif "p1" in part and "p2" in part:
+        evalPremIncrPart(part.p1, input_dir, increm)
+        evalPremIncrPart(part.p2, input_dir, increm)
+    if not increm:
+        query: str = get_query_string(part, input_dir)
+        if part.name == "SelectQuery":
+            return duckdb_conn.sql(query).df()
+        else:
+            duckdb_conn.sql(query)
+    else:
+        query: str = get_query_string(
+            part, input_dir, "delta_"
+        )
+        duckdb_conn.sql(query)
+        query: str = get_query_string(
+            part, input_dir, "nu_"
+        )
+        duckdb_conn.sql(query)
 
 
 def evalIncrPart(

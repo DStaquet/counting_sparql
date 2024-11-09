@@ -1,0 +1,4 @@
+INSERT INTO delta_Project_4280896612342391958(comment, label, producer, productFeature, propertyNumeric1, propertyNumeric2, propertyNumeric4, propertyTextual1, propertyTextual2, propertyTextual3, propertyTextual4, propertyTextual5, k_count)
+SELECT comment, label, producer, productFeature, propertyNumeric1, propertyNumeric2, propertyNumeric4, propertyTextual1, propertyTextual2, propertyTextual3, propertyTextual4, propertyTextual5, SUM(k_count) AS k_count
+FROM delta_LeftJoin_7483953543868752126
+GROUP BY comment, label, producer, productFeature, propertyNumeric1, propertyNumeric2, propertyNumeric4, propertyTextual1, propertyTextual2, propertyTextual3, propertyTextual4, propertyTextual5;

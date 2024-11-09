@@ -1,0 +1,118 @@
+INSERT INTO delta_BGP_4245425749932949804 (label, p1, p3, product, k_count)
+SELECT G3.o AS label,
+       G4.o AS p1,
+       G5.o AS p3,
+       G1.s AS product,
+       G1.k_count
+FROM delta_G G1,
+     G G2,
+     G G3,
+     G G4,
+     G G5
+WHERE G1.p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+  AND G1.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType8'
+  AND G1.s = G2.s
+  AND G2.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature'
+  AND G2.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature300'
+  AND G1.s = G3.s
+  AND G3.p = 'http://www.w3.org/2000/01/rdf-schema#label'
+  AND G1.s = G4.s
+  AND G4.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1'
+  AND G1.s = G5.s
+  AND G5.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric3';
+
+
+INSERT INTO delta_BGP_4245425749932949804 (label, p1, p3, product, k_count)
+SELECT G3.o AS label,
+       G4.o AS p1,
+       G5.o AS p3,
+       G1.s AS product,
+       G2.k_count
+FROM nu_G G1,
+     delta_G G2,
+     G G3,
+     G G4,
+     G G5
+WHERE G1.p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+  AND G1.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType8'
+  AND G1.s = G2.s
+  AND G2.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature'
+  AND G2.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature300'
+  AND G1.s = G3.s
+  AND G3.p = 'http://www.w3.org/2000/01/rdf-schema#label'
+  AND G1.s = G4.s
+  AND G4.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1'
+  AND G1.s = G5.s
+  AND G5.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric3';
+
+
+INSERT INTO delta_BGP_4245425749932949804 (label, p1, p3, product, k_count)
+SELECT G3.o AS label,
+       G4.o AS p1,
+       G5.o AS p3,
+       G1.s AS product,
+       G3.k_count
+FROM nu_G G1,
+     nu_G G2,
+     delta_G G3,
+     G G4,
+     G G5
+WHERE G1.p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+  AND G1.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType8'
+  AND G1.s = G2.s
+  AND G2.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature'
+  AND G2.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature300'
+  AND G1.s = G3.s
+  AND G3.p = 'http://www.w3.org/2000/01/rdf-schema#label'
+  AND G1.s = G4.s
+  AND G4.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1'
+  AND G1.s = G5.s
+  AND G5.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric3';
+
+
+INSERT INTO delta_BGP_4245425749932949804 (label, p1, p3, product, k_count)
+SELECT G3.o AS label,
+       G4.o AS p1,
+       G5.o AS p3,
+       G1.s AS product,
+       G4.k_count
+FROM nu_G G1,
+     nu_G G2,
+     nu_G G3,
+     delta_G G4,
+     G G5
+WHERE G1.p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+  AND G1.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType8'
+  AND G1.s = G2.s
+  AND G2.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature'
+  AND G2.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature300'
+  AND G1.s = G3.s
+  AND G3.p = 'http://www.w3.org/2000/01/rdf-schema#label'
+  AND G1.s = G4.s
+  AND G4.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1'
+  AND G1.s = G5.s
+  AND G5.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric3';
+
+
+INSERT INTO delta_BGP_4245425749932949804 (label, p1, p3, product, k_count)
+SELECT G3.o AS label,
+       G4.o AS p1,
+       G5.o AS p3,
+       G1.s AS product,
+       G5.k_count
+FROM nu_G G1,
+     nu_G G2,
+     nu_G G3,
+     nu_G G4,
+     delta_G G5
+WHERE G1.p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+  AND G1.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType8'
+  AND G1.s = G2.s
+  AND G2.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature'
+  AND G2.o = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature300'
+  AND G1.s = G3.s
+  AND G3.p = 'http://www.w3.org/2000/01/rdf-schema#label'
+  AND G1.s = G4.s
+  AND G4.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1'
+  AND G1.s = G5.s
+  AND G5.p = 'http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric3';

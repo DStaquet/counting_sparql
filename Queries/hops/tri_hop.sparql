@@ -1,0 +1,8 @@
+PREFIX : <http://example.org/>
+PREFIX edge: <http://example.org/edges/>
+select ?x ?z
+where {
+    ?x edge:link ?y1 .
+    ?y1 edge:link ?y2 .
+    ?y2 edge:link ?z .
+}

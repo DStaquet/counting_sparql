@@ -1,0 +1,43 @@
+@prefix : <http://example.org/> .
+@prefix edge: <http://example.org/edges/> .
+
+:00
+    a :Node ;
+    edge:hop :0bl .
+
+:01
+    a :Node ;
+    edge:hop :0bl .
+
+:0bl
+    a :Node ;
+    edge:hop :0br .
+
+:0br
+    a :Node ;
+    edge:hop :10 ;
+    edge:hop :11 .
+
+:10
+    a :Node ;
+    edge:hop :1bl .
+
+:11
+    a :Node ;
+    edge:hop :1bl .
+
+:1bl
+    a :Node ;
+    edge:hop :1br .
+
+:1br
+    a :Node ;
+    edge:hop :20 ;
+    edge:hop :21 .
+
+:20
+    a :Node .
+
+:21
+    a :Node .
+

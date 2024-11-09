@@ -18,6 +18,8 @@ from rdflib.plugins.sparql import algebra
 from rdflib.plugins.sparql import parser
 from rdflib.plugins.sparql.sparql import QueryContext
 from rdflib.plugins.sparql.sparql import Query
+from rdflib.plugins.sparql.parserutils import CompValue
+from os.path import join
 
 import sys, os
 
@@ -27,7 +29,10 @@ from eval_incremental.eval_incremental import (
     dropTablesRec,
 )
 from eval_incremental import delta_inserter, duckdb_conn
-from eval_incremental.eval_incremental import evalIncrPart
+from eval_incremental.eval_incremental import (
+    evalIncrPart,
+    evalPremIncrPart,
+)
 
 from pandas import DataFrame
 
@@ -39,6 +44,16 @@ from eval_incremental import (
 )
 
 from database import insert_data_graph
+
+from SQL_Constructor import SQL_Constructor
+from setup_data import (
+    insert_data,
+    insert_delete_delta_data,
+    insert_nu_data,
+    insert_insert_delta_data,
+    drop_delta_table,
+    create_delta_table,
+)
 
 
 def insertData(g: graph.Graph, query: Query) -> None:
@@ -250,16 +265,100 @@ def check_relevancy(
             return False
 
 
+def setup_tables(
+    query_input_dir: str,
+    increm: bool = False,
+) -> None:
+    """Sets up the tables in the database
+
+    Args:
+        part (CompValue): The query
+        input_dir (str): Input directory
+    """
+    with open(
+        join(query_input_dir, "construct_tables.sql"), "r"
+    ) as f:
+        for line in f.read().split(";\n"):
+            command = line + ";"
+            duckdb_conn.execute(command)
+    if not increm:
+        with open(
+            join(query_input_dir, "delete_tables.sql"), "r"
+        ) as f:
+            for line in f.read().split(";"):
+                command = line + ";"
+                duckdb_conn.execute(command)
+
+
+def get_query_input(
+    output_dir: str, q_query_object: Query
+) -> str:
+    query_input_dir: str = join(
+        output_dir,
+        "query_"
+        + SQL_Constructor.get_table_name(
+            q_query_object.algebra
+        ),
+    )
+    return query_input_dir
+
+
+def get_query_object(query: str) -> Query:
+    query_tree = parser.parseQuery(str(query))
+    return algebra.translateQuery(query_tree)
+
+
+def run_query(
+    query_str: str, data_str: str, output_dir: str
+) -> None:
+    # g = graph.Graph()
+    # g.parse(data_str)
+
+    q_query_object = get_query_object(query_str)
+    algebra.pprintAlgebra(q_query_object)
+
+    query_input_dir: str = get_query_input(
+        output_dir, q_query_object
+    )
+
+    setup_tables(query_input_dir)
+
+    df: DataFrame | None = evalPremIncrPart(
+        q_query_object.algebra, query_input_dir
+    )
+    df = evalPremIncrPart(
+        q_query_object.algebra, query_input_dir, True
+    )
+    """output: DataFrame = evalIncrPart(
+        QueryContext(g), q_query_object.algebra, True
+    )
+
+    with open(f"{output_dir}/output.txt", "w") as f:
+        f.write(str(output))"""
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python query_parser.py <output_dir>")
+    hashseed = os.getenv("PYTHONHASHSEED")
+    if not hashseed:
+        os.environ["PYTHONHASHSEED"] = "0"
+        os.execv(
+            sys.executable, [sys.executable] + sys.argv
+        )
+
+    if len(sys.argv) < 5:
+        print(
+            "Usage: python query_parser.py <query_file> <data_file> <output_dir> <delete_data_file>"
+        )
         exit(1)
     else:
-        output_file: str = sys.argv[1]
-        f = open(output_file, "w")
-        f.close()
+        query_str: str = sys.argv[1]
+        data_str: str = sys.argv[2]
+        output_dir: str = sys.argv[3]
+        delete_data_str: str = sys.argv[4]
+        # f = open(output_file, "w")
+        # f.close()
 
-    f = open("./measurements/results.csv", "w")
+    """f = open("./measurements/results.csv", "w")
     f.write(
         "Data size,Delta size,Sample,Incremental,Query1,Query2,Query3,Query4\n"
     )
@@ -360,4 +459,15 @@ if __name__ == "__main__":
                     f"{data_size},{delta_size},Product{sample},False,{query1_time},{query2_time},{query3_time},{query4_time}\n"
                 )
         print("\n")
-    f.close()
+    
+
+    f.close()"""
+
+    data: str = readQueryFile(data_str)
+    insert_data(duckdb_conn, data)
+    delete_data: str = readQueryFile(delete_data_str)
+    insert_delete_delta_data(duckdb_conn, delete_data)
+    insert_nu_data(duckdb_conn)
+
+    query: str = readQueryFile(query_str)
+    run_query(query, data_str, output_dir)
