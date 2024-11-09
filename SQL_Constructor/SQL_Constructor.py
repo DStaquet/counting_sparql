@@ -1524,17 +1524,7 @@ def delta_filter_query(part: CompValue) -> str:
     """
     table_name: str = "delta_" + __encode_table_name(part.p)
     filter_str: str = (
-        "INSERT INTO delta_"
-        + __encode_table_name(part)
-        + "("
-        + ", ".join(
-            var
-            for var in sorted(part._vars)
-            if var != "k_count"
-        )
-        + ", k_count)"
-        + "\n"
-        + "SELECT "
+        "SELECT "
         + ", ".join(
             var
             for var in sorted(part._vars)
@@ -2156,16 +2146,7 @@ def filter_query(part: CompValue) -> str:
         str: Query string for the filter operation.
     """
     filter_str: str = (
-        "INSERT INTO "
-        + __encode_table_name(part)
-        + "("
-        + ", ".join(
-            var
-            for var in sorted(part._vars)
-            if var != "k_count"
-        )
-        + ", k_count)\n"
-        + "SELECT "
+        "SELECT "
         + ", ".join(
             var
             for var in sorted(part._vars)

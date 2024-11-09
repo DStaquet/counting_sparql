@@ -1,0 +1,7 @@
+CREATE TABLE delta_Filter_3699958788462208976 AS
+SELECT x,
+       y,
+       z,
+       k_count
+FROM delta_BGP_2691716057464995186
+WHERE CAST(x AS INT) != CAST(z AS INT);

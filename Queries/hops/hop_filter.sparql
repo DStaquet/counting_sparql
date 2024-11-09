@@ -1,0 +1,8 @@
+PREFIX : <http://example.org/>
+PREFIX edge: <http://example.org/edges/>
+select ?x ?z
+where {
+    ?x edge:link ?y .
+    ?y edge:link ?z .
+    FILTER (?x != ?z)
+}

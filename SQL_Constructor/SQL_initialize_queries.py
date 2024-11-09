@@ -165,6 +165,16 @@ def build_increm_queries(
                 delta_long_join_query,
                 delta_join_tables,
             ) = __delta_bgp_queries(part)
+            delta_prep_sum: str = (
+                SQL_Constructor.delta_prep_sum_query(part)
+            )
+            delta_queries_sum = (
+                SQL_Constructor.create_table_w_select(
+                    "delta_"
+                    + SQL_Constructor.get_table_name(part),
+                    delta_prep_sum,
+                )
+            )
             write_query_to_output_dir(
                 output_dir,
                 delta_join_tables,
@@ -175,20 +185,10 @@ def build_increm_queries(
             )
             write_query_to_output_dir(
                 output_dir,
-                delta_queries,
+                delta_queries + delta_queries_sum,
                 SQL_Constructor.get_table_name(part),
                 False,
                 "delta_",
-            )
-            delta_prep_sum: str = (
-                SQL_Constructor.delta_prep_sum_query(part)
-            )
-            delta_queries_sum = (
-                SQL_Constructor.create_table_w_select(
-                    "delta_"
-                    + SQL_Constructor.get_table_name(part),
-                    delta_prep_sum,
-                )
             )
             write_query_to_output_dir(
                 output_dir,
@@ -216,7 +216,13 @@ def build_increm_queries(
             )
         case "Filter":
             filter_query: str = (
-                SQL_Constructor.delta_filter_query(part)
+                SQL_Constructor.create_table_w_select(
+                    "delta_"
+                    + SQL_Constructor.get_table_name(part),
+                    SQL_Constructor.delta_filter_query(
+                        part
+                    ),
+                )
             )
             write_query_to_output_dir(
                 output_dir,
@@ -339,7 +345,10 @@ def build_queries(part: CompValue, output_dir: str) -> None:
             )
         case "Filter":
             filter_query: str = (
-                SQL_Constructor.filter_query(part)
+                SQL_Constructor.create_table_w_select(
+                    SQL_Constructor.get_table_name(part),
+                    SQL_Constructor.filter_query(part),
+                )
             )
             write_query_to_output_dir(
                 output_dir,
