@@ -41,22 +41,25 @@ def go_through_algebra_for_test(
             join(output_dir, table_file_names[2]),
             join(output_dir, table_file_names[3]),
             join(output_dir, table_file_names[4]),
-            to_drop_table_names,
+            to_drop_table_names[0],
             runs,
             table_args,
             delta_tables,
             nu_tables,
             duckdb_conn,
+            to_drop_table_names[1],
         )
 
         # Plot the results
         compare_times_plot(
-            avg_long_join_time,
+            avg_join_time,
             avg_groupby_time,
             "Full outer join",
             "Group by",
             ["50", "100", "200", "1000"],
             f"delta_{get_table_name(part)}",
+            name_three="Long join",
+            cmp_arr_three=avg_long_join_time,
         )
     else:
         if "p" in part:
@@ -94,7 +97,10 @@ def go_through_algebra_for_test(
 
 def get_bgp_delta_table_names(
     part: CompValue,
-) -> tuple[tuple[str, str, str, str, str], list[str]]:
+) -> tuple[
+    tuple[str, str, str, str, str],
+    tuple[list[str], list[str]],
+]:
     """Gets the table names for the BGP's delta tables.
 
     Args:
@@ -127,11 +133,12 @@ def get_bgp_delta_table_names(
 
     delta_table_name += ".sql"
 
-    """# Build to drop table names for join
+    # Build to drop table names for join
+    delta_delete_table_names: list[str] = []
     for i in range(2, len(part.triples)):
-        delta_table_names.append(
-            f"delta_join_{table_name}_{i}"
-        )"""
+        delta_delete_table_names.append(
+            f"delta_{table_name}_{i}"
+        )
 
     return (
         delta_table_name,
@@ -139,7 +146,7 @@ def get_bgp_delta_table_names(
         delta_table_long_join_name,
         delta_table_tables,
         delta_table_sum,
-    ), delta_table_names
+    ), (delta_table_names, delta_delete_table_names)
 
 
 def run_query_time(
@@ -147,12 +154,13 @@ def run_query_time(
     runs: int,
     tables_to_drop: list[str],
     duckdb_conn: DuckDBPyConnection,
+    tables_to_delete: list[str] = [],
 ) -> float:
     import time as t
 
     avg_time: float | None = None
 
-    print(query)
+    duckdb_conn.execute("SELECT * FROM G LIMIT 1;")
 
     for i in range(runs):
         print(f"Run {i + 1} of {runs}")
@@ -162,6 +170,11 @@ def run_query_time(
             print(f"Dropping table {table_name}")
             duckdb_conn.execute(
                 f"DROP TABLE IF EXISTS {table_name};"
+            )
+        for table_name in tables_to_delete:
+            print(f"Deleting data from table {table_name}")
+            duckdb_conn.execute(
+                f"DELETE FROM {table_name};"
             )
 
         start_time: float = t.time()
@@ -241,6 +254,7 @@ def join_delta_rules_bgp_test(
     delta_tables: list[str],
     nu_tables: list[str],
     duckdb_conn: DuckDBPyConnection,
+    tables_to_delete: list[str],
 ) -> tuple[ndarray, ndarray, ndarray]:
     """Compares the delta rules utilizing a join.
 
@@ -312,12 +326,16 @@ def join_delta_rules_bgp_test(
             avg_group_by_time, group_by_time
         )
 
-        """# Run the join query
+        # Run the join query
         print(f"Running the join query")
         join_time: float = run_query_time(
-            join_query, runs, tables_to_drop, duckdb_conn
+            join_query,
+            runs,
+            tables_to_drop,
+            duckdb_conn,
+            tables_to_delete,
         )
-        avg_join_time = append(avg_join_time, join_time)"""
+        avg_join_time = append(avg_join_time, join_time)
 
         # Run the long join query
         print(f"Running the long join query")
