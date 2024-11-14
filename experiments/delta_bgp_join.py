@@ -54,9 +54,9 @@ def go_through_algebra_for_test(
         compare_times_plot(
             avg_join_time,
             avg_groupby_time,
-            "Full outer join",
+            "Full join",
             "Group by",
-            ["Type of join"],
+            ["10", "20", "50"],
             f"delta_{get_table_name(part)}",
             name_three="Long join",
             cmp_arr_three=avg_long_join_time,
@@ -158,7 +158,7 @@ def run_query_time(
 ) -> float:
     import time as t
 
-    avg_time: float | None = None
+    avg_time: list[float] | None = None
 
     duckdb_conn.execute("SELECT * FROM G LIMIT 1;")
 
@@ -185,17 +185,21 @@ def run_query_time(
             end_time - start_time
         ) * 1000
         if avg_time is None:
-            avg_time = measured_time
+            avg_time = [measured_time]
         else:
-            avg_time = (avg_time + measured_time) / 2
+            avg_time.append(measured_time)
 
         print(f"Measured time: {measured_time}")
-        print(f"Average time: {avg_time}")
+        print(
+            f"Average time: {sum(avg_time) / len(avg_time)}"
+        )
 
     if avg_time is None:
         raise ValueError("No time was measured.")
+    else:
+        avg_time_val: float = sum(avg_time) / len(avg_time)
 
-    return avg_time
+    return avg_time_val
 
 
 def load_delta_table_in_graph(

@@ -10,6 +10,36 @@ class Graph:
     def __str__(self):
         return f"Vertices: {self.vertices}, Edges: {self.edges}"
 
+    def diff(self, other):
+        """Returns the difference between two graphs.
+
+        Args:
+            other (Graph): The graph to compare with.
+        """
+        vertices_diff = list(
+            set(self.vertices) - set(other.vertices)
+        )
+        edges_diff = list(
+            set(self.edges) - set(other.edges)
+        )
+
+        return Graph(vertices_diff, edges_diff)
+
+    def union(self, other):
+        """Returns the union of two graphs.
+
+        Args:
+            other (Graph): The graph to compare with.
+        """
+        vertices_union = list(
+            set(self.vertices).union(set(other.vertices))
+        )
+        edges_union = list(
+            set(self.edges).union(set(other.edges))
+        )
+
+        return Graph(vertices_union, edges_union)
+
     def graph_to_turtle(
         self, vertices_uri: str, edges_uri: str
     ) -> str:
@@ -81,6 +111,7 @@ class Graph:
         triples: list[tuple[str, str, str, str]] = []
 
         # Triples per vertex
+        known_vertices = set()
         for vertex in self.vertices:
             for edge in self.edges:
                 if edge[0] == vertex:
@@ -92,6 +123,19 @@ class Graph:
                             str(1 * swap_int),
                         )
                     )
+                    if (
+                        vertex not in known_vertices
+                        and swap_int > 0
+                    ):
+                        triples.append(
+                            (
+                                f"'{vertices_uri}{vertex}'",
+                                "'https://www.w3.org/1999/02/22-rdf-syntax-ns#type'",
+                                f"'{vertices_uri}Node'",
+                                str(1 * swap_int),
+                            )
+                        )
+                        known_vertices.add(vertex)
 
         return triples
 
@@ -463,7 +507,7 @@ def build_hop_graph(
 
 def select_delta_edges_hop_graph(
     g: Graph, k_value: int, groups: int, many_vertices: int
-) -> tuple[Graph, Graph]:
+) -> tuple[Graph, Graph, Graph]:
     """Selects and constructs the delta edges that need to be deleted from the graph.
 
     Args:
@@ -480,7 +524,7 @@ def select_delta_edges_hop_graph(
     selected_edges = sample(edges, k_value // 2)
     selected_vertices = [node[0] for node in selected_edges]
 
-    last_edges = [
+    last_vertices = [
         f"{groups}_{i}" for i in range(k_value // 2)
     ]
     second_to_last_group = [
@@ -497,13 +541,25 @@ def select_delta_edges_hop_graph(
             (
                 chosen_second_to_last_vertices[i],
                 "link",
-                last_edges[i],
+                last_vertices[i],
             )
         )
 
-    return Graph(selected_vertices, selected_edges), Graph(
-        chosen_second_to_last_vertices, selected_ins_edges
+    delta_del_graph = Graph(
+        selected_vertices, selected_edges
     )
+    delta_ins_graph = Graph(
+        chosen_second_to_last_vertices + last_vertices,
+        selected_ins_edges,
+    )
+
+    # Construct the nu graphs
+    nu_graph = g.diff(Graph([], selected_edges))
+    nu_graph = nu_graph.union(
+        Graph(last_vertices, selected_ins_edges)
+    )
+
+    return delta_del_graph, delta_ins_graph, nu_graph
 
 
 if __name__ == "__main__":
@@ -578,6 +634,13 @@ if __name__ == "__main__":
         default=None,
         help="CSV file to save the delta graph",
     )
+    parser.add_argument(
+        "-nc",
+        "--nu_csv",
+        type=str,
+        default=None,
+        help="CSV file to save the new graph",
+    )
 
     args = parser.parse_args()
 
@@ -600,7 +663,7 @@ if __name__ == "__main__":
             many_vertices,
             bottlenecks,
         )
-        delta_graph_del, delta_graph_ins = (
+        delta_graph_del, delta_graph_ins, nu_graph = (
             select_delta_edges_hop_graph(
                 graph,
                 args.k_value,
@@ -633,4 +696,10 @@ if __name__ == "__main__":
             csv=True,
             delta=True,
             append=True,
+        )
+    if args.nu_csv:
+        save_graph_to_file(
+            nu_graph,
+            args.nu_csv,
+            csv=True,
         )
