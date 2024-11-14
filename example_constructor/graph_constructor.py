@@ -38,6 +38,63 @@ class Graph:
 
         return turtle_string
 
+    def graph_to_delta_turtle(
+        self,
+        vertices_uri: str,
+        edges_uri: str,
+        swap_int: int = 1,
+    ) -> str:
+        """Delta version of the graph to turtle.
+
+        Args:
+            vertices_uri (str): Vertices uri to use.
+            edges_uri (str): edges uri to use.
+
+        Returns:
+            str: String with the turtle that is written
+        """
+        # Prefixes
+        turtle_string = f"@prefix : <{vertices_uri}> .\n"
+        turtle_string += (
+            f"@prefix edge: <{edges_uri}> .\n\n"
+        )
+
+        # Edges per vertex
+        for vertex in self.vertices:
+            for edge in self.edges:
+                if edge[0] == vertex:
+                    turtle_string += f":{vertex}\n\t edge:{edge[1]} :{edge[2]} .\n\n"
+
+        return turtle_string
+
+    def graph_to_triple_list_delta(
+        self,
+        vertices_uri: str,
+        edges_uri: str,
+        swap_int: int = 1,
+    ) -> list[tuple[str, str, str, str]]:
+        """Converts the graph to a list of triples.
+
+        Returns:
+            list[tuple[str, str, str]]: List of triples.
+        """
+        triples: list[tuple[str, str, str, str]] = []
+
+        # Triples per vertex
+        for vertex in self.vertices:
+            for edge in self.edges:
+                if edge[0] == vertex:
+                    triples.append(
+                        (
+                            f"'{vertices_uri}{vertex}'",
+                            f"'{edges_uri}{edge[1]}'",
+                            f"'{vertices_uri}{edge[2]}'",
+                            str(1 * swap_int),
+                        )
+                    )
+
+        return triples
+
     def graph_to_triple_list(
         self, vertices_uri: str, edges_uri: str
     ) -> list[tuple[str, str, str, str]]:
@@ -377,7 +434,7 @@ def build_hop_graph(
 
     # Build edges
     if fraction == 0:
-        amount_of_edges = N**2
+        amount_of_edges = 0
     else:
         amount_of_edges = int((N**2) / fraction)
     for i in range(0, groups - 1):
@@ -402,6 +459,51 @@ def build_hop_graph(
             nodes.append(node)
 
     return Graph(nodes, edges)
+
+
+def select_delta_edges_hop_graph(
+    g: Graph, k_value: int, groups: int, many_vertices: int
+) -> tuple[Graph, Graph]:
+    """Selects and constructs the delta edges that need to be deleted from the graph.
+
+    Args:
+        g (Graph): The graph to select the edges from.
+        k_value (int): How much edges should be inserted/deleted.
+
+    Returns:
+        Graph: Graph containing the edges that need to be deleted.
+    """
+    from random import sample
+
+    # select k edges
+    edges = g.edges
+    selected_edges = sample(edges, k_value // 2)
+    selected_vertices = [node[0] for node in selected_edges]
+
+    last_edges = [
+        f"{groups}_{i}" for i in range(k_value // 2)
+    ]
+    second_to_last_group = [
+        f"{groups - 1}_{i}" for i in range(many_vertices)
+    ]
+
+    chosen_second_to_last_vertices = sample(
+        second_to_last_group, k_value // 2
+    )
+
+    selected_ins_edges = []
+    for i in range(k_value // 2):
+        selected_ins_edges.append(
+            (
+                chosen_second_to_last_vertices[i],
+                "link",
+                last_edges[i],
+            )
+        )
+
+    return Graph(selected_vertices, selected_edges), Graph(
+        chosen_second_to_last_vertices, selected_ins_edges
+    )
 
 
 if __name__ == "__main__":
@@ -462,6 +564,20 @@ if __name__ == "__main__":
         default=None,
         help="CSV file to save the graph",
     )
+    parser.add_argument(
+        "-k",
+        "--k_value",
+        type=int,
+        default=1,
+        help="Amount of edges to delete",
+    )
+    parser.add_argument(
+        "-dc",
+        "--delta_csv",
+        type=str,
+        default=None,
+        help="CSV file to save the delta graph",
+    )
 
     args = parser.parse_args()
 
@@ -484,6 +600,14 @@ if __name__ == "__main__":
             many_vertices,
             bottlenecks,
         )
+        delta_graph_del, delta_graph_ins = (
+            select_delta_edges_hop_graph(
+                graph,
+                args.k_value,
+                bottlenecks,
+                many_vertices,
+            )
+        )
 
     if args.file:
         save_graph_to_file(
@@ -495,4 +619,18 @@ if __name__ == "__main__":
             graph,
             args.csv,
             csv=True,
+        )
+    if args.delta_csv:
+        save_graph_to_file(
+            delta_graph_del,
+            args.delta_csv,
+            csv=True,
+            delta=True,
+        )
+        save_graph_to_file(
+            delta_graph_ins,
+            args.delta_csv,
+            csv=True,
+            delta=True,
+            append=True,
         )

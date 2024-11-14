@@ -1,0 +1,164 @@
+{
+"SelectQuery_2529522664998749014": {
+    "p": {
+        "p": {
+            "p1": {
+                "triples": [
+                    [
+                        "x",
+                        "http://example.org/edges/link",
+                        "y"
+                    ]
+                ],
+                "_vars": [
+                    "y",
+                    "x"
+                ]
+            },
+            "p2": {
+                "triples": [
+                    [
+                        "y",
+                        "http://example.org/edges/link",
+                        "z"
+                    ]
+                ],
+                "_vars": [
+                    "y",
+                    "z"
+                ]
+            },
+            "_vars": [
+                "y",
+                "z",
+                "x"
+            ]
+        },
+        "PV": [
+            "x",
+            "z"
+        ],
+        "_vars": [
+            "y",
+            "z",
+            "x"
+        ]
+    },
+    "datasetClause": null,
+    "PV": [
+        "x",
+        "z"
+    ],
+    "_vars": [
+        "y",
+        "z",
+        "x"
+    ]
+}
+,
+"Project_7268717039862799428": {
+    "p": {
+        "p1": {
+            "triples": [
+                [
+                    "x",
+                    "http://example.org/edges/link",
+                    "y"
+                ]
+            ],
+            "_vars": [
+                "y",
+                "x"
+            ]
+        },
+        "p2": {
+            "triples": [
+                [
+                    "y",
+                    "http://example.org/edges/link",
+                    "z"
+                ]
+            ],
+            "_vars": [
+                "y",
+                "z"
+            ]
+        },
+        "_vars": [
+            "y",
+            "z",
+            "x"
+        ]
+    },
+    "PV": [
+        "x",
+        "z"
+    ],
+    "_vars": [
+        "y",
+        "z",
+        "x"
+    ]
+}
+,
+"Union_5968519747945714539": {
+    "p1": {
+        "triples": [
+            [
+                "x",
+                "http://example.org/edges/link",
+                "y"
+            ]
+        ],
+        "_vars": [
+            "y",
+            "x"
+        ]
+    },
+    "p2": {
+        "triples": [
+            [
+                "y",
+                "http://example.org/edges/link",
+                "z"
+            ]
+        ],
+        "_vars": [
+            "y",
+            "z"
+        ]
+    },
+    "_vars": [
+        "y",
+        "z",
+        "x"
+    ]
+}
+,
+"BGP_4313253051102226119": {
+    "triples": [
+        [
+            "x",
+            "http://example.org/edges/link",
+            "y"
+        ]
+    ],
+    "_vars": [
+        "y",
+        "x"
+    ]
+}
+"BGP_5439676414810165533": {
+    "triples": [
+        [
+            "y",
+            "http://example.org/edges/link",
+            "z"
+        ]
+    ],
+    "_vars": [
+        "y",
+        "z"
+    ]
+}
+}

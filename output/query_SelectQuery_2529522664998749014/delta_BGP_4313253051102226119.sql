@@ -1,0 +1,15 @@
+CREATE TEMP TABLE delta_prep_BGP_4313253051102226119 AS
+SELECT G1.s AS x,
+       G1.o AS y,
+       G1.k_count
+FROM delta_G G1
+WHERE G1.p = 'http://example.org/edges/link';
+
+
+CREATE TABLE delta_BGP_4313253051102226119 AS
+SELECT x,
+       y,
+       SUM(k_count) AS k_count
+FROM delta_prep_BGP_4313253051102226119
+GROUP BY x,
+         y;

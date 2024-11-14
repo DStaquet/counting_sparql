@@ -56,7 +56,7 @@ def go_through_algebra_for_test(
             avg_groupby_time,
             "Full outer join",
             "Group by",
-            ["50", "100", "200", "1000"],
+            ["Type of join"],
             f"delta_{get_table_name(part)}",
             name_three="Long join",
             cmp_arr_three=avg_long_join_time,
