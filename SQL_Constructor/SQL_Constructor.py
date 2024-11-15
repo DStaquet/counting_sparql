@@ -2093,7 +2093,7 @@ def delta_union_query(part: CompValue) -> str:
     Returns:
         str: Query string for the delta union operation.
     """
-    '''union_query = (
+    union_query = (
         "SELECT "
         + ", ".join(
             f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
@@ -2103,34 +2103,6 @@ def delta_union_query(part: CompValue) -> str:
     )
     union_query += (
         "FROM delta_"
-        + __encode_table_name(part.p1)
-        + " AS r1 FULL OUTER JOIN "
-        + __encode_table_name(part.p2)
-        + " AS r2 ON "
-    )
-    union_query += " AND ".join(
-        f"r1.{var} = r2.{var}"
-        for var in sorted(
-            part.p1._vars.intersection(part.p2._vars)
-        )
-    )
-    union_query += ";\n"
-
-    union_query += (
-        "INSERT INTO delta_"
-        + __encode_table_name(part)
-        + "\n"
-    )
-    union_query += (
-        "SELECT "
-        + ", ".join(
-            f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
-            for var in sorted(part.p1._vars)
-        )
-        + ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count\n"
-    )
-    union_query += (
-        "FROM nu_"
         + __encode_table_name(part.p1)
         + " AS r1 FULL OUTER JOIN delta_"
         + __encode_table_name(part.p2)
@@ -2142,59 +2114,44 @@ def delta_union_query(part: CompValue) -> str:
             part.p1._vars.intersection(part.p2._vars)
         )
     )
-    union_query += ";\n"'''
+    union_query += ";\n"
 
-    if part.p1.name == "BGP":
-        table_name1 = "delta_" + __encode_table_name(
-            part.p1
+    union_query_right = (
+        "SELECT "
+        + ", ".join(
+            f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
+            for var in sorted(part.p2._vars)
         )
-        union_query_left = (
-            "SELECT "
-            + ", ".join(
-                var for var in sorted(part.p1._vars)
-            )
-            + ", k_count\nFROM "
-            + table_name1
-            + ";\n"
+        + ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count\n"
+    )
+    union_query_right += (
+        "FROM delta_"
+        + __encode_table_name(part.p1)
+        + " AS r1 FULL OUTER JOIN delta_"
+        + __encode_table_name(part.p2)
+        + " AS r2 ON "
+    )
+    union_query_right += " AND ".join(
+        f"r1.{var} = r2.{var}"
+        for var in sorted(
+            part.p1._vars.intersection(part.p2._vars)
         )
-        union_query_left = create_table_w_select(
-            __encode_table_name(part)
-            + "_"
-            + __encode_schema_name(
-                str(sorted(part.p1._vars))
-            ),
-            union_query_left,
-        )
-    else:
-        # TODO: Add more schemes.
-        union_query_left = ""
+    )
+    union_query_right += ";\n"
 
-    if part.p2.name == "BGP":
-        table_name2 = "delta_" + __encode_table_name(
-            part.p2
-        )
-        union_query_right = (
-            "SELECT "
-            + ", ".join(
-                var for var in sorted(part.p2._vars)
-            )
-            + ", k_count\nFROM "
-            + table_name2
-            + ";\n"
-        )
-        union_query_right = create_table_w_select(
-            __encode_table_name(part)
-            + "_"
-            + __encode_schema_name(
-                str(sorted(part.p2._vars))
-            ),
-            union_query_right,
-        )
-    else:
-        # TODO: Add more schemes.
-        union_query_right = ""
-
-    return union_query_left + union_query_right
+    return create_table_w_select(
+        "delta_"
+        + __encode_table_name(part)
+        + __encode_schema_name(str(sorted(part.p1._vars))),
+        union_query,
+        part.p1._vars,
+    ) + create_table_w_select(
+        "delta_"
+        + __encode_table_name(part)
+        + __encode_schema_name(str(sorted(part.p2._vars))),
+        union_query_right,
+        part.p2._vars,
+    )
 
 
 def filter_query(part: CompValue) -> str:
@@ -2443,11 +2400,8 @@ def union_query(part: CompValue) -> str:
     Returns:
         str: Query string containing the union operation.
     """
-    '''union_query: str = (
-        "INSERT INTO "
-        + __encode_table_name(part)
-        + "\n"
-        + "SELECT "
+    union_query: str = (
+        "SELECT "
         + ", ".join(
             f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
             for var in sorted(part.p1._vars)
@@ -2465,55 +2419,33 @@ def union_query(part: CompValue) -> str:
             part.p1._vars.intersection(part.p2._vars)
         )
     )
-    union_query += ";\n"'''
+    union_query += ";\n"
 
-    if part.p1.name == "BGP":
-        table_name1 = __encode_table_name(part.p1)
-        union_query_left = (
-            "SELECT "
-            + ", ".join(
-                var for var in sorted(part.p1._vars)
-            )
-            + ", k_count\nFROM "
-            + table_name1
-            + ";\n"
+    union_query_right: str = (
+        "SELECT "
+        + ", ".join(
+            f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
+            for var in sorted(part.p2._vars)
         )
-        union_query_left = create_table_w_select(
-            __encode_table_name(part)
-            + "_"
-            + __encode_schema_name(
-                str(sorted(part.p1._vars))
-            ),
-            union_query_left,
-        )
-    else:
-        # TODO: Add more schemes.
-        union_query_left = ""
+        + ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count\n"
+        + "FROM "
+        + __encode_table_name(part.p1)
+        + " AS r1 FULL OUTER JOIN "
+        + __encode_table_name(part.p2)
+        + " AS r2 ON "
+    )
 
-    if part.p2.name == "BGP":
-        table_name2 = __encode_table_name(part.p2)
-        union_query_right = (
-            "SELECT "
-            + ", ".join(
-                var for var in sorted(part.p2._vars)
-            )
-            + ", k_count\nFROM "
-            + table_name2
-            + ";\n"
-        )
-        union_query_right = create_table_w_select(
-            __encode_table_name(part)
-            + "_"
-            + __encode_schema_name(
-                str(sorted(part.p2._vars))
-            ),
-            union_query_right,
-        )
-    else:
-        # TODO: Add more schemes.
-        union_query_right = ""
-
-    return union_query_left + union_query_right
+    return create_table_w_select(
+        __encode_table_name(part)
+        + __encode_schema_name(str(sorted(part.p1._vars))),
+        union_query,
+        part.p1._vars,
+    ) + create_table_w_select(
+        __encode_table_name(part)
+        + __encode_schema_name(str(sorted(part.p2._vars))),
+        union_query_right,
+        part.p2._vars,
+    )
 
 
 def nu_queries(
