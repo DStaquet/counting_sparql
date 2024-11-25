@@ -1,7 +1,9 @@
 from rdflib.plugins.sparql.parserutils import CompValue
 from SQL_Constructor import SQL_Constructor
+from typing import Union
 
 import sqlparse
+import json
 
 
 def write_query_to_output_dir(
@@ -373,7 +375,9 @@ def construct_minus_columns(part: CompValue) -> list[str]:
     return minus_columns
 
 
-def build_queries(part: CompValue, output_dir: str) -> None:
+def build_queries(
+    part: CompValue, output_dir: str
+) -> list[set[str]]:
     """Constructs the non_incremental queries
 
     Args:
@@ -381,10 +385,10 @@ def build_queries(part: CompValue, output_dir: str) -> None:
         output_dir (str): Where to write the SQL queries
     """
     if "p" in part:
-        build_queries(part.p, output_dir)
+        schemas1 = build_queries(part.p, output_dir)
     elif "p1" in part and "p2" in part:
-        build_queries(part.p1, output_dir)
-        build_queries(part.p2, output_dir)
+        schemas1 = build_queries(part.p1, output_dir)
+        schemas2 = build_queries(part.p2, output_dir)
     # Construct the SQL query
     match part.name:
         case "BGP":
@@ -403,6 +407,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 bgp_query,
                 SQL_Constructor.get_table_name(part),
             )
+            return [part._vars]
         case "Filter":
             filter_query: str = (
                 SQL_Constructor.create_table_w_select(
@@ -415,6 +420,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 filter_query,
                 SQL_Constructor.get_table_name(part),
             )
+            return schemas1
         case "Project":
             project_query: str = (
                 SQL_Constructor.create_table_w_select(
@@ -427,6 +433,13 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 project_query,
                 SQL_Constructor.get_table_name(part),
             )
+            new_schema = []
+            for schema in schemas1:
+                if set(part.PV).issubset(set(schema)):
+                    new_schema.append(
+                        schema.intersection(set(part.PV))
+                    )
+            return new_schema
         case "LeftJoin":
             left_join_query: str = (
                 SQL_Constructor.left_join_query(part)
@@ -456,6 +469,19 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 join_query,
                 SQL_Constructor.get_table_name(part),
             )
+            new_schema = []
+            for schema in schemas1:
+                for schema2 in schemas2:
+                    if (
+                        set(schema).intersection(
+                            set(schema2)
+                        )
+                        != set()
+                    ):
+                        new_schema.append(
+                            schema.union(schema2)
+                        )
+            return new_schema
         case "Minus":
             minus_query: str = SQL_Constructor.minus_query(
                 part
@@ -465,6 +491,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 minus_query,
                 SQL_Constructor.get_table_name(part),
             )
+            return schemas1
         case "Union":
             union_query: str = SQL_Constructor.union_query(
                 part
@@ -474,6 +501,7 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 union_query,
                 SQL_Constructor.get_table_name(part),
             )
+            return schemas1 + schemas2  # type: ignore
         case "SelectQuery":
             select_query: str = (
                 SQL_Constructor.select_query(part)
@@ -483,3 +511,5 @@ def build_queries(part: CompValue, output_dir: str) -> None:
                 select_query,
                 SQL_Constructor.get_table_name(part),
             )
+            return schemas1
+    return schemas1

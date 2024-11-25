@@ -2142,15 +2142,15 @@ def delta_union_query(part: CompValue) -> str:
     return create_table_w_select(
         "delta_"
         + __encode_table_name(part)
+        + "_"
         + __encode_schema_name(str(sorted(part.p1._vars))),
         union_query,
-        part.p1._vars,
     ) + create_table_w_select(
         "delta_"
         + __encode_table_name(part)
+        + "_"
         + __encode_schema_name(str(sorted(part.p2._vars))),
         union_query_right,
-        part.p2._vars,
     )
 
 
@@ -2439,12 +2439,10 @@ def union_query(part: CompValue) -> str:
         __encode_table_name(part)
         + __encode_schema_name(str(sorted(part.p1._vars))),
         union_query,
-        part.p1._vars,
     ) + create_table_w_select(
         __encode_table_name(part)
         + __encode_schema_name(str(sorted(part.p2._vars))),
         union_query_right,
-        part.p2._vars,
     )
 
 
