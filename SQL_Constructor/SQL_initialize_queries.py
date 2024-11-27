@@ -410,10 +410,7 @@ def build_queries(
             return [part._vars]
         case "Filter":
             filter_query: str = (
-                SQL_Constructor.create_table_w_select(
-                    SQL_Constructor.get_table_name(part),
-                    SQL_Constructor.filter_query(part),
-                )
+                SQL_Constructor.filter_query(part, schemas1)
             )
             write_query_to_output_dir(
                 output_dir,
@@ -439,7 +436,7 @@ def build_queries(
                     new_schema.append(
                         schema.intersection(set(part.PV))
                     )
-            return new_schema
+            return list(set(new_schema))
         case "LeftJoin":
             left_join_query: str = (
                 SQL_Constructor.left_join_query(part)
@@ -449,6 +446,12 @@ def build_queries(
                 left_join_query,
                 SQL_Constructor.get_table_name(part),
             )
+            new_schema = []
+            for schema in schemas1:
+                new_schema.append(schema)
+                for schema2 in schema2:
+                    new_schema.append(schema.union(schema2))
+            return list(set(new_schema))
         case "Join":
             join_query: str = (
                 SQL_Constructor.create_table_w_select(
@@ -472,16 +475,8 @@ def build_queries(
             new_schema = []
             for schema in schemas1:
                 for schema2 in schemas2:
-                    if (
-                        set(schema).intersection(
-                            set(schema2)
-                        )
-                        != set()
-                    ):
-                        new_schema.append(
-                            schema.union(schema2)
-                        )
-            return new_schema
+                    new_schema.append(schema.union(schema2))
+            return list(set(new_schema))
         case "Minus":
             minus_query: str = SQL_Constructor.minus_query(
                 part
@@ -501,7 +496,11 @@ def build_queries(
                 union_query,
                 SQL_Constructor.get_table_name(part),
             )
-            return schemas1 + schemas2  # type: ignore
+            schemas = schemas1.copy()
+            for schema in schemas2:
+                if schema not in schemas:
+                    schemas.append(schema)
+            return schemas
         case "SelectQuery":
             select_query: str = (
                 SQL_Constructor.select_query(part)

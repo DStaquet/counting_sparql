@@ -168,6 +168,7 @@ data/*.nt
 data/*.ttl
 data/*
 database/*
+testing_query_folder/*
 
 # VS code
 .vscode/
