@@ -2504,37 +2504,59 @@ def project_query(
         )
     else:
         project_strs: str = ""
+        projection_schema = project_schemas(part, schemas1)
+        already_seen_projection_schemas = list()
         for schema in schemas1:
-            schema_suffix: str = __encode_schema_name(
-                str(sorted(schema))
-            )
             projected_schema = set(part.PV).intersection(
                 schema
             )
+            if len(projection_schema) == 1:
+                schema_suffix = ""
+            else:
+                schema_suffix = "_" + __encode_schema_name(
+                    str(sorted(schema))
+                )
+
             project_str: str = (
                 "SELECT "
                 + ", ".join(
                     var for var in sorted(projected_schema)
                 )
                 + ", SUM(k_count) AS k_count\nFROM "
-                + __encode_table_name(part)
+                + __encode_table_name(part.p)
                 + "_"
-                + schema_suffix
+                + __encode_schema_name(str(sorted(schema)))
                 + "\nGROUP BY "
                 + ", ".join(
                     var for var in sorted(projected_schema)
                 )
                 + ";"
             )
-            project_strs += (
-                create_table_w_select(
-                    __encode_table_name(part)
-                    + "_"
-                    + schema_suffix,
-                    project_str,
+            if (
+                projected_schema
+                not in already_seen_projection_schemas
+            ):
+                already_seen_projection_schemas.append(
+                    projected_schema
                 )
-                + "\n"
-            )
+                project_strs += (
+                    create_table_w_select(
+                        __encode_table_name(part)
+                        + schema_suffix,
+                        project_str,
+                    )
+                    + "\n"
+                )
+            else:
+                project_strs += (
+                    insert_into_w_select(
+                        __encode_table_name(part)
+                        + schema_suffix,
+                        project_str,
+                        projected_schema,
+                    )
+                    + "\n"
+                )
         return project_strs
 
 
