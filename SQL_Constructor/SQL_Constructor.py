@@ -100,7 +100,7 @@ def __create_vars(variables: set) -> str:
     return var_str
 
 
-def __serialize_to_json(part: CompValue) -> str:
+def __serialize_to_json(part: CompValue | list[set]) -> str:
     """Serialize to JSON
 
     Args:
@@ -122,16 +122,250 @@ def __serialize_to_json(part: CompValue) -> str:
     )
 
 
+def project_schemas(
+    part: CompValue, schemas1: list[set[str]]
+) -> list[set[str]]:
+    """Generates the schemas for the project part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): The schemas of the child part of the query
+
+    Returns:
+        list[set[str]]: Schemas of the projection
+    """
+    new_schema = []
+    for schema in schemas1:
+        projected_schema = schema.intersection(set(part.PV))
+        if (
+            projected_schema != set()
+            and projected_schema not in new_schema
+        ):
+            new_schema.append(projected_schema)
+    return new_schema
+
+
+def leftjoin_schemas(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+) -> list[set[str]]:
+    """Constructs the schemas of the leftjoin part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): Schemas of the left child of the part
+        schemas2 (list[set[str]]): Schemas of the right child of the part
+
+    Returns:
+        list[set[str]]: Schemas of the leftjoin part of the query
+    """
+    new_schema = []
+    for schema in schemas1:
+        new_schema.append(schema)
+        for schema2 in schema2:
+            new_schema.append(schema.union(schema2))
+    return list(set(new_schema))
+
+
+def join_schemas(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+) -> list[set[str]]:
+    """Constructs the schemas of the join part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): Schema of the left child of the join
+        schemas2 (list[set[str]]): Schema of the right child of the join
+
+    Returns:
+        list[set[str]]: Schema of the join part of the query
+    """
+    new_schema = []
+    for schema in schemas1:
+        for schema2 in schemas2:
+            new_schema.append(schema.union(schema2))
+    return list(set(new_schema))
+
+
+def union_schemas(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+) -> list[set[str]]:
+    """Constructs the schemas of the union part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): Schema of the left child of the union
+        schemas2 (list[set[str]]): Schema of the right child of the union
+
+    Returns:
+        list[set[str]]: Schema of the union part of the query
+    """
+    schemas = schemas1.copy()
+    for schema in schemas2:
+        if schema not in schemas:
+            schemas.append(schema)
+    return schemas
+
+
+def __write_hash_schemas(
+    part: CompValue,
+    output_dir: str,
+    schemas1: list[set],
+    schemas2: list[set] | None = None,
+) -> list[set]:
+    """Generates data in the hash_value.json for the schemas.
+
+    Args:
+        part (CompValue): Current part of the query
+        output_dir (str): Directory to write the hash_values.json file
+        schemas (list[set]): List of already calculated schemas
+            lower in the parse tree
+
+    Returns:
+        list[set]: The schema list to return
+    """
+    match part.name:
+        case "Filter":
+            with open(
+                join(output_dir, "hash_values.json"), "a"
+            ) as hash_file:
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(
+                    __serialize_to_json(schemas1)
+                )
+                hash_file.write(",\n")
+                return schemas1
+        case "Project":
+            with open(
+                join(output_dir, "hash_values.json"), "a"
+            ) as hash_file:
+                project_schema = project_schemas(
+                    part, schemas1
+                )
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(
+                    __serialize_to_json(project_schema)
+                )
+                hash_file.write(",\n")
+                return schemas1
+        case "LeftJoin":
+            with open(
+                join(output_dir, "hash_values.json"), "a"
+            ) as hash_file:
+                if schemas2 is None:
+                    raise ValueError(
+                        "Schemas2 cannot be None for a left join"
+                    )
+                leftjoin_schema = leftjoin_schemas(
+                    part, schemas1, schemas2
+                )
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(
+                    __serialize_to_json(leftjoin_schema)
+                )
+                hash_file.write(",\n")
+                return leftjoin_schema
+        case "Join":
+            with open(
+                join(output_dir, "hash_values.json"), "a"
+            ) as hash_file:
+                if schemas2 is None:
+                    raise ValueError(
+                        "Schemas2 cannot be None for a join"
+                    )
+                join_schema = join_schemas(
+                    part, schemas1, schemas2
+                )
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(
+                    __serialize_to_json(join_schema)
+                )
+                hash_file.write(",\n")
+                return join_schema
+        case "Minus":
+            with open(
+                join(output_dir, "hash_values.json"), "a"
+            ) as hash_file:
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(
+                    __serialize_to_json(schemas1)
+                )
+                hash_file.write(",\n")
+                return schemas1
+        case "Union":
+            with open(
+                join(output_dir, "hash_values.json"), "a"
+            ) as hash_file:
+                if schemas2 is None:
+                    raise ValueError(
+                        "Schemas2 cannot be None for a union"
+                    )
+                union_schema = union_schemas(
+                    part, schemas1, schemas2
+                )
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(
+                    __serialize_to_json(union_schema)
+                )
+                hash_file.write(",\n")
+                return union_schema
+        case "SelectQuery":
+            with open(
+                join(output_dir, "hash_values.json"), "a"
+            ) as hash_file:
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(
+                    __serialize_to_json(schemas1)
+                )
+                hash_file.write(",\n")
+                return schemas1
+
+    raise NotImplementedError(
+        "Part name not supported for writing hash schemas"
+    )
+
+
 def setup_hash_values(
     part: CompValue, output_dir: str
-) -> None:
+) -> list[set]:
     """Constructs a hash value info file for the query.
 
     Args:
         part (CompValue): Part of the query
     """
-    if part is None:
-        return
     hash_value: str = __encode_table_name(part)
     with open(
         join(output_dir, "hash_values.json"), "a"
@@ -143,11 +377,35 @@ def setup_hash_values(
         hash_file.write("\n")
         if any(key in part for key in ["p", "p1", "p2"]):
             hash_file.write(",\n")
+
+        # Add schemas to the hash file
+        if part.name == "BGP":
+            schema_name = __encode_table_name(part)
+            hash_file.write(
+                ',\n"schema_' + schema_name + '": '
+            )
+            hash_file.write(__serialize_to_json(part._vars))
+            hash_file.write("\n")
+            hash_file.write(",\n")
+
+            return [part._vars]
+
     if "p" in part:
-        setup_hash_values(part.p, output_dir)
+        schemas1 = setup_hash_values(part.p, output_dir)
+        schemas2 = None
     elif "p1" in part and "p2" in part:
-        setup_hash_values(part.p1, output_dir)
-        setup_hash_values(part.p2, output_dir)
+        schemas1 = setup_hash_values(part.p1, output_dir)
+        hash_file = open(
+            join(output_dir, "hash_values.json"), "a"
+        )
+        hash_file.write(",\n")
+        hash_file.close()
+        schemas2 = setup_hash_values(part.p2, output_dir)
+
+    # BGP cannot have come to this part of the function
+    return __write_hash_schemas(
+        part, output_dir, schemas1, schemas2
+    )
 
 
 def __encode_schema_name(part: CompValue | str) -> str:
@@ -2477,10 +2735,12 @@ def union_query(part: CompValue) -> str:
 
     return create_table_w_select(
         __encode_table_name(part)
+        + "_"
         + __encode_schema_name(str(sorted(part.p1._vars))),
         union_query,
     ) + create_table_w_select(
         __encode_table_name(part)
+        + "_"
         + __encode_schema_name(str(sorted(part.p2._vars))),
         union_query_right,
     )

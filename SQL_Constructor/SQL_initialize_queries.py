@@ -420,23 +420,16 @@ def build_queries(
             return schemas1
         case "Project":
             project_query: str = (
-                SQL_Constructor.create_table_w_select(
-                    SQL_Constructor.get_table_name(part),
-                    SQL_Constructor.project_query(part),
-                )
+                SQL_Constructor.project_query(part)
             )
             write_query_to_output_dir(
                 output_dir,
                 project_query,
                 SQL_Constructor.get_table_name(part),
             )
-            new_schema = []
-            for schema in schemas1:
-                if set(part.PV).issubset(set(schema)):
-                    new_schema.append(
-                        schema.intersection(set(part.PV))
-                    )
-            return list(set(new_schema))
+            return SQL_Constructor.project_schemas(
+                part, schemas1
+            )
         case "LeftJoin":
             left_join_query: str = (
                 SQL_Constructor.left_join_query(part)
@@ -446,12 +439,9 @@ def build_queries(
                 left_join_query,
                 SQL_Constructor.get_table_name(part),
             )
-            new_schema = []
-            for schema in schemas1:
-                new_schema.append(schema)
-                for schema2 in schema2:
-                    new_schema.append(schema.union(schema2))
-            return list(set(new_schema))
+            return SQL_Constructor.leftjoin_schemas(
+                part, schemas1, schemas2
+            )
         case "Join":
             join_query: str = (
                 SQL_Constructor.create_table_w_select(
@@ -472,11 +462,9 @@ def build_queries(
                 join_query,
                 SQL_Constructor.get_table_name(part),
             )
-            new_schema = []
-            for schema in schemas1:
-                for schema2 in schemas2:
-                    new_schema.append(schema.union(schema2))
-            return list(set(new_schema))
+            return SQL_Constructor.join_schemas(
+                part, schemas1, schemas2
+            )
         case "Minus":
             minus_query: str = SQL_Constructor.minus_query(
                 part
@@ -496,11 +484,9 @@ def build_queries(
                 union_query,
                 SQL_Constructor.get_table_name(part),
             )
-            schemas = schemas1.copy()
-            for schema in schemas2:
-                if schema not in schemas:
-                    schemas.append(schema)
-            return schemas
+            return SQL_Constructor.union_schemas(
+                part, schemas1, schemas2
+            )
         case "SelectQuery":
             select_query: str = (
                 SQL_Constructor.select_query(part)
