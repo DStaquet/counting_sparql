@@ -2477,25 +2477,65 @@ def filter_query(
     return filter_strs
 
 
-def project_query(part: CompValue) -> str:
+def project_query(
+    part: CompValue, schemas1: list[set] = []
+) -> str:
     """Generate project query for the current part of the algebra.
 
     Args:
         part (CompValue): Current part of the algebra.
+        schemas1 (list[set[str]]): List of schemas to project on.
 
     Returns:
         str: Query string for the project operation.
     """
-    project_str: str = (
-        "SELECT "
-        + ", ".join(var for var in sorted(part.PV))
-        + ", SUM(k_count) AS k_count\nFROM "
-        + __encode_table_name(part.p)
-        + "\nGROUP BY "
-        + ", ".join(var for var in sorted(part.PV))
-        + ";"
-    )
-    return project_str
+    if len(schemas1) <= 1:
+        project_str: str = (
+            "SELECT "
+            + ", ".join(var for var in sorted(part.PV))
+            + ", SUM(k_count) AS k_count\nFROM "
+            + __encode_table_name(part.p)
+            + "\nGROUP BY "
+            + ", ".join(var for var in sorted(part.PV))
+            + ";"
+        )
+        return create_table_w_select(
+            __encode_table_name(part), project_str
+        )
+    else:
+        project_strs: str = ""
+        for schema in schemas1:
+            schema_suffix: str = __encode_schema_name(
+                str(sorted(schema))
+            )
+            projected_schema = set(part.PV).intersection(
+                schema
+            )
+            project_str: str = (
+                "SELECT "
+                + ", ".join(
+                    var for var in sorted(projected_schema)
+                )
+                + ", SUM(k_count) AS k_count\nFROM "
+                + __encode_table_name(part)
+                + "_"
+                + schema_suffix
+                + "\nGROUP BY "
+                + ", ".join(
+                    var for var in sorted(projected_schema)
+                )
+                + ";"
+            )
+            project_strs += (
+                create_table_w_select(
+                    __encode_table_name(part)
+                    + "_"
+                    + schema_suffix,
+                    project_str,
+                )
+                + "\n"
+            )
+        return project_strs
 
 
 def join_query(

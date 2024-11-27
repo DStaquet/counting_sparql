@@ -420,7 +420,9 @@ def build_queries(
             return schemas1
         case "Project":
             project_query: str = (
-                SQL_Constructor.project_query(part)
+                SQL_Constructor.project_query(
+                    part, schemas1
+                )
             )
             write_query_to_output_dir(
                 output_dir,
