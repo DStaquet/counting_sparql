@@ -1,4 +1,4 @@
-INSERT INTO nu_prep_SelectQuery_7326146391645809822 (x, y1, y2, z, k_count)
+CREATE TEMP TABLE nu_prep_SelectQuery_7326146391645809822 (x, y1, y2, z, k_count INT) AS
 SELECT x,
        y1,
        y2,
@@ -14,7 +14,7 @@ SELECT x,
        k_count
 FROM delta_SelectQuery_7326146391645809822;
 
-INSERT INTO nu_SelectQuery_7326146391645809822 (x, y1, y2, z, k_count)
+CREATE TABLE nu_SelectQuery_7326146391645809822 (x, y1, y2, z, k_count INT) AS
 SELECT x,
        y1,
        y2,

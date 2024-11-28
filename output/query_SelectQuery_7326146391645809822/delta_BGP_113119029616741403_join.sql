@@ -1,4 +1,4 @@
-INSERT INTO delta_BGP_113119029616741403_2 (z, y1, x, y2, k_count)
+CREATE TEMP TABLE delta_BGP_113119029616741403_2_temp AS
 SELECT (CASE
             WHEN R1.z NOT NULL THEN R1.z
             ELSE R2.z
@@ -48,7 +48,7 @@ SELECT (CASE
             WHEN R2.k_count IS NULL THEN R1.k_count
             ELSE R1.k_count + R2.k_count
         END) AS k_count
-FROM delta_BGP_113119029616741403_2 AS R1
+FROM delta_BGP_113119029616741403_2_temp AS R1
 FULL OUTER JOIN delta_BGP_113119029616741403_3 AS R2 ON R1.z = R2.z
 AND R1.y1 = R2.y1
 AND R1.x = R2.x

@@ -55,6 +55,7 @@ def __delta_bgp_queries(
     delta_join_tables: str = ""
     last_delta_query_name: str = ""
     first_insert = True
+    temp_suffix = ""
     for triple_index in range(len(part.triples)):
         delta_query, known_vars = (
             SQL_Constructor.bgp_delta_table_query(
@@ -80,8 +81,8 @@ def __delta_bgp_queries(
             delta_join_query = (
                 SQL_Constructor.outer_join_queries(
                     part,
-                    delta_query_name,
-                    last_delta_query_name,
+                    delta_query_name + "_temp",
+                    last_delta_query_name + temp_suffix,
                     delta_query_name,
                     known_vars,
                     triple_index + 1,
@@ -89,13 +90,14 @@ def __delta_bgp_queries(
             )
             delta_join_queries += delta_join_query
             last_delta_query_name = delta_query_name
+            temp_suffix = "_temp"
         elif (triple_index + 1) == len(
             part.triples
         ) and triple_index != 0:
             delta_join_query = (
                 SQL_Constructor.final_outer_join_query(
                     part,
-                    last_delta_query_name,
+                    last_delta_query_name + "_temp",
                     delta_query_name,
                     known_vars,
                 )

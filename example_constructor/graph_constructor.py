@@ -17,10 +17,12 @@ class Graph:
             other (Graph): The graph to compare with.
         """
         vertices_diff = list(
-            set(self.vertices) - set(other.vertices)
+            set(self.vertices).difference(
+                set(other.vertices)
+            )
         )
         edges_diff = list(
-            set(self.edges) - set(other.edges)
+            set(self.edges).difference(set(other.edges))
         )
 
         return Graph(vertices_diff, edges_diff)
@@ -120,7 +122,7 @@ class Graph:
                             f"'{vertices_uri}{vertex}'",
                             f"'{edges_uri}{edge[1]}'",
                             f"'{vertices_uri}{edge[2]}'",
-                            str(1 * swap_int),
+                            str(swap_int * 1),
                         )
                     )
                     if (
@@ -132,7 +134,7 @@ class Graph:
                                 f"'{vertices_uri}{vertex}'",
                                 "'https://www.w3.org/1999/02/22-rdf-syntax-ns#type'",
                                 f"'{vertices_uri}Node'",
-                                str(1 * swap_int),
+                                str(swap_int * 1),
                             )
                         )
                         known_vertices.add(vertex)
@@ -166,7 +168,7 @@ class Graph:
                             f"'{vertices_uri}{vertex}'",
                             f"'{edges_uri}{edge[1]}'",
                             f"'{vertices_uri}{edge[2]}'",
-                            f"1",
+                            "1",
                         )
                     )
 
