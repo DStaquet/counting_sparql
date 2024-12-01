@@ -446,19 +446,12 @@ def build_queries(
                 part, schemas1, schemas2
             )
         case "Join":
-            join_query: str = (
-                SQL_Constructor.create_table_w_select(
-                    SQL_Constructor.get_table_name(part),
-                    SQL_Constructor.join_query(
-                        part,
-                        SQL_Constructor.get_table_name(
-                            part.p1
-                        ),
-                        SQL_Constructor.get_table_name(
-                            part.p2
-                        ),
-                    ),
-                )
+            join_query: str = SQL_Constructor.join_query(
+                part,
+                SQL_Constructor.get_table_name(part.p1),
+                SQL_Constructor.get_table_name(part.p2),
+                schemas1,
+                schemas2,
             )
             write_query_to_output_dir(
                 output_dir,

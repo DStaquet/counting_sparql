@@ -184,7 +184,7 @@ def join_schemas(
     for schema in schemas1:
         for schema2 in schemas2:
             new_schema.append(schema.union(schema2))
-    return list(set(new_schema))
+    return new_schema
 
 
 def union_schemas(
@@ -2604,6 +2604,8 @@ def join_query(
     part: CompValue,
     table_name_one: str,
     table_name_two: str,
+    schemas1: list[set[str]] = [],
+    schemas2: list[set[str]] = [],
 ) -> str:
     """Generates the join part according to two parts in the parse tree.
 
@@ -2613,30 +2615,151 @@ def join_query(
     Returns:
         str: The SQL query to join both parts.
     """
-    join_query: str = (
-        "SELECT "
-        + ", ".join(
-            f"r1.{var} AS {var}"
-            for var in sorted(
-                part.p1._vars.union(part.p2._vars)
+    if len(schemas1) == 0 or len(schemas2) == 0:
+        raise ValueError("No schemas to join on.")
+    elif len(schemas1) == 1 and len(schemas2) == 1:
+        if schemas1[0] == schemas2[0]:
+            join_query: str = (
+                "SELECT "
+                + ", ".join(
+                    f"r1.{var} AS {var}"
+                    for var in sorted(
+                        part.p1._vars.union(part.p2._vars)
+                    )
+                )
+                + ", r1.k_count * r2.k_count as k_count\n"
             )
-        )
-        + ", r1.k_count * r2.k_count as k_count\n"
-    )
-    join_query += "FROM "
-    join_query += table_name_one
-    join_query += " AS r1 JOIN "
-    join_query += table_name_two
-    join_query += " AS r2 "
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        join_query += "ON "
-        join_query += " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in sorted(
+            join_query += "FROM "
+            join_query += table_name_one
+            join_query += " AS r1 JOIN "
+            join_query += table_name_two
+            join_query += " AS r2 "
+            if (
                 part.p1._vars.intersection(part.p2._vars)
+                != set()
+            ):
+                join_query += "ON "
+                join_query += " AND ".join(
+                    f"r1.{var} = r2.{var}"
+                    for var in sorted(
+                        part.p1._vars.intersection(
+                            part.p2._vars
+                        )
+                    )
+                )
+            join_query += ";\n"
+        else:
+            join_query: str = (
+                "SELECT "
+                + ", ".join(
+                    f"r1.{var} AS {var}"
+                    for var in sorted(
+                        part.p1._vars.union(part.p2._vars)
+                    )
+                )
+                + ", r1.k_count * r2.k_count as k_count\n"
+                + "FROM "
+                + table_name_one
+                + " AS r1, "
+                + table_name_two
+                + " AS r2;\n"
             )
+    else:
+
+        def sch2SelectClause(
+            sch1: set[str], sch2: set[str]
+        ) -> str:
+            if sch1.intersection(sch2) == set():
+                return ""
+            else:
+                return ", " + ", ".join(
+                    f"r2.{var} AS {var}"
+                    for var in sorted(sch2.difference(sch1))
+                )
+
+        join_query: str = ""
+        join_schemas_list = join_schemas(
+            part, schemas1, schemas2
         )
-    join_query += ";\n"
+        for sch1 in schemas1:
+            for sch2 in schemas2:
+                if not len(schemas1) == 1:
+                    sch1_suffix: str = (
+                        "_"
+                        + __encode_schema_name(
+                            str(sorted(sch1))
+                        )
+                    )
+                else:
+                    sch1_suffix: str = ""
+                if not len(schemas2) == 1:
+                    sch2_suffix: str = (
+                        "_"
+                        + __encode_schema_name(
+                            str(sorted(sch2))
+                        )
+                    )
+                else:
+                    sch2_suffix: str = ""
+
+                if sch1.intersection(sch2) == set():
+                    curr_join_query: str = (
+                        "SELECT "
+                        + ", ".join(
+                            f"r1.{var} AS {var}"
+                            for var in sorted(sch1)
+                        )
+                        + sch2SelectClause(sch1, sch2)
+                        + ", r1.k_count * r2.k_count as k_count\n"
+                    )
+                    curr_join_query += "FROM "
+                    curr_join_query += (
+                        table_name_one + sch1_suffix
+                    )
+                    curr_join_query += " AS r1, "
+                    curr_join_query += (
+                        table_name_two + sch2_suffix
+                    )
+                    curr_join_query += " AS r2;\n"
+                else:
+                    curr_join_query: str = (
+                        "SELECT "
+                        + ", ".join(
+                            f"r1.{var} AS {var}"
+                            for var in sorted(sch1)
+                        )
+                        + sch2SelectClause(sch1, sch2)
+                        + ", r1.k_count * r2.k_count as k_count\n"
+                        + "FROM "
+                        + table_name_one
+                        + sch1_suffix
+                        + " AS r1, "
+                        + table_name_two
+                        + sch2_suffix
+                        + " AS r2 "
+                        + "ON "
+                        + " AND ".join(
+                            f"r1.{var} = r2.{var}"
+                            for var in sorted(
+                                sch1.intersection(sch2)
+                            )
+                        )
+                        + ";\n"
+                    )
+                if len(join_schemas_list) == 1:
+                    join_query += create_table_w_select(
+                        __encode_table_name(part),
+                        curr_join_query,
+                    )
+                else:
+                    join_query += create_table_w_select(
+                        __encode_table_name(part)
+                        + "_"
+                        + __encode_schema_name(
+                            str(sorted(sch1.union(sch2)))
+                        ),
+                        curr_join_query,
+                    )
 
     return join_query
 
