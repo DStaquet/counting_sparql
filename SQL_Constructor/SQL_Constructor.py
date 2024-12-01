@@ -137,10 +137,7 @@ def project_schemas(
     new_schema = []
     for schema in schemas1:
         projected_schema = schema.intersection(set(part.PV))
-        if (
-            projected_schema != set()
-            and projected_schema not in new_schema
-        ):
+        if projected_schema not in new_schema:
             new_schema.append(projected_schema)
     return new_schema
 
@@ -2489,16 +2486,42 @@ def project_query(
     Returns:
         str: Query string for the project operation.
     """
-    if len(schemas1) <= 1:
-        project_str: str = (
-            "SELECT "
-            + ", ".join(var for var in sorted(part.PV))
-            + ", SUM(k_count) AS k_count\nFROM "
-            + __encode_table_name(part.p)
-            + "\nGROUP BY "
-            + ", ".join(var for var in sorted(part.PV))
-            + ";"
+
+    def projected_variables(schema: set[str]) -> str:
+        """Generates the select clause for projected variables."""
+        return (
+            ", ".join(var for var in sorted(schema)) + ", "
         )
+
+    def projectPVToSchema(
+        PV: set[str], schema: set[str]
+    ) -> set[str]:
+        """Projects the PV to the schema."""
+        return PV.intersection(schema)
+
+    if len(schemas1) == 0:
+        raise ValueError("No schemas to project on.")
+    elif len(schemas1) == 1:
+        projected_schema = projectPVToSchema(
+            set(part.PV), schemas1[0]
+        )
+        if projected_schema:
+            project_str: str = (
+                "SELECT "
+                + projected_variables(set(part.PV))
+                + " SUM(k_count) AS k_count\nFROM "
+                + __encode_table_name(part.p)
+                + "\nGROUP BY "
+                + ", ".join(var for var in sorted(part.PV))
+                + ";"
+            )
+        else:
+            project_str: str = (
+                "SELECT "
+                + " SUM (k_count) AS k_count\nFROM "
+                + __encode_table_name(part.p)
+                + ";"
+            )
         return create_table_w_select(
             __encode_table_name(part), project_str
         )
@@ -2507,35 +2530,48 @@ def project_query(
         projection_schema = project_schemas(part, schemas1)
         already_seen_projection_schemas = list()
         for schema in schemas1:
-            projected_schema = set(part.PV).intersection(
-                schema
+            projected_schema = projectPVToSchema(
+                set(part.PV), schema
             )
-            if (
-                not projected_schema
-            ):  # Returns True if set is empty
-                continue
+
             if len(projection_schema) == 1:
                 schema_suffix = ""
             else:
                 schema_suffix = "_" + __encode_schema_name(
-                    str(sorted(schema))
+                    str(sorted(projected_schema))
                 )
 
-            project_str: str = (
-                "SELECT "
-                + ", ".join(
-                    var for var in sorted(projected_schema)
+            if projected_schema:
+                project_str: str = (
+                    "SELECT "
+                    + ", ".join(
+                        var
+                        for var in sorted(projected_schema)
+                    )
+                    + ", SUM(k_count) AS k_count\nFROM "
+                    + __encode_table_name(part.p)
+                    + "_"
+                    + __encode_schema_name(
+                        str(sorted(schema))
+                    )
+                    + "\nGROUP BY "
+                    + ", ".join(
+                        var
+                        for var in sorted(projected_schema)
+                    )
+                    + ";"
                 )
-                + ", SUM(k_count) AS k_count\nFROM "
-                + __encode_table_name(part.p)
-                + "_"
-                + __encode_schema_name(str(sorted(schema)))
-                + "\nGROUP BY "
-                + ", ".join(
-                    var for var in sorted(projected_schema)
+            else:
+                project_str: str = (
+                    "SELECT "
+                    + " SUM (k_count) AS k_count\nFROM "
+                    + __encode_table_name(part.p)
+                    + "_"
+                    + __encode_schema_name(
+                        str(sorted(schema))
+                    )
+                    + ";"
                 )
-                + ";"
-            )
             if (
                 projected_schema
                 not in already_seen_projection_schemas
