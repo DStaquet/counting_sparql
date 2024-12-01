@@ -8,6 +8,7 @@ def run_queries(
     output_dir: str,
     part_name: str,
     duckdb_conn: DuckDBPyConnection,
+    incremental: bool = False,
 ) -> None:
     """Execute the BGP queries recursively.
 
@@ -22,15 +23,17 @@ def run_queries(
 
     if part.name == part_name:
         query_file: str = get_query_string(part, output_dir)
+        print(query_file)
         duckdb_conn.sql(query_file)
-        query_file_delta: str = get_query_string(
-            part, output_dir, "delta_"
-        )
-        duckdb_conn.sql(query_file_delta)
-        query_file_nu: str = get_query_string(
-            part, output_dir, "nu_"
-        )
-        duckdb_conn.sql(query_file_nu)
+        if incremental:
+            query_file_delta: str = get_query_string(
+                part, output_dir, "delta_"
+            )
+            duckdb_conn.sql(query_file_delta)
+            query_file_nu: str = get_query_string(
+                part, output_dir, "nu_"
+            )
+            duckdb_conn.sql(query_file_nu)
     if "p" in part:
         run_queries(
             part.p, output_dir, part_name, duckdb_conn
@@ -48,6 +51,7 @@ def run_bgps(
     query_str: str,
     output_dir: str,
     duckdb_conn: DuckDBPyConnection,
+    incremental: bool = False,
 ) -> None:
     """Run the BGP queries.
 
@@ -74,6 +78,7 @@ def run_filter(
     query_str: str,
     output_dir: str,
     duckdb_conn: DuckDBPyConnection,
+    incremental: bool = False,
 ) -> None:
     """Run the filter part of the query
 
@@ -103,6 +108,7 @@ def run_project(
     query_str: str,
     output_dir: str,
     duckdb_conn: DuckDBPyConnection,
+    incremental: bool = False,
 ) -> None:
     """Run the project part of the query
 
@@ -132,6 +138,7 @@ def run_minus(
     query_str: str,
     output_dir: str,
     duckdb_conn: DuckDBPyConnection,
+    incremental: bool = False,
 ) -> None:
     """Run the minus part of the query
 
@@ -161,6 +168,12 @@ if __name__ == "__main__":
     import sys, os
     import argparse
 
+    from build_data import build_data
+    from duckdb import connect
+    from experiments.delta_bgp_join import (
+        load_table_in_graph,
+    )
+
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
         os.environ["PYTHONHASHSEED"] = "0"
@@ -169,7 +182,7 @@ if __name__ == "__main__":
         )
 
     # Connection to database
-    from eval_incremental import duckdb_conn
+    # from eval_incremental import duckdb_conn
 
     # Parse the arguments
     parser = argparse.ArgumentParser(
@@ -179,7 +192,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("query", help="The query to test")
     parser.add_argument(
-        "output", help="The output directory to write to"
+        "query_dir",
+        help="The directory to read the query files from",
     )
     parser.add_argument("data", help="The data file")
     parser.add_argument(
@@ -192,10 +206,57 @@ if __name__ == "__main__":
         dest="insert_file",
         help="The file containing insertions",
     )
+    parser.add_argument(
+        "-i",
+        "--incremental",
+        action="store_true",
+        help="Run the incremental version of the query",
+        default=False,
+    )
+    parser.add_argument(
+        "-db",
+        "--database",
+        dest="db",
+        default="./database/k_tester.db",
+        help="The database to connect to",
+    )
 
     args = parser.parse_args()
 
-    run_bgps(args.query, args.output, duckdb_conn)
-    run_filter(args.query, args.output, duckdb_conn)
-    run_minus(args.query, args.output, duckdb_conn)
-    run_project(args.query, args.output, duckdb_conn)
+    # Connection to database
+    duckdb_conn = connect(args.db)
+
+    build_data(
+        args.query_dir,
+        args.query,
+        duckdb_conn,
+        args.data,
+        args.insert_file,
+        args.deletion_file,
+        True,
+    )
+
+    run_bgps(
+        args.query,
+        args.query_dir,
+        duckdb_conn,
+        args.incremental,
+    )
+    run_filter(
+        args.query,
+        args.query_dir,
+        duckdb_conn,
+        args.incremental,
+    )
+    run_minus(
+        args.query,
+        args.query_dir,
+        duckdb_conn,
+        args.incremental,
+    )
+    run_project(
+        args.query,
+        args.query_dir,
+        duckdb_conn,
+        args.incremental,
+    )

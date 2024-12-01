@@ -34,7 +34,6 @@ def go_through_algebra_for_test(
         (
             avg_groupby_time,
             avg_join_time,
-            avg_long_join_time,
         ) = join_delta_rules_bgp_test(
             join(output_dir, table_file_names[0]),
             join(output_dir, table_file_names[1]),
@@ -60,8 +59,6 @@ def go_through_algebra_for_test(
             "Group by",
             ["10", "20", "50"],
             f"delta_{get_table_name(part)}",
-            name_three="Long join",
-            cmp_arr_three=avg_long_join_time,
         )
     else:
         if "p" in part:
@@ -275,7 +272,7 @@ def join_delta_rules_bgp_test(
     tables_to_delete: list[str],
     delta_tables_to_drop: list[str],
     prep_table_name: str,
-) -> tuple[ndarray, ndarray, ndarray]:
+) -> tuple[ndarray, ndarray]:
     """Compares the delta rules utilizing a join.
 
     Args:
@@ -357,7 +354,7 @@ def join_delta_rules_bgp_test(
             f"DROP TABLE IF EXISTS {prep_table_name};"
         )
 
-        # Run the long join query
+        """# Run the long join query
         print(f"Running the long join query")
         long_join_time: float = run_query_time(
             iqp.readQueryFile(long_join_filename),
@@ -367,7 +364,7 @@ def join_delta_rules_bgp_test(
         )
         avg_long_join_time = append(
             avg_long_join_time, long_join_time
-        )
+        )"""
 
         # Run the join query
         print(f"Running the join query")
@@ -382,10 +379,9 @@ def join_delta_rules_bgp_test(
 
     print(f"Group by average time: {avg_group_by_time}")
     print(f"Join average time: {avg_join_time}")
-    print(f"Long join average time: {avg_long_join_time}")
+    # print(f"Long join average time: {avg_long_join_time}")
 
     return (
         avg_group_by_time,
         avg_join_time,
-        avg_long_join_time,
     )

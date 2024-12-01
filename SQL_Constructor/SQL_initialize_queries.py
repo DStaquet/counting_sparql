@@ -401,7 +401,6 @@ def build_queries(
                 SQL_Constructor.create_table_w_select(
                     SQL_Constructor.get_table_name(part),
                     bgp_query,
-                    list(known_vars),
                 )
             )
             write_query_to_output_dir(
@@ -481,7 +480,7 @@ def build_queries(
             return schemas1
         case "Union":
             union_query: str = SQL_Constructor.union_query(
-                part
+                part, schemas1, schemas2
             )
             write_query_to_output_dir(
                 output_dir,

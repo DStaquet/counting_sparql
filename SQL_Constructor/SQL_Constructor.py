@@ -1531,7 +1531,7 @@ def create_table_w_select(
                 if key != "k_count"
             )
         )
-        create_str += ", k_count INT) AS\n" + select_query
+        create_str += ", k_count) AS\n" + select_query
         return create_str
 
 
@@ -2510,6 +2510,10 @@ def project_query(
             projected_schema = set(part.PV).intersection(
                 schema
             )
+            if (
+                not projected_schema
+            ):  # Returns True if set is empty
+                continue
             if len(projection_schema) == 1:
                 schema_suffix = ""
             else:
@@ -2751,7 +2755,98 @@ def minus_query(part: CompValue) -> str:
         return __diff_query_sub(part)
 
 
-def union_query(part: CompValue) -> str:
+def __union_query(
+    part: CompValue,
+    schema1: set[str],
+    schema2: set[str],
+    add_schemas: bool = False,
+) -> str:
+    if add_schemas:
+        sch1_suffix: str = "_" + __encode_schema_name(
+            str(sorted(schema1))
+        )
+        sch2_suffix: str = "_" + __encode_schema_name(
+            str(sorted(schema2))
+        )
+    else:
+        sch1_suffix = ""
+        sch2_suffix = ""
+    if schema1 == schema2:
+        union_query: str = (
+            "SELECT "
+            + ", ".join(
+                f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
+                for var in sorted(schema1)
+            )
+            + ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count\n"
+            + "FROM "
+            + __encode_table_name(part.p1)
+            + sch1_suffix
+            + " AS r1 FULL OUTER JOIN "
+            + __encode_table_name(part.p2)
+            + sch2_suffix
+            + " AS r2 ON "
+        )
+        union_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in sorted(schema1)
+        )
+        union_query += ";\n"
+
+        if add_schemas:
+            union_query = create_table_w_select(
+                __encode_table_name(part) + sch1_suffix,
+                union_query,
+            )
+        else:
+            union_query = create_table_w_select(
+                __encode_table_name(part), union_query
+            )
+
+    else:
+        # Left table
+        left_union_query: str = (
+            "SELECT "
+            + ", ".join(f"{var}" for var in sorted(schema1))
+            + ", k_count\n"
+            + "FROM "
+            + __encode_table_name(part.p1)
+            + sch1_suffix
+            + ";\n"
+        )
+
+        right_union_query: str = (
+            "SELECT "
+            + ", ".join(f"{var}" for var in sorted(schema2))
+            + ", k_count\n"
+            + "FROM "
+            + __encode_table_name(part.p2)
+            + sch2_suffix
+            + ";\n"
+        )
+
+        union_query = create_table_w_select(
+            __encode_table_name(part)
+            + "_"
+            + __encode_schema_name(str(sorted(schema1))),
+            left_union_query,
+        )
+
+        union_query += create_table_w_select(
+            __encode_table_name(part)
+            + "_"
+            + __encode_schema_name(str(sorted(schema2))),
+            right_union_query,
+        )
+
+    return union_query
+
+
+def union_query(
+    part: CompValue,
+    schemas1: list[set[str]] = [],
+    schemas2: list[set[str]] = [],
+) -> str:
     """Generates the union query.
 
     Args:
@@ -2760,7 +2855,17 @@ def union_query(part: CompValue) -> str:
     Returns:
         str: Query string containing the union operation.
     """
-    union_query: str = (
+    if len(schemas1) == 1 and len(schemas2) == 1:
+        return __union_query(part, schemas1[0], schemas2[0])
+    else:
+        all_queries: str = ""
+        for sch1 in schemas1:
+            for sch2 in schemas2:
+                all_queries += __union_query(
+                    part, sch1, sch2, True
+                )
+        return all_queries
+    """union_query: str = (
         "SELECT "
         + ", ".join(
             f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
@@ -2805,7 +2910,7 @@ def union_query(part: CompValue) -> str:
         + "_"
         + __encode_schema_name(str(sorted(part.p2._vars))),
         union_query_right,
-    )
+    )"""
 
 
 def nu_queries(

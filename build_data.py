@@ -8,12 +8,25 @@ def build_data(
     data_file: str | None = None,
     delf: str | None = None,
     insf: str | None = None,
+    csv: bool = False,
 ) -> None:
     """Builds up the data from the data file.
 
     Args:
         data_file (str): String containing the data file.
     """
+    if csv:
+        from experiments.delta_bgp_join import (
+            load_table_in_graph,
+        )
+
+        if data_file is None:
+            raise ValueError(
+                "Data file must be provided when using CSV"
+            )
+        load_table_in_graph(data_file, duckdb_conn)
+        return
+
     import incremental_query_parser as iqp
 
     query_input_dir: str = iqp.get_query_input(
