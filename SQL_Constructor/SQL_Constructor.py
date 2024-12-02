@@ -2615,6 +2615,18 @@ def join_query(
     Returns:
         str: The SQL query to join both parts.
     """
+
+    def sch2SelectClause(
+        sch1: set[str], sch2: set[str]
+    ) -> str:
+        if sch1.intersection(sch2) == set():
+            return ""
+        else:
+            return ", " + ", ".join(
+                f"r2.{var} AS {var}"
+                for var in sorted(sch2.difference(sch1))
+            )
+
     if len(schemas1) == 0 or len(schemas2) == 0:
         raise ValueError("No schemas to join on.")
     elif len(schemas1) == 1 and len(schemas2) == 1:
@@ -2653,29 +2665,26 @@ def join_query(
                 "SELECT "
                 + ", ".join(
                     f"r1.{var} AS {var}"
-                    for var in sorted(
-                        part.p1._vars.union(part.p2._vars)
-                    )
+                    for var in sorted(schemas1[0])
                 )
+                + sch2SelectClause(schemas1[0], schemas2[0])
                 + ", r1.k_count * r2.k_count as k_count\n"
                 + "FROM "
                 + table_name_one
                 + " AS r1, "
                 + table_name_two
-                + " AS r2;\n"
+                + " AS r2 ON "
+                + " AND ".join(
+                    f"r1.{var} = r2.{var}"
+                    for var in sorted(
+                        schemas1[0].intersection(
+                            schemas2[0]
+                        )
+                    )
+                )
+                + ";\n"
             )
     else:
-
-        def sch2SelectClause(
-            sch1: set[str], sch2: set[str]
-        ) -> str:
-            if sch1.intersection(sch2) == set():
-                return ""
-            else:
-                return ", " + ", ".join(
-                    f"r2.{var} AS {var}"
-                    for var in sorted(sch2.difference(sch1))
-                )
 
         join_query: str = ""
         join_schemas_list = join_schemas(
