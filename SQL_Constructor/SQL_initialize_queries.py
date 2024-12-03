@@ -465,7 +465,7 @@ def build_queries(
             )
         case "Minus":
             minus_query: str = SQL_Constructor.minus_query(
-                part
+                part, schemas1, schemas2
             )
             write_query_to_output_dir(
                 output_dir,
