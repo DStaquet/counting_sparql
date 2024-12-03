@@ -435,7 +435,9 @@ def build_queries(
             )
         case "LeftJoin":
             left_join_query: str = (
-                SQL_Constructor.left_join_query(part)
+                SQL_Constructor.left_join_query(
+                    part, schemas1, schemas2
+                )
             )
             write_query_to_output_dir(
                 output_dir,

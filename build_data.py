@@ -88,7 +88,7 @@ def setup_query_files(
     q_query_object: iqp.Query = iqp.get_query_object(
         iqp.readQueryFile(query_str)
     )
-    # algebra.pprintAlgebra(q_query_object)
+    algebra.pprintAlgebra(q_query_object)
 
     # Output directory
     query_output_dir: str = get_query_output_dir(

@@ -160,9 +160,9 @@ def leftjoin_schemas(
     new_schema = []
     for schema in schemas1:
         new_schema.append(schema)
-        for schema2 in schema2:
+        for schema2 in schemas2:
             new_schema.append(schema.union(schema2))
-    return list(set(new_schema))
+    return new_schema
 
 
 def join_schemas(
@@ -2606,6 +2606,7 @@ def join_query(
     table_name_two: str,
     schemas1: list[set[str]] = [],
     schemas2: list[set[str]] = [],
+    new_table_name: str | None = None,
 ) -> str:
     """Generates the join part according to two parts in the parse tree.
 
@@ -2615,6 +2616,8 @@ def join_query(
     Returns:
         str: The SQL query to join both parts.
     """
+    if new_table_name is None:
+        new_table_name = __encode_table_name(part)
 
     def sch2SelectClause(
         sch1: set[str], sch2: set[str]
@@ -2684,6 +2687,11 @@ def join_query(
                 )
                 + ";\n"
             )
+
+        join_query = create_table_w_select(
+            new_table_name, join_query
+        )
+
     else:
 
         join_query: str = ""
@@ -2757,12 +2765,12 @@ def join_query(
                     )
                 if len(join_schemas_list) == 1:
                     join_query += create_table_w_select(
-                        __encode_table_name(part),
+                        new_table_name,
                         curr_join_query,
                     )
                 else:
                     join_query += create_table_w_select(
-                        __encode_table_name(part)
+                        new_table_name
                         + "_"
                         + __encode_schema_name(
                             str(sorted(sch1.union(sch2)))
@@ -2773,7 +2781,11 @@ def join_query(
     return join_query
 
 
-def __join_query(part: CompValue) -> str:
+def __join_query(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+) -> str:
     """Generates the join query.
 
     Args:
@@ -2782,7 +2794,33 @@ def __join_query(part: CompValue) -> str:
     Returns:
         str: Query string for the join operation.
     """
-    join_query: str = (
+
+    if len(schemas1) == 0 or len(schemas2) == 0:
+        raise ValueError("No schemas to join on.")
+    elif len(schemas1) == 1 and len(schemas2) == 1:
+        return join_query(
+            part,
+            __encode_table_name(part.p1),
+            __encode_table_name(part.p2),
+            schemas1,
+            schemas2,
+            __encode_table_name(part)
+            + "_"
+            + __encode_schema_name(
+                str(sorted(schemas1[0])),
+            ),
+        )
+    else:
+        return join_query(
+            part,
+            __encode_table_name(part.p1),
+            __encode_table_name(part.p2),
+            schemas1,
+            schemas2,
+            __encode_table_name(part),
+        )
+
+    """join_query: str = (
         "INSERT INTO " + __encode_table_name(part) + "\n"
     )
     join_query += "SELECT "
@@ -2817,10 +2855,42 @@ def __join_query(part: CompValue) -> str:
         )
     )
     join_query += ";\n"
-    return join_query
+    return join_query"""
 
 
-def __diff_query_sub(part: CompValue) -> str:
+def __diffSch2Subquery(
+    part: CompValue, sch2: set[str], sch1: set[str]
+) -> str:
+    """Generate the subquery to use in the diff query
+
+    Args:
+        sch2 (set[str]): Schema of the subquery
+        sch1 (set[str]): Schema of the left table
+
+    Returns:
+        str: String containing the sub query for the schema
+            combinations of sch1 and sch2.
+    """
+    subquery_diff_str: str = (
+        "SELECT * FROM "
+        + __encode_table_name(part.p2)
+        + "_"
+        + __encode_schema_name(str(sorted(sch2)))
+        + " WHERE "
+        + " AND ".join(
+            f"s1.{var} = s2.{var}"
+            for var in sorted(sch1.intersection(sch2))
+        )
+    )
+
+    return subquery_diff_str
+
+
+def __diff_query_sub(
+    part: CompValue,
+    schemas1: list[set[str]] = [],
+    schemas2: list[set[str]] = [],
+) -> str:
     """Generates the difference subquery.
 
     Args:
@@ -2829,7 +2899,35 @@ def __diff_query_sub(part: CompValue) -> str:
     Returns:
         str: Query string of the needed difference operation.
     """
-    diff_query: str = (
+    diff_query = ""
+
+    if len(schemas1) == 0 or len(schemas2) == 0:
+        raise ValueError("No schemas to join on.")
+    else:
+        for sch1 in schemas1:
+            curr_diff_query: str = (
+                "SELECT *"
+                + " FROM "
+                + __encode_table_name(part.p1)
+                + "_"
+                + __encode_schema_name(str(sorted(sch1)))
+                + " WHERE "
+                + " AND ".join(
+                    f"NOT EXISTS ("
+                    + __diffSch2Subquery(part, sch2, sch1)
+                    + ")"
+                    for sch2 in schemas2
+                )
+            )
+            diff_query += create_table_w_select(
+                __encode_table_name(part)
+                + "_"
+                + __encode_schema_name(str(sorted(sch1))),
+                curr_diff_query,
+            )
+
+    return diff_query
+    """diff_query: str = (
         "INSERT INTO "
         + __encode_table_name(part)
         + "\n"
@@ -2884,10 +2982,14 @@ def __diff_query_sub(part: CompValue) -> str:
         )
     diff_query += ";\n"
 
-    return diff_query
+    return diff_query"""
 
 
-def left_join_query(part: CompValue) -> str:
+def left_join_query(
+    part: CompValue,
+    schemas1: list[set[str]] = [],
+    schemas2: list[set[str]] = [],
+) -> str:
     """Generates the leftjoin query.
 
     Args:
@@ -2896,8 +2998,12 @@ def left_join_query(part: CompValue) -> str:
     Returns:
         str: Query string for the leftjoin operation.
     """
-    leftjoin_join: str = __join_query(part)
-    leftjoin_diff: str = __diff_query_sub(part)
+    leftjoin_join: str = __join_query(
+        part, schemas1, schemas2
+    )
+    leftjoin_diff: str = __diff_query_sub(
+        part, schemas1, schemas2
+    )
 
     return leftjoin_join + leftjoin_diff
 

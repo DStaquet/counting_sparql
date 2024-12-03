@@ -1,0 +1,10 @@
+PREFIX : <http://example.org/>
+PREFIX edge: <http://example.org/edges/>
+select ?x ?y
+where {
+    ?x a :Node .
+    OPTIONAL {
+        ?x edge:link ?y .
+    }
+
+}
