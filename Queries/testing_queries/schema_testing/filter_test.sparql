@@ -7,5 +7,5 @@ where {
         UNION
         {?y edge:link ?z .}
     }
-    FILTER (?x != ?z)
+    FILTER (?x != ?y)
 }

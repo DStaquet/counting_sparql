@@ -288,9 +288,7 @@ def build_increm_queries(
                 base_constructor.create_table_w_select(
                     "delta_"
                     + base_constructor.get_table_name(part),
-                    base_constructor.delta_filter_query(
-                        part
-                    ),
+                    SQL_filter.delta_filter_query(part),
                 )
             )
             write_query_to_output_dir(

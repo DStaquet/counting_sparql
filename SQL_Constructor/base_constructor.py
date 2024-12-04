@@ -1,7 +1,6 @@
 from rdflib.plugins.sparql.sparql import FrozenBindings
 from rdflib.plugins.sparql.parserutils import (
     CompValue,
-    Expr,
 )
 from rdflib.term import Variable
 
@@ -1541,65 +1540,6 @@ def delta_union_table_query(
     )
 
     return (first_query, second_query)
-
-
-def filter_expr_part(expr: Expr) -> str:
-    """Recursively construct the filter expression part of the query.
-
-    Args:
-        expr (Expr): Current expression part of the query
-
-    Returns:
-        str: Expression part for the filter query.
-    """
-    filter_expr = ""
-    if type(expr.expr) == Expr:
-        filter_expr += filter_expr_part(expr.expr)
-        for i in range(len(expr.other)):
-            filter_expr += " AND "
-            filter_expr += filter_expr_part(expr.other[i])
-    else:
-        if expr.op in ["=", "<", ">", "<=", ">=", "!="]:
-            filter_expr += (
-                "CAST("
-                + expr.expr
-                + " AS INT) "
-                + expr.op
-                + " CAST("
-                + expr.other
-                + " AS INT)"
-            )
-        else:
-            filter_expr += (
-                expr.expr + " " + expr.op + " " + expr.other
-            )
-    return filter_expr
-
-
-def delta_filter_query(part: CompValue) -> str:
-    """Build up the incremental delta filter queries.
-
-    Args:
-        part (CompValue): Current part of the algebra
-
-    Returns:
-        str: Query string to get the results of the delta filter operation
-    """
-    table_name: str = "delta_" + __encode_table_name(part.p)
-    filter_str: str = (
-        "SELECT "
-        + ", ".join(
-            var
-            for var in sorted(part._vars)
-            if var != "k_count"
-        )
-        + ", k_count\nFROM "
-        + table_name
-        + " \nWHERE "
-        + filter_expr_part(part.expr)
-        + ";"
-    )
-    return filter_str
 
 
 def delta_project_query(part: CompValue) -> str:
