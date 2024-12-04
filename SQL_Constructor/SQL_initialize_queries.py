@@ -5,7 +5,10 @@ from typing import Union
 import sqlparse
 import json
 
-import SQL_Constructor.operation_constructor.bgp_constructor
+from SQL_Constructor.operation_constructor import (
+    bgp_constructor as SQL_bgp,
+    filter_constructor as SQL_filter,
+)
 
 
 def write_query_to_output_dir(
@@ -402,10 +405,8 @@ def build_queries(
     # Construct the SQL query
     match part.name:
         case "BGP":
-            bgp_query, known_vars = (
-                SQL_Constructor.operation_constructor.bgp_constructor.bgp_table_query(
-                    part
-                )
+            bgp_query, known_vars = SQL_bgp.bgp_table_query(
+                part
             )
             bgp_query: str = (
                 base_constructor.create_table_w_select(
@@ -420,10 +421,8 @@ def build_queries(
             )
             return [part._vars]
         case "Filter":
-            filter_query: str = (
-                base_constructor.filter_query(
-                    part, schemas1
-                )
+            filter_query: str = SQL_filter.filter_query(
+                part, schemas1
             )
             write_query_to_output_dir(
                 output_dir,
