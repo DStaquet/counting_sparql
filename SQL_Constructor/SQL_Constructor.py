@@ -1,5 +1,3 @@
-from hashlib import sha256
-
 from rdflib.plugins.sparql.sparql import FrozenBindings
 from rdflib.plugins.sparql.parserutils import (
     CompValue,
@@ -183,7 +181,8 @@ def join_schemas(
     new_schema = []
     for schema in schemas1:
         for schema2 in schemas2:
-            new_schema.append(schema.union(schema2))
+            if schema.union(schema2) not in new_schema:
+                new_schema.append(schema.union(schema2))
     return new_schema
 
 
@@ -1536,15 +1535,20 @@ def insert_into_w_select(
     given_table: str,
     select_query: str,
     columns: list[str] | None = None,
+    sort: bool = True,
 ) -> str:
     if columns is None:
         return f"INSERT INTO {given_table}\n{select_query}"
     else:
+        if sort:
+            sorted_columns: list[str] = sorted(columns)
+        else:
+            sorted_columns: list[str] = columns
         insert_str: str = (
             f"INSERT INTO {given_table} ("
             + ", ".join(
                 key
-                for key in sorted(columns)
+                for key in sorted_columns
                 if key != "k_count"
             )
         )
@@ -2694,6 +2698,25 @@ def join_query(
 
     else:
 
+        # Construct for prep table
+        already_seen_join_schemas = list()
+        double_schemas = list()
+        for sch1 in schemas1:
+            for sch2 in schemas2:
+                curr_join_schema: set[str] = sch1.union(
+                    sch2
+                )
+                if (
+                    curr_join_schema
+                    not in already_seen_join_schemas
+                ):
+                    already_seen_join_schemas.append(
+                        curr_join_schema
+                    )
+                else:
+                    double_schemas.append(curr_join_schema)
+        already_seen_join_schemas = list()
+
         join_query: str = ""
         join_schemas_list = join_schemas(
             part, schemas1, schemas2
@@ -2763,20 +2786,102 @@ def join_query(
                         )
                         + ";\n"
                     )
-                if len(join_schemas_list) == 1:
-                    join_query += create_table_w_select(
-                        new_table_name,
-                        curr_join_query,
-                    )
+
+                # Checks if the join schema has already been seen
+                # to insert to same table
+                curr_join_schema: set[str] = sch1.union(
+                    sch2
+                )
+                if curr_join_schema in double_schemas:
+                    temp_prefix: str = " TEMP "
+                    prep_prefix: str = "prep_"
                 else:
-                    join_query += create_table_w_select(
-                        new_table_name
-                        + "_"
-                        + __encode_schema_name(
-                            str(sorted(sch1.union(sch2)))
-                        ),
-                        curr_join_query,
+                    temp_prefix: str = ""
+                    prep_prefix: str = ""
+                if len(join_schemas_list) == 1:
+                    if (
+                        curr_join_schema
+                        not in already_seen_join_schemas
+                    ):
+                        already_seen_join_schemas.append(
+                            curr_join_schema
+                        )
+                        join_query += create_table_w_select(
+                            prep_prefix + new_table_name,
+                            curr_join_query,
+                            temp_prefix=temp_prefix,
+                        )
+                    else:
+                        join_query += insert_into_w_select(
+                            prep_prefix + new_table_name,
+                            curr_join_query,
+                            curr_join_schema,
+                        )
+                else:
+                    if (
+                        curr_join_schema
+                        not in already_seen_join_schemas
+                    ):
+                        already_seen_join_schemas.append(
+                            curr_join_schema
+                        )
+                        join_query += create_table_w_select(
+                            prep_prefix
+                            + new_table_name
+                            + "_"
+                            + __encode_schema_name(
+                                str(
+                                    sorted(curr_join_schema)
+                                )
+                            ),
+                            curr_join_query,
+                            temp_prefix=temp_prefix,
+                        )
+                    else:
+                        join_query += insert_into_w_select(
+                            prep_prefix
+                            + new_table_name
+                            + "_"
+                            + __encode_schema_name(
+                                str(
+                                    sorted(curr_join_schema)
+                                )
+                            ),
+                            curr_join_query,
+                            sorted(sch1)
+                            + sorted(sch2.difference(sch1)),
+                            False,
+                        )
+
+        for joined_schemas in double_schemas:
+            if len(join_schemas_list) == 1:
+                schema_suffix: str = ""
+            else:
+                schema_suffix: str = (
+                    "_"
+                    + __encode_schema_name(
+                        str(sorted(joined_schemas))
                     )
+                )
+            join_query += create_table_w_select(
+                new_table_name,
+                "SELECT "
+                + ", ".join(
+                    f"{var}"
+                    for var in sorted(joined_schemas)
+                    if var != "k_count"
+                )
+                + ", SUM(k_count) AS k_count\nFROM prep_"
+                + new_table_name
+                + schema_suffix
+                + "\nGROUP BY "
+                + ", ".join(
+                    f"{var}"
+                    for var in sorted(joined_schemas)
+                    if var != "k_count"
+                )
+                + ";",
+            )
 
     return join_query
 
