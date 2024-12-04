@@ -45,7 +45,7 @@ from eval_incremental import (
 
 from database import insert_data_graph
 
-from SQL_Constructor import SQL_Constructor
+from SQL_Constructor import base_constructor
 from setup_data import (
     insert_data,
     insert_delete_delta_data,
@@ -296,7 +296,7 @@ def get_query_input(
     query_input_dir: str = join(
         output_dir,
         "query_"
-        + SQL_Constructor.get_table_name(
+        + base_constructor.get_table_name(
             q_query_object.algebra
         ),
     )

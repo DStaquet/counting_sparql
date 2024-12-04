@@ -5,7 +5,7 @@ from eval_incremental.eval_incremental import (
     deleteTablesRec,
 )
 from SQL_Constructor import SQL_initialize_queries
-from SQL_Constructor.SQL_Constructor import (
+from SQL_Constructor.base_constructor import (
     get_table_name,
     setup_hash_values,
 )

@@ -6,7 +6,7 @@ from rdflib.term import Variable
 
 from eval_incremental import duckdb_conn
 
-from SQL_Constructor.SQL_Constructor import (
+from SQL_Constructor.base_constructor import (
     construct_bgp_insert,
 )
 

@@ -1,4 +1,4 @@
-from SQL_Constructor.SQL_Constructor import get_table_name
+from SQL_Constructor.base_constructor import get_table_name
 from rdflib.plugins.sparql.parserutils import CompValue
 from duckdb import DuckDBPyConnection
 from os.path import join
@@ -22,7 +22,7 @@ def go_through_algebra_for_test(
         duckdb_conn (DuckDBPyConnection): Connection to the database.
     """
     from plots.build_compare_plot import compare_times_plot
-    from SQL_Constructor.SQL_Constructor import (
+    from SQL_Constructor.base_constructor import (
         get_table_name,
     )
 

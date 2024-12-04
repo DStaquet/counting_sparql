@@ -1,3 +1,4 @@
+import SQL_Constructor.operation_constructor.bgp_constructor
 from eval_incremental import duckdb_conn
 
 from pandas import DataFrame
@@ -6,8 +7,8 @@ from rdflib.plugins.sparql.sparql import QueryContext
 from rdflib.plugins.sparql.parserutils import CompValue
 
 from typing import Any
-from SQL_Constructor.SQL_Constructor import get_table_name
-from SQL_Constructor import SQL_Constructor
+from SQL_Constructor.base_constructor import get_table_name
+from SQL_Constructor import base_constructor
 
 from rdflib.term import Identifier
 
@@ -79,7 +80,7 @@ def evalIncrDistinct(
             distinct_delta_handle.df()
         )
         distinct_delta_insert_query: str = (
-            SQL_Constructor.insert_delta_query(
+            base_constructor.insert_delta_query(
                 part, distinct_delta_results, "delta_"
             )
         )
@@ -99,7 +100,7 @@ def evalIncrDistinct(
         )
         distinct_results: DataFrame = distinct_handle.df()
         distinct_insert_query: str = (
-            SQL_Constructor.insert_query(
+            base_constructor.insert_query(
                 part, distinct_results
             )
         )
@@ -126,7 +127,7 @@ def evalIncrProject(
         )
         if not project_delta_results.empty:
             project_delta_insert_query: str = (
-                SQL_Constructor.insert_delta_query(
+                base_constructor.insert_delta_query(
                     part, project_delta_results, "delta_"
                 )
             )
@@ -145,7 +146,7 @@ def evalIncrProject(
         project_results: DataFrame = project_handle.df()
         if not project_results.empty:
             project_insert_query: str = (
-                SQL_Constructor.insert_query(
+                base_constructor.insert_query(
                     part, project_results
                 )
             )
@@ -159,7 +160,7 @@ def evalIncrUnion(
     evalIncrPart(ctx, part.p1, increm)
     evalIncrPart(ctx, part.p2, increm)
     union_table_query: str = (
-        SQL_Constructor.union_table_query(
+        base_constructor.union_table_query(
             part, part.p1._vars, part.p2._vars
         )
     )
@@ -167,7 +168,7 @@ def evalIncrUnion(
     union_handle = duckdb_conn.sql(union_table_query)
     union_results: DataFrame = union_handle.df()
 
-    union_insert_query: str = SQL_Constructor.insert_query(
+    union_insert_query: str = base_constructor.insert_query(
         part, union_results
     )
     duckdb_conn.execute(union_insert_query)
@@ -192,7 +193,7 @@ def insert_increm_nu_table(
         f"CREATE TABLE IF NOT EXISTS nu_"
         + get_table_name(part)
         + " (\n"
-        + SQL_Constructor.get_create_vars(variables)
+        + base_constructor.get_create_vars(variables)
         + "\tPRIMARY KEY ("
         + ",".join(
             var for var in variables if var != "k_count"
@@ -259,7 +260,7 @@ def evalIncrFilter(
         filter_results: DataFrame = filter_handle.df()
         if not filter_results.empty:
             filter_insert_query: str = (
-                SQL_Constructor.insert_delta_query(
+                base_constructor.insert_delta_query(
                     part, filter_results, "delta_"
                 )
             )
@@ -283,7 +284,7 @@ def evalIncrFilter(
         filter_results: DataFrame = filter_handle.df()
         if not filter_results.empty:
             filter_insert_query: str = (
-                SQL_Constructor.insert_query(
+                base_constructor.insert_query(
                     part, filter_results
                 )
             )
@@ -300,7 +301,7 @@ def evalIncremBGP(
         delta_queries: list[str] = list()
         for tripe_index in range(len(triples)):
             delta_queries.append(
-                SQL_Constructor.bgp_delta_table_query(
+                base_constructor.bgp_delta_table_query(
                     part, tripe_index + 1
                 )
             )
@@ -312,21 +313,23 @@ def evalIncremBGP(
             )
             if not bgp_delta_results.empty:
                 bgp_delta_insert_query: str = (
-                    SQL_Constructor.insert_delta_query(
+                    base_constructor.insert_delta_query(
                         part, bgp_delta_results, "delta_"
                     )
                 )
                 duckdb_conn.sql(bgp_delta_insert_query)
         insert_increm_nu_table(part)
     else:
-        bgp_query: str = SQL_Constructor.bgp_table_query(
-            part
+        bgp_query: str = (
+            base_constructor.operation_constructor.bgp_constructor.bgp_table_query(
+                part
+            )
         )
         bgp_results_handle = duckdb_conn.sql(bgp_query)
         bgp_results: DataFrame = bgp_results_handle.df()
         if not bgp_results.empty:
             bgp_insert_query: str = (
-                SQL_Constructor.bgp_insert_query(
+                base_constructor.bgp_insert_query(
                     part, bgp_results
                 )
             )

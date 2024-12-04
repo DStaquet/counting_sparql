@@ -48,8 +48,9 @@ import re
 
 from os.path import join
 
-from SQL_Constructor import SQL_Constructor
+from SQL_Constructor import base_constructor
 
+import SQL_Constructor.operation_constructor.bgp_constructor
 from eval_incremental import duckdb_conn
 
 _Triple = tuple[Identifier, Identifier, Identifier]
@@ -74,11 +75,11 @@ def delete_all_tables(part: CompValue) -> str:
         delete_delta_query,
         delete_nu_query,
         delete_nu_prep_query,
-    ) = SQL_Constructor.delete_all_tables(part)
+    ) = base_constructor.delete_all_tables(part)
     (
         delta_table_delete_query,
         delta_prep_table_delete_query,
-    ) = SQL_Constructor.delete_delta_table(part)
+    ) = base_constructor.delete_delta_table(part)
     return (
         delete_query
         + "\n"
@@ -100,9 +101,9 @@ def drop_all_tables(part) -> str:
         drop_delta_query,
         drop_nu_query,
         drop_nu_prep_query,
-    ) = SQL_Constructor.drop_all_tables(part)
+    ) = base_constructor.drop_all_tables(part)
     delta_table_drop_query, delta_prep_table_drop_query = (
-        SQL_Constructor.drop_delta_table(part)
+        base_constructor.drop_delta_table(part)
     )
     return (
         drop_query
@@ -126,7 +127,7 @@ def construct_tables(part) -> str:
         table_delta_prep,
         table_nu,
         table_nu_prep,
-    ) = SQL_Constructor.make_tables(part, part._vars)
+    ) = base_constructor.make_tables(part, part._vars)
     return (
         table_query
         + "\n"
@@ -152,15 +153,19 @@ def evalIncremBGP(
         delta_queries: list[str] = list()
         for tripe_index in range(len(triples)):
             delta_queries.append(
-                SQL_Constructor.bgp_delta_table_query(
+                base_constructor.bgp_delta_table_query(
                     part, tripe_index + 1
                 )
             )
-    bgp_query: str = SQL_Constructor.bgp_table_query(part)
+    bgp_query: str = (
+        SQL_Constructor.operation_constructor.bgp_constructor.bgp_table_query(
+            part
+        )
+    )
     bgp_results_handle = duckdb_conn.sql(bgp_query)
     bgp_results: DataFrame = bgp_results_handle.df()
     bgp_insert_query: str = (
-        SQL_Constructor.bgp_insert_query(part, bgp_results)
+        base_constructor.bgp_insert_query(part, bgp_results)
     )
     duckdb_conn.sql(bgp_insert_query)
 
@@ -196,13 +201,13 @@ def evalIncrUnion(
     evalIncrPart(ctx, union.p1, increm)
     evalIncrPart(ctx, union.p2, increm)
     union_table_query: str = (
-        SQL_Constructor.union_table_query(
+        base_constructor.union_table_query(
             union, union.p1._vars, union.p2._vars
         )
     )
     union_handle = duckdb_conn.sql(union_table_query)
     union_results: DataFrame = union_handle.df()
-    union_insert_query: str = SQL_Constructor.insert_query(
+    union_insert_query: str = base_constructor.insert_query(
         union, union_results
     )
     duckdb_conn.sql(union_insert_query)
@@ -234,12 +239,12 @@ def evalIncrProject(
 ) -> None:
     evalIncrPart(ctx, part.p, increm)
     project_table_name: str = (
-        SQL_Constructor.project_table_query(part)
+        base_constructor.project_table_query(part)
     )
     project_handle = duckdb_conn.sql(project_table_name)
     project_results: DataFrame = project_handle.df()
     project_insert_query: str = (
-        SQL_Constructor.insert_query(part, project_results)
+        base_constructor.insert_query(part, project_results)
     )
     duckdb_conn.sql(project_insert_query)
 
@@ -280,7 +285,7 @@ def evalIncrSelectQuery(
     ctx: QueryContext, part, increm: bool
 ) -> Any:
     result = evalIncrPart(ctx, part.p, increm)
-    select_query: str = SQL_Constructor.select_query(part)
+    select_query: str = base_constructor.select_query(part)
     select_handle = duckdb_conn.sql(select_query)
     select_results: DataFrame = select_handle.df()
     return select_results
@@ -312,6 +317,7 @@ def evalIncrServiceQuery(ctx: QueryContext, part) -> None:
 def evalIncrDescribeQuery(ctx: QueryContext, part) -> None:
     pass
 
+
 def deleteTablesRec(part: CompValue) -> str:
     """Deletes the tables recursively.
 
@@ -324,7 +330,9 @@ def deleteTablesRec(part: CompValue) -> str:
     if part == None:
         return ""
     if "p" in part or part.name == "BGP":
-        return deleteTablesRec(part.p) + delete_all_tables(part)
+        return deleteTablesRec(part.p) + delete_all_tables(
+            part
+        )
     elif "p1" in part and "p2" in part:
         return (
             deleteTablesRec(part.p1)
@@ -332,6 +340,7 @@ def deleteTablesRec(part: CompValue) -> str:
             + delete_all_tables(part)
         )
     return ""
+
 
 def dropTablesRec(part) -> str:
     if part == None:
@@ -378,7 +387,7 @@ def get_query_string(
     query_file_path: str = join(
         input_dir,
         prefix
-        + SQL_Constructor.get_table_name(part)
+        + base_constructor.get_table_name(part)
         + ".sql",
     )
     with open(query_file_path, "r") as query_file:
