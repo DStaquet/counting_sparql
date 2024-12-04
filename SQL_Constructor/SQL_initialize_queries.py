@@ -8,8 +8,8 @@ import json
 from SQL_Constructor.operation_constructor import (
     bgp_constructor as SQL_bgp,
     filter_constructor as SQL_filter,
+    project_constructor as SQL_project,
 )
-import SQL_Constructor.operation_constructor.project_constructor
 
 
 def write_query_to_output_dir(
@@ -432,10 +432,8 @@ def build_queries(
             )
             return schemas1
         case "Project":
-            project_query: str = (
-                SQL_Constructor.operation_constructor.project_constructor.project_query(
-                    part, schemas1
-                )
+            project_query: str = SQL_project.project_query(
+                part, schemas1
             )
             write_query_to_output_dir(
                 output_dir,
