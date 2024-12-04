@@ -9,6 +9,9 @@ from SQL_Constructor.operation_constructor import (
     bgp_constructor as SQL_bgp,
     filter_constructor as SQL_filter,
     project_constructor as SQL_project,
+    join_constructor as SQL_join,
+    leftjoin_constructor as SQL_leftjoin,
+    minus_constructor as SQL_minus,
 )
 
 
@@ -165,7 +168,7 @@ def __delta_join_queries(part: CompValue) -> str:
         base_constructor.create_table_w_select(
             "delta_"
             + base_constructor.get_table_name(part),
-            base_constructor.join_query(
+            SQL_join.join_query(
                 part,
                 "delta_"
                 + base_constructor.get_table_name(part.p1),
@@ -178,7 +181,7 @@ def __delta_join_queries(part: CompValue) -> str:
         base_constructor.insert_into_w_select(
             "delta_"
             + base_constructor.get_table_name(part),
-            base_constructor.join_query(
+            SQL_join.join_query(
                 part,
                 "nu_"
                 + base_constructor.get_table_name(part.p1),
@@ -445,7 +448,7 @@ def build_queries(
             )
         case "LeftJoin":
             left_join_query: str = (
-                base_constructor.left_join_query(
+                SQL_leftjoin.left_join_query(
                     part, schemas1, schemas2
                 )
             )
@@ -458,7 +461,7 @@ def build_queries(
                 part, schemas1, schemas2
             )
         case "Join":
-            join_query: str = base_constructor.join_query(
+            join_query: str = SQL_join.join_query(
                 part,
                 base_constructor.get_table_name(part.p1),
                 base_constructor.get_table_name(part.p2),
@@ -474,7 +477,7 @@ def build_queries(
                 part, schemas1, schemas2
             )
         case "Minus":
-            minus_query: str = base_constructor.minus_query(
+            minus_query: str = SQL_minus.minus_query(
                 part, schemas1, schemas2
             )
             write_query_to_output_dir(
