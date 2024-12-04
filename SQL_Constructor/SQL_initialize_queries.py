@@ -12,6 +12,7 @@ from SQL_Constructor.operation_constructor import (
     join_constructor as SQL_join,
     leftjoin_constructor as SQL_leftjoin,
     minus_constructor as SQL_minus,
+    union_constructor as SQL_union,
 )
 
 
@@ -485,7 +486,7 @@ def build_queries(
             )
             return schemas1
         case "Union":
-            union_query: str = base_constructor.union_query(
+            union_query: str = SQL_union.union_query(
                 part, schemas1, schemas2
             )
             write_query_to_output_dir(
