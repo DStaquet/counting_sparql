@@ -9,6 +9,7 @@ from SQL_Constructor.operation_constructor import (
     bgp_constructor as SQL_bgp,
     filter_constructor as SQL_filter,
 )
+import SQL_Constructor.operation_constructor.project_constructor
 
 
 def write_query_to_output_dir(
@@ -432,7 +433,7 @@ def build_queries(
             return schemas1
         case "Project":
             project_query: str = (
-                base_constructor.project_query(
+                SQL_Constructor.operation_constructor.project_constructor.project_query(
                     part, schemas1
                 )
             )
