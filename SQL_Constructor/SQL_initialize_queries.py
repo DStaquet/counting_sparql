@@ -14,6 +14,9 @@ from SQL_Constructor.operation_constructor import (
     minus_constructor as SQL_minus,
     union_constructor as SQL_union,
 )
+from SQL_Constructor.operation_constructor.bgp_constructor import (
+    delta_bgp_queries,
+)
 
 
 def write_query_to_output_dir(
@@ -47,113 +50,6 @@ def write_query_to_output_dir(
             "a",
         ) as f:
             f.write(query)
-
-
-def __delta_bgp_queries(
-    part: CompValue,
-) -> tuple[str, str, str, str]:
-    """Builds up the different delta BGP queries for the incremental query.
-
-    Args:
-        part (CompValue): Current part of the query
-
-    Returns:
-        list[str]: List of the delta queries for the BGP
-    """
-    delta_queries: str = ""
-    delta_join_queries: str = ""
-    delta_join_tables: str = ""
-    last_delta_query_name: str = ""
-    first_insert = True
-    temp_suffix = ""
-    for triple_index in range(len(part.triples)):
-        delta_query, known_vars = (
-            base_constructor.bgp_delta_table_query(
-                part, triple_index + 1
-            )
-        )
-        delta_query_name = (
-            "delta_"
-            + base_constructor.get_table_name(part)
-            + "_"
-            + str(triple_index + 1)
-        )
-        delta_join_tables += (
-            base_constructor.create_table_w_select(
-                delta_query_name,
-                delta_query + ";\n",
-                temp_prefix="TEMP",
-            )
-        )
-        if last_delta_query_name != "" and (
-            triple_index + 1
-        ) < len(part.triples):
-            delta_join_query = (
-                base_constructor.outer_join_queries(
-                    part,
-                    delta_query_name + "_temp",
-                    last_delta_query_name + temp_suffix,
-                    delta_query_name,
-                    known_vars,
-                    triple_index + 1,
-                )
-            )
-            delta_join_queries += delta_join_query
-            last_delta_query_name = delta_query_name
-            temp_suffix = "_temp"
-        elif (triple_index + 1) == len(
-            part.triples
-        ) and triple_index != 0:
-            delta_join_query = (
-                base_constructor.final_outer_join_query(
-                    part,
-                    last_delta_query_name + "_temp",
-                    delta_query_name,
-                    known_vars,
-                )
-            )
-            delta_join_queries += delta_join_query
-            last_delta_query_name = delta_query_name
-        else:
-            # This is unconventional, but skips the first query making
-            last_delta_query_name = delta_query_name
-        if first_insert:
-            first_insert = False
-            delta_queries += (
-                base_constructor.create_table_w_select(
-                    "delta_prep_"
-                    + base_constructor.get_table_name(part),
-                    delta_query + ";\n",
-                    temp_prefix="TEMP",
-                )
-            )
-        else:
-            delta_queries += (
-                base_constructor.insert_into_w_select(
-                    "delta_prep_"
-                    + base_constructor.get_table_name(part),
-                    delta_query + ";\n",
-                    list(known_vars),
-                )
-            )
-
-    delta_long_join_query: str = (
-        base_constructor.delta_outer_join_long_query(part)
-    )
-    delta_long_w_create = (
-        base_constructor.create_table_w_select(
-            "delta_"
-            + base_constructor.get_table_name(part),
-            delta_long_join_query,
-        )
-    )
-
-    return (
-        delta_queries,
-        delta_join_queries,
-        delta_long_w_create,
-        delta_join_tables,
-    )
 
 
 def __delta_join_queries(part: CompValue) -> str:
@@ -212,8 +108,11 @@ def __delta_join_queries(part: CompValue) -> str:
 
 
 def build_increm_queries(
-    part: CompValue, output_dir: str
-) -> None:
+    part: CompValue,
+    output_dir: str,
+    schemas1: list[set[str]] = [],
+    schemas2: list[set[str]] = [],
+) -> list[set[str]]:
     """Constructs the incremental queries
 
     Args:
@@ -221,10 +120,15 @@ def build_increm_queries(
         output_dir (str): Where to write the SQL queries.
     """
     if "p" in part:
-        build_increm_queries(part.p, output_dir)
+        schemas1 = build_increm_queries(
+            part.p, output_dir, schemas1, schemas2
+        )
     elif "p1" in part and "p2" in part:
-        build_increm_queries(part.p1, output_dir)
-        build_increm_queries(part.p2, output_dir)
+        schemas1 = build_increm_queries(
+            part.p1, output_dir, schemas1, schemas2
+        )
+        schemas2 = build_increm_queries(part.p2, output_dir)
+    part_schemas: Union[list[set[str]], None] = None
     # Construct the SQL query
     use_PV = False
     match part.name:
@@ -234,7 +138,7 @@ def build_increm_queries(
                 delta_join_queries,
                 delta_long_join_query,
                 delta_join_tables,
-            ) = __delta_bgp_queries(part)
+            ) = delta_bgp_queries(part)
             delta_prep_sum: str = (
                 base_constructor.delta_prep_sum_query(part)
             )
@@ -284,6 +188,7 @@ def build_increm_queries(
                 False,
                 "delta_",
             )
+            part_schemas = [part._vars]
         case "Filter":
             filter_query: str = (
                 base_constructor.create_table_w_select(
@@ -372,6 +277,10 @@ def build_increm_queries(
         base_constructor.get_table_name(part),
         name="nu_",
     )
+
+    if part_schemas == None:
+        part_schemas = schemas1
+    return part_schemas
 
 
 def construct_minus_columns(part: CompValue) -> list[str]:

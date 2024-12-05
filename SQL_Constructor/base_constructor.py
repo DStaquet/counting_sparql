@@ -2,7 +2,6 @@ from rdflib.plugins.sparql.sparql import FrozenBindings
 from rdflib.plugins.sparql.parserutils import (
     CompValue,
 )
-from rdflib.term import Variable
 
 from os.path import join
 
@@ -85,6 +84,36 @@ def get_table_name(part: CompValue) -> str:
 
 def get_create_vars(variables: set) -> str:
     return __create_vars(variables)
+
+
+def delta_outer_join_long_query(
+    part: CompValue, known_vars: set[str]
+) -> str:
+    """Builds up the query to join the delta tables together fully without
+        intermediate tables.
+
+    Args:
+        part (CompValue): Current part of the query
+
+    Returns:
+        str: Query to join the delta tables together fully.
+    """
+    index: int = 0
+    double_index: str = str(index) + "_" + str(index + 1)
+
+    from_part = " FROM " + __from_clause_long_outer_join(
+        part, index
+    )
+
+    select_part = f"SELECT "
+    select_part += ", ".join(
+        f"(CASE WHEN R{index}.{var} NOT NULL THEN R{index}.{var} ELSE R{double_index}.{var} END) AS {var}"
+        for var in known_vars
+        if var != "k_count"
+    )
+    select_part += f", (CASE WHEN R{index}.k_count IS NULL THEN R{double_index}.k_count WHEN R{double_index}.k_count IS NULL THEN R{index}.k_count ELSE R{index}.k_count + R{double_index}.k_count END) AS k_count "
+
+    return select_part + from_part + ";"
 
 
 def __create_vars(variables: set) -> str:
@@ -892,35 +921,6 @@ def __from_clause_long_outer_join(
         )
 
 
-def delta_outer_join_long_query(part: CompValue) -> str:
-    """Builds up the query to join the delta tables together fully without
-        intermediate tables.
-
-    Args:
-        part (CompValue): Current part of the query
-
-    Returns:
-        str: Query to join the delta tables together fully.
-    """
-    _, known_vars = bgp_delta_table_query(part, 1)
-    index: int = 0
-    double_index: str = str(index) + "_" + str(index + 1)
-
-    from_part = " FROM " + __from_clause_long_outer_join(
-        part, index
-    )
-
-    select_part = f"SELECT "
-    select_part += ", ".join(
-        f"(CASE WHEN R{index}.{var} NOT NULL THEN R{index}.{var} ELSE R{double_index}.{var} END) AS {var}"
-        for var in known_vars
-        if var != "k_count"
-    )
-    select_part += f", (CASE WHEN R{index}.k_count IS NULL THEN R{double_index}.k_count WHEN R{double_index}.k_count IS NULL THEN R{index}.k_count ELSE R{index}.k_count + R{double_index}.k_count END) AS k_count "
-
-    return select_part + from_part + ";"
-
-
 def final_outer_join_query(
     part: CompValue,
     left_query: str,
@@ -994,165 +994,6 @@ def outer_join_queries(
     )
     join_query += f";"
     return join_query
-
-
-def bgp_delta_table_query(
-    part: CompValue, triple_count: int
-) -> tuple[str, set[str]]:
-    bgp_delta_table_name = "delta_" + __encode_table_name(
-        part
-    )
-    g_per_triple: dict[tuple[str, str, str], str] = dict()
-
-    # FROM clause
-    from_clause: str = " FROM "
-    count = 1
-    for triple in part.triples:
-        if count > 1:
-            from_clause += ", "
-        delta_tables = ""
-        if count == triple_count:
-            delta_tables = "delta_"
-        elif count < triple_count:
-            delta_tables = "nu_"
-        g_per_triple[triple] = "G" + str(count)
-        count += 1
-        from_clause += (
-            delta_tables + "G " + g_per_triple[triple]
-        )
-
-    # Construct select clause
-    first = False
-    known_vars: set = set()
-    bgp_select_clause: str = "SELECT "
-    for var in sorted(part._vars):
-        for index in range(3):
-            for triple in sorted(part.triples):
-                if (
-                    triple[index] == var
-                    and var not in known_vars
-                ):
-                    if not first:
-                        first = True
-                    else:
-                        bgp_select_clause += ", "
-                    bgp_select_clause += (
-                        g_per_triple[triple] + "."
-                    )
-                    if index == 0:
-                        bgp_select_clause += "s"
-                    elif index == 1:
-                        bgp_select_clause += "p"
-                    else:
-                        bgp_select_clause += "o"
-                    bgp_select_clause += " AS " + var
-                    known_vars.add(var)
-    bgp_select_clause += (
-        ", G" + str(triple_count) + ".k_count "
-    )
-
-    # construct where clause
-    where_clause: str = " WHERE "
-    first: bool = False
-    known_var_dict: dict[str, str] = dict()
-    for triple_index in range(len(part.triples)):
-        for var_index in range(3):
-            if (
-                part.triples[triple_index][var_index]
-                in part._vars
-            ):
-                if (
-                    type(
-                        part.triples[triple_index][
-                            var_index
-                        ]
-                    )
-                    == Variable
-                ):
-                    current_g: str = g_per_triple[
-                        part.triples[triple_index]
-                    ]
-                    if (
-                        part.triples[triple_index][
-                            var_index
-                        ]
-                        not in known_var_dict
-                    ):
-                        match var_index:
-                            case 0:
-                                current_g += ".s"
-                            case 1:
-                                current_g += ".p"
-                            case 2:
-                                current_g += ".o"
-                        known_var_dict[
-                            part.triples[triple_index][
-                                var_index
-                            ]
-                        ] = current_g
-                    else:
-                        if not first:
-                            first = True
-                        else:
-                            where_clause += " AND "
-                        current_g = known_var_dict[
-                            part.triples[triple_index][
-                                var_index
-                            ]
-                        ]
-                        where_clause += (
-                            current_g
-                            + " = "
-                            + g_per_triple[
-                                part.triples[triple_index]
-                            ]
-                            + "."
-                        )
-                        match var_index:
-                            case 0:
-                                where_clause += "s"
-                            case 1:
-                                where_clause += "p"
-                            case 2:
-                                where_clause += "o"
-            elif (
-                type(part.triples[triple_index][var_index])
-                != Variable
-            ):
-                if not first:
-                    first = True
-                else:
-                    where_clause += " AND "
-                where_clause += (
-                    g_per_triple[part.triples[triple_index]]
-                    + "."
-                )
-                if var_index == 0:
-                    where_clause += "s"
-                elif var_index == 1:
-                    where_clause += "p"
-                else:
-                    where_clause += "o"
-                where_clause += (
-                    " = '"
-                    + str(
-                        part.triples[triple_index][
-                            var_index
-                        ]
-                    )
-                    + "'"
-                )
-
-    return (
-        (
-            bgp_select_clause
-            + "\n"
-            + from_clause
-            + "\n"
-            + where_clause
-        ),
-        known_vars,
-    )
 
 
 def insert_delta_query(

@@ -104,10 +104,10 @@ def setup_query_files(
         q_query_object.algebra,
         query_output_dir,
     )
-    """SQLiq.build_increm_queries(
+    SQLiq.build_increm_queries(
         q_query_object.algebra,
         query_output_dir,
-    )"""
+    )
 
 
 if __name__ == "__main__":

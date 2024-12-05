@@ -301,7 +301,7 @@ def evalIncremBGP(
         delta_queries: list[str] = list()
         for tripe_index in range(len(triples)):
             delta_queries.append(
-                base_constructor.bgp_delta_table_query(
+                SQL_Constructor.operation_constructor.bgp_constructor.bgp_delta_table_query(
                     part, tripe_index + 1
                 )
             )
