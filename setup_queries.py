@@ -1,3 +1,4 @@
+from SQL_Constructor.hash_writer import setup_hash_values
 from incremental_query_parser import readQueryFile
 from eval_incremental.eval_incremental import (
     constructTablesRec,
@@ -7,7 +8,6 @@ from eval_incremental.eval_incremental import (
 from SQL_Constructor import SQL_initialize_queries
 from SQL_Constructor.base_constructor import (
     get_table_name,
-    setup_hash_values,
 )
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql.sparql import Query

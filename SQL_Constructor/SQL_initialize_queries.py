@@ -5,6 +5,7 @@ from typing import Union
 import sqlparse
 import json
 
+import SQL_Constructor.hash_writer
 from SQL_Constructor.operation_constructor import (
     bgp_constructor as SQL_bgp,
     filter_constructor as SQL_filter,
@@ -161,12 +162,8 @@ def build_increm_queries(
         case "Project":
             use_PV = True
             project_query: str = (
-                base_constructor.create_table_w_select(
-                    "delta_"
-                    + base_constructor.get_table_name(part),
-                    base_constructor.delta_project_query(
-                        part
-                    ),
+                SQL_project.delta_project_query(
+                    part, schemas1
                 )
             )
             write_query_to_output_dir(
@@ -174,6 +171,11 @@ def build_increm_queries(
                 project_query,
                 base_constructor.get_table_name(part),
                 name="delta_",
+            )
+            part_schemas = (
+                SQL_Constructor.hash_writer.project_schemas(
+                    part, schemas1
+                )
             )
         case "LeftJoin":
             left_join_query: str = (
@@ -301,8 +303,10 @@ def build_queries(
                 project_query,
                 base_constructor.get_table_name(part),
             )
-            return base_constructor.project_schemas(
-                part, schemas1
+            return (
+                SQL_Constructor.hash_writer.project_schemas(
+                    part, schemas1
+                )
             )
         case "LeftJoin":
             left_join_query: str = (

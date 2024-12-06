@@ -4,5 +4,5 @@ select ?x
 where {
     {?x edge:link ?y .}
     UNION
-    {?y edge:link ?z .}
+    {?z edge:link ?x .}
 }
