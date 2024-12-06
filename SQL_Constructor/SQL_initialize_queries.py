@@ -13,9 +13,7 @@ from SQL_Constructor.operation_constructor import (
     leftjoin_constructor as SQL_leftjoin,
     minus_constructor as SQL_minus,
     union_constructor as SQL_union,
-)
-from SQL_Constructor.operation_constructor.bgp_constructor import (
-    delta_bgp_queries,
+    join_constructor as SQL_join,
 )
 
 
@@ -52,61 +50,6 @@ def write_query_to_output_dir(
             f.write(query)
 
 
-def __delta_join_queries(part: CompValue) -> str:
-    """Constructs the delta join queries
-
-    Args:
-        part (CompValue): Current part of the query
-
-    Returns:
-        str: SQL query for the delta join
-    """
-    first_delta_query: str = (
-        base_constructor.create_table_w_select(
-            "delta_"
-            + base_constructor.get_table_name(part),
-            SQL_join.join_query(
-                part,
-                "delta_"
-                + base_constructor.get_table_name(part.p1),
-                base_constructor.get_table_name(part.p2),
-            ),
-        )
-    )
-
-    second_delta_query: str = (
-        base_constructor.insert_into_w_select(
-            "delta_"
-            + base_constructor.get_table_name(part),
-            SQL_join.join_query(
-                part,
-                "nu_"
-                + base_constructor.get_table_name(part.p1),
-                "delta_"
-                + base_constructor.get_table_name(part.p2),
-            ),
-            list(part.p1._vars.union(part.p2._vars)),
-        )
-    )
-
-    delta_prep_sum: str = (
-        base_constructor.delta_prep_sum_query(part)
-    )
-    delta_queries_sum = (
-        base_constructor.create_table_w_select(
-            "delta_"
-            + base_constructor.get_table_name(part),
-            delta_prep_sum,
-        )
-    )
-
-    return (
-        first_delta_query
-        + second_delta_query
-        + delta_queries_sum
-    )
-
-
 def build_increm_queries(
     part: CompValue,
     output_dir: str,
@@ -138,7 +81,7 @@ def build_increm_queries(
                 delta_join_queries,
                 delta_long_join_query,
                 delta_join_tables,
-            ) = delta_bgp_queries(part)
+            ) = SQL_bgp.delta_bgp_queries(part)
             delta_prep_sum: str = (
                 base_constructor.delta_prep_sum_query(part)
             )
@@ -201,12 +144,19 @@ def build_increm_queries(
             )
             part_schemas = schemas1
         case "Join":
-            join_query: str = __delta_join_queries(part)
+            join_query: str = (
+                SQL_join.delta_join_queries_part_func(
+                    part, schemas1, schemas2
+                )
+            )
             write_query_to_output_dir(
                 output_dir,
                 join_query,
                 "delta_"
                 + base_constructor.get_table_name(part),
+            )
+            part_schemas = base_constructor.join_schemas(
+                part, schemas1, schemas2
             )
         case "Project":
             use_PV = True

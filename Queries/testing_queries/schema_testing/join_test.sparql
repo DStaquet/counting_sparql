@@ -6,6 +6,6 @@ where {
     {
         {?x edge:link ?y .}
         UNION
-        {?x edge:link ?w .}
+        {?x edge:link ?z .}
     }
 }
