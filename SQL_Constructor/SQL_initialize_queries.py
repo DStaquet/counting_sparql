@@ -190,12 +190,8 @@ def build_increm_queries(
             )
             part_schemas = [part._vars]
         case "Filter":
-            filter_query: str = (
-                base_constructor.create_table_w_select(
-                    "delta_"
-                    + base_constructor.get_table_name(part),
-                    SQL_filter.delta_filter_query(part),
-                )
+            filter_query: str = SQL_filter.filter_query(
+                part, schemas1, True
             )
             write_query_to_output_dir(
                 output_dir,
@@ -203,6 +199,7 @@ def build_increm_queries(
                 base_constructor.get_table_name(part),
                 name="delta_",
             )
+            part_schemas = schemas1
         case "Join":
             join_query: str = __delta_join_queries(part)
             write_query_to_output_dir(
@@ -257,6 +254,9 @@ def build_increm_queries(
                 union_query,
                 base_constructor.get_table_name(part),
                 name="delta_",
+            )
+            part_schemas = base_constructor.union_schemas(
+                part, schemas1, schemas2
             )
         case "SelectQuery":
             select_query: str = (

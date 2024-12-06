@@ -74,7 +74,9 @@ def __atLeastOneOverlap(
 
 
 def filter_query(
-    part: CompValue, schemas: list[set] = []
+    part: CompValue,
+    schemas: list[set] = [],
+    is_delta: bool = False,
 ) -> str:
     """Generate filter query for the current part of the algebra.
 
@@ -86,6 +88,14 @@ def filter_query(
     Returns:
         str: Query string for the filter operation.
     """
+    # Construct table name to pull from
+    if is_delta:
+        from_table = "delta_" + __encode_table_name(part.p)
+        table_name = "delta_" + __encode_table_name(part)
+    else:
+        from_table = __encode_table_name(part.p)
+        table_name = __encode_table_name(part)
+
     if len(schemas) <= 1:
         filter_str: str = (
             "SELECT "
@@ -95,7 +105,7 @@ def filter_query(
                 if var != "k_count"
             )
             + ", k_count\nFROM "
-            + __encode_table_name(part.p)
+            + from_table
         )
         if __atLeastOneOverlap(schemas[0], part.expr):
             filter_str_part = (
@@ -105,9 +115,7 @@ def filter_query(
             filter_str += filter_str_part
         filter_str += ";\n"
 
-        return create_table_w_select(
-            __encode_table_name(part), filter_str
-        )
+        return create_table_w_select(table_name, filter_str)
     else:
         filter_strs: str = ""
         for schema in schemas:
@@ -122,7 +130,7 @@ def filter_query(
                     if var != "k_count"
                 )
                 + ", k_count\nFROM "
-                + __encode_table_name(part.p)
+                + from_table
                 + "_"
                 + schema_suffix
             )
@@ -136,9 +144,7 @@ def filter_query(
 
             filter_strs += (
                 create_table_w_select(
-                    __encode_table_name(part)
-                    + "_"
-                    + schema_suffix,
+                    table_name + "_" + schema_suffix,
                     filter_str,
                 )
                 + "\n"
@@ -147,7 +153,7 @@ def filter_query(
     return filter_strs
 
 
-def delta_filter_query(
+'''def delta_filter_query(
     part: CompValue, schemas: list[set[str]] = []
 ) -> str:
     """Build up the incremental delta filter queries.
@@ -172,4 +178,4 @@ def delta_filter_query(
         + filter_expr_part(part.expr, schemas[0])
         + ";"
     )
-    return filter_str
+    return filter_str'''
