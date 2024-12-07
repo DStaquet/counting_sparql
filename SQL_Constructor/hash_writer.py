@@ -1,11 +1,14 @@
 from SQL_Constructor.base_constructor import (
     __encode_table_name,
     __serialize_to_json,
-    join_schemas,
-    leftjoin_schemas,
-    union_schemas,
 )
 
+from SQL_Constructor.operation_constructor.join_constructor import (
+    join_schemas,
+)
+from SQL_Constructor.operation_constructor.leftjoin_constructor import (
+    leftjoin_schemas,
+)
 from SQL_Constructor.operation_constructor.project_constructor import (
     project_schemas,
 )
@@ -14,6 +17,10 @@ from rdflib.plugins.sparql.parserutils import CompValue
 
 
 from os.path import join
+
+from SQL_Constructor.operation_constructor.union_constructor import (
+    union_schemas,
+)
 
 
 def write_hash_schemas(

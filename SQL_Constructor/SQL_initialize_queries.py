@@ -156,7 +156,7 @@ def build_increm_queries(
                 "delta_"
                 + base_constructor.get_table_name(part),
             )
-            part_schemas = base_constructor.join_schemas(
+            part_schemas = SQL_join.join_schemas(
                 part, schemas1, schemas2
             )
         case "Project":
@@ -179,13 +179,18 @@ def build_increm_queries(
             )
         case "LeftJoin":
             left_join_query: str = (
-                base_constructor.delta_left_join_query(part)
+                SQL_leftjoin.delta_left_join_query(
+                    part, schemas1, schemas2
+                )
             )
             write_query_to_output_dir(
                 output_dir,
                 left_join_query,
                 base_constructor.get_table_name(part),
                 name="delta_",
+            )
+            part_schemas = SQL_leftjoin.leftjoin_schemas(
+                part, schemas1, schemas2
             )
         case "Minus":
             minus_query: str = (
@@ -207,7 +212,7 @@ def build_increm_queries(
                 base_constructor.get_table_name(part),
                 name="delta_",
             )
-            part_schemas = base_constructor.union_schemas(
+            part_schemas = SQL_union.union_schemas(
                 part, schemas1, schemas2
             )
         case "SelectQuery":
@@ -319,7 +324,7 @@ def build_queries(
                 left_join_query,
                 base_constructor.get_table_name(part),
             )
-            return base_constructor.leftjoin_schemas(
+            return SQL_leftjoin.leftjoin_schemas(
                 part, schemas1, schemas2
             )
         case "Join":
@@ -335,7 +340,7 @@ def build_queries(
                 join_query,
                 base_constructor.get_table_name(part),
             )
-            return base_constructor.join_schemas(
+            return SQL_join.join_schemas(
                 part, schemas1, schemas2
             )
         case "Minus":
@@ -357,7 +362,7 @@ def build_queries(
                 union_query,
                 base_constructor.get_table_name(part),
             )
-            return base_constructor.union_schemas(
+            return SQL_union.union_schemas(
                 part, schemas1, schemas2
             )
         case "SelectQuery":

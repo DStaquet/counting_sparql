@@ -212,7 +212,7 @@ def project_query(
                         + new_table_name
                         + schema_suffix,
                         project_str,
-                        projected_schema,
+                        list(projected_schema),
                     )
                     + "\n"
                 )

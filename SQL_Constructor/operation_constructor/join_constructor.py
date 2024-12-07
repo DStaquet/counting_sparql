@@ -4,11 +4,33 @@ from SQL_Constructor.base_constructor import (
     __encode_table_name,
     create_table_w_select,
     insert_into_w_select,
-    join_schemas,
 )
 
 
 from rdflib.plugins.sparql.parserutils import CompValue
+
+
+def join_schemas(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+) -> list[set[str]]:
+    """Constructs the schemas of the join part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): Schema of the left child of the join
+        schemas2 (list[set[str]]): Schema of the right child of the join
+
+    Returns:
+        list[set[str]]: Schema of the join part of the query
+    """
+    new_schema = []
+    for schema in schemas1:
+        for schema2 in schemas2:
+            if schema.union(schema2) not in new_schema:
+                new_schema.append(schema.union(schema2))
+    return new_schema
 
 
 def join_query(
@@ -28,7 +50,7 @@ def join_query(
     Returns:
         str: The SQL query to join both parts.
     """
-    if is_delta_and_first[0]:
+    if is_delta_and_first[0] and new_table_name is None:
         new_table_name = (
             "delta_" + base_constructor.get_table_name(part)
         )
@@ -405,6 +427,7 @@ def delta_join_queries_part_func(
     part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
+    new_table_name: str | None = None,
 ) -> str:
     """Constructs the delta join queries
 
@@ -421,6 +444,7 @@ def delta_join_queries_part_func(
         schemas1,
         schemas2,
         is_delta_and_first=(True, True),
+        new_table_name=new_table_name,
     )
 
     second_delta_query: str = join_query(
@@ -430,6 +454,7 @@ def delta_join_queries_part_func(
         schemas1,
         schemas2,
         is_delta_and_first=(True, False),
+        new_table_name=new_table_name,
     )
 
     """delta_prep_sum: str = (
@@ -444,3 +469,122 @@ def delta_join_queries_part_func(
     )"""
 
     return first_delta_query + second_delta_query
+
+
+def left_join_select_clause(part: CompValue) -> str:
+    """Returns the lefjoin select clause for the delta rule.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        str: String containing the leftjoin variable clause.
+    """
+    return_str: str = (
+        ", ".join(
+            var
+            for var in sorted(part.p1._vars)
+            if var != "k_count"
+        )
+        + ", "
+        + ", ".join(
+            var
+            for var in sorted(
+                part.p2._vars.difference(part.p1._vars)
+            )
+            if var != "k_count"
+        )
+    )
+    return return_str
+
+
+def delta_join_sub(
+    part1: CompValue, part2: CompValue, join_part: CompValue
+) -> str:
+    """Generates the delta join subquery.
+
+    Args:
+        part1 (CompValue): First part of the join.
+        part2 (CompValue): Second part of the join.
+    """
+    # R1 JOIN delta_R2
+    first_query: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(join_part)
+        + "\n"
+    )
+    first_query += (
+        "SELECT "
+        + left_join_select_clause(join_part)
+        + ", r1.k_count * r2.k_count as k_count\n"
+    )
+    first_query += (
+        "FROM delta_"
+        + __encode_table_name(part1)
+        + " AS r1 JOIN "
+        + __encode_table_name(part2)
+        + " AS r2 "
+    )
+    first_query += "ON "
+    if part1._vars.intersection(part2._vars) != set():
+        first_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part1._vars.intersection(part2._vars)
+        )
+        first_query += "\n"
+    else:
+        first_query += "TRUE\n"
+    first_query += "ON CONFLICT DO\nUPDATE SET\n\t"
+    first_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}" for var in part1._vars
+        )
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in part2._vars.difference(part1._vars)
+        )
+    )
+    first_query += ";\n"
+
+    second_query: str = (
+        "INSERT INTO delta_"
+        + __encode_table_name(join_part)
+    )
+    second_query += (
+        "\nSELECT "
+        + left_join_select_clause(join_part)
+        + ", r1.k_count * r2.k_count as k_count\n"
+    )
+    second_query += (
+        "FROM nu_"
+        + __encode_table_name(part1)
+        + " AS r1 JOIN delta_"
+        + __encode_table_name(part2)
+        + " AS r2\n"
+    )
+    second_query += "ON "
+    if part1._vars.intersection(part2._vars) != set():
+        second_query += " AND ".join(
+            f"r1.{var} = r2.{var}"
+            for var in part1._vars.intersection(part2._vars)
+        )
+        second_query += "\n"
+    else:
+        second_query += "TRUE\n"
+    second_query += "ON CONFLICT DO\nUPDATE SET\n\t"
+    second_query += (
+        "k_count = EXCLUDED.k_count + k_count\n"
+        + "WHERE "
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}" for var in part1._vars
+        )
+        + " AND ".join(
+            f"{var} = EXCLUDED.{var}"
+            for var in part2._vars.difference(part1._vars)
+        )
+    )
+    second_query += ";\n"
+
+    return first_query + second_query

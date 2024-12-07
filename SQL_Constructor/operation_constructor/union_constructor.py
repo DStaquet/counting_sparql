@@ -73,3 +73,25 @@ def union_query(
         + __encode_schema_name(str(sorted(part.p2._vars))),
         union_query_right,
     )"""
+
+
+def union_schemas(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+) -> list[set[str]]:
+    """Constructs the schemas of the union part of the query.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): Schema of the left child of the union
+        schemas2 (list[set[str]]): Schema of the right child of the union
+
+    Returns:
+        list[set[str]]: Schema of the union part of the query
+    """
+    schemas = schemas1.copy()
+    for schema in schemas2:
+        if schema not in schemas:
+            schemas.append(schema)
+    return schemas
