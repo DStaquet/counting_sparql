@@ -2,16 +2,133 @@ from SQL_Constructor.base_constructor import (
     __encode_schema_name,
     __encode_table_name,
     create_table_w_select,
+    insert_into_w_select,
 )
 
 
 from rdflib.plugins.sparql.parserutils import CompValue
 
 
+def __delta_on_negate_part(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+    new_table_name: str | None = None,
+) -> str:
+    """Generates the delta on negate part of the left join query.
+
+    Args:
+        part (CompValue): Current part of the query.
+        schemas1 (list[set[str]]): Schemas of the left child of the part.
+        schemas2 (list[set[str]]): Schemas of the right child of the part.
+        new_table_name (str | None, optional): Table name to write to. Defaults to None.
+
+    Returns:
+        str: Queries to make diff part of delta.
+    """
+    if new_table_name is None:
+        new_table_name = __encode_table_name(part)
+
+    nu_from_table: str = "nu_" + __encode_table_name(
+        part.p1
+    )
+    delta_from_table: str = "delta_" + __encode_table_name(
+        part.p2
+    )
+    old_delta_from_table_name: str = __encode_table_name(
+        part.p2
+    )
+
+    diff_queries: str = ""
+
+    if len(schemas1) == 0:
+        raise ValueError("No schemas to join on.")
+    for sch1 in schemas1:
+        curr_diff_query_select_left: str = (
+            "SELECT * FROM "
+            + nu_from_table
+            + "as r1 JOIN "
+            + delta_from_table
+            + "as r2 ON "
+            + " AND ".join(
+                f"r1.{var} = r2.{var}"
+                for var in sorted(schemas1[0])
+            )
+        )
+        curr_diff_query_select_right: str = (
+            "SELECT "
+            + ", ".join(
+                f"r1.{var} as {var}" for var in sorted(sch1)
+            )
+            + ", -r1.k_count as k_count"
+            + " FROM "
+            + nu_from_table
+            + " as r1 JOIN "
+            + delta_from_table
+            + " as r2 ON "
+            + " AND ".join(
+                f"r1.{var} = r2.{var}"
+                for var in sorted(sch1)
+            )
+        )
+
+        curr_diff_query_left: str = ""
+        curr_diff_query_right: str = ""
+        if len(schemas2) > 0:
+            curr_diff_query_left = " WHERE " + " AND ".join(
+                f" EXISTS ("
+                + __diffSch2Subquery(
+                    part,
+                    old_delta_from_table_name,
+                    sch2,
+                    sch1,
+                    len(schemas2),
+                    index + 3,
+                    is_delta=True,
+                    delta_swap="-",
+                )
+                + ")"
+                for index, sch2 in enumerate(schemas2)
+            )
+            curr_diff_query_right = (
+                " WHERE "
+                + " AND ".join(
+                    f"NOT EXISTS ("
+                    + __diffSch2Subquery(
+                        part,
+                        old_delta_from_table_name,
+                        sch2,
+                        sch1,
+                        len(schemas2),
+                        index + 3,
+                        is_delta=True,
+                    )
+                    + ")"
+                    for index, sch2 in enumerate(schemas2)
+                )
+            )
+        curr_diff_query = (
+            curr_diff_query_select_left
+            + curr_diff_query_left
+            + " UNION "
+            + curr_diff_query_select_right
+            + curr_diff_query_right
+            + ";\n"
+        )
+
+        diff_queries += insert_into_w_select(
+            new_table_name,
+            curr_diff_query,
+        )
+
+    return diff_queries
+
+
 def delta_diff_sub(
     part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
+    new_table_name: str | None = None,
 ) -> str:
     """Generates the minus subquery.
 
@@ -28,9 +145,14 @@ def delta_diff_sub(
         schemas2,
         first_from_table="delta_"
         + __encode_table_name(part.p1),
+        new_table_name=new_table_name,
     )
 
-    return diff_delta_first_part
+    diff_delta_second_part: str = __delta_on_negate_part(
+        part, schemas1, schemas2, new_table_name
+    )
+
+    return diff_delta_first_part + diff_delta_second_part
 
     """# R1 MINUS delta_R2
     first_query: str = (
@@ -237,6 +359,8 @@ def __diffSch2Subquery(
     sch1: set[str],
     schemas2_len: int,
     index: int,
+    is_delta: bool = False,
+    delta_swap: str = "",
 ) -> str:
     """Generate the subquery to use in the diff query
 
@@ -265,6 +389,8 @@ def __diffSch2Subquery(
             for var in sorted(sch1.intersection(sch2))
         )
     )
+    if is_delta:
+        subquery_diff_str += f" AND {delta_swap}s2.k_count = s{index}.k_count"
 
     return subquery_diff_str
 
@@ -297,6 +423,7 @@ def diff_query_sub(
     minus: bool = False,
     first_from_table: str | None = None,
     second_from_table: str | None = None,
+    new_table_name: str | None = None,
 ) -> str:
     """Generates the difference subquery.
 
@@ -347,8 +474,10 @@ def diff_query_sub(
             curr_diff_query: str = (
                 "SELECT "
                 + ", ".join(
-                    f"s1.{var}" for var in sorted(sch1)
+                    f"s1.{var} as {var}"
+                    for var in sorted(sch1)
                 )
+                + ", s1.k_count as k_count"
                 + " FROM "
                 + first_from_table
                 + schemas1_suffix

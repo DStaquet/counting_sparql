@@ -53,6 +53,39 @@ def __delta_join_part(
         )
 
 
+def __delta_diff_part(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+) -> str:
+    """Generates the delta diff part of the left join query.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): Schemas of the left child of the part
+        schemas2 (list[set[str]]): Schemas of the right child of the part
+
+    Returns:
+        str: Diff part of the left join query.
+    """
+    if len(schemas1) == 0:
+        raise ValueError("No schemas to diff on.")
+    elif len(schemas1) == 1:
+        return delta_diff_sub(
+            part,
+            schemas1,
+            schemas2,
+            new_table_name="delta_"
+            + __encode_table_name(part)
+            + "_"
+            + __encode_schema_name(
+                str(sorted(schemas1[0]))
+            ),
+        )
+    else:
+        return delta_diff_sub(part, schemas1, schemas2)
+
+
 def delta_left_join_query(
     part: CompValue,
     schemas1: list[set[str]],
@@ -60,22 +93,27 @@ def delta_left_join_query(
 ) -> str:
     # First delta rules of the left join
     # Join deltas
-    leftjoin_delta_part: str = delta_join_queries_part_func(
-        part,
-        schemas1,
-        schemas2,
-        new_table_name="delta_" + __encode_table_name(part),
+    leftjoin_delta_join_part: str = (
+        delta_join_queries_part_func(
+            part,
+            schemas1,
+            schemas2,
+            new_table_name="delta_"
+            + __encode_table_name(part),
+        )
     )
 
     # Second part of the leftjoin delta
     # Diff deltas
-    leftjoin_diff_part: str = delta_diff_sub(
+    leftjoin_diff_delta_part: str = __delta_diff_part(
         part,
         schemas1,
         schemas2,
     )
 
-    return leftjoin_delta_part + leftjoin_diff_part
+    return (
+        leftjoin_delta_join_part + leftjoin_diff_delta_part
+    )
 
     """leftjoin_join_delta_query: str = delta_join_sub(
         part.p1, part.p2, part
