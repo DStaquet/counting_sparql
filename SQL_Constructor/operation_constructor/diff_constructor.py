@@ -47,27 +47,27 @@ def __delta_on_negate_part(
         curr_diff_query_select_left: str = (
             "SELECT * FROM "
             + nu_from_table
-            + "as r1 JOIN "
+            + " as s1 JOIN "
             + delta_from_table
-            + "as r2 ON "
+            + " as s2 ON "
             + " AND ".join(
-                f"r1.{var} = r2.{var}"
+                f"s1.{var} = s2.{var}"
                 for var in sorted(schemas1[0])
             )
         )
         curr_diff_query_select_right: str = (
             "SELECT "
             + ", ".join(
-                f"r1.{var} as {var}" for var in sorted(sch1)
+                f"s1.{var} as {var}" for var in sorted(sch1)
             )
-            + ", -r1.k_count as k_count"
+            + ", -s1.k_count as k_count"
             + " FROM "
             + nu_from_table
-            + " as r1 JOIN "
+            + " as s1 JOIN "
             + delta_from_table
-            + " as r2 ON "
+            + " as s2 ON "
             + " AND ".join(
-                f"r1.{var} = r2.{var}"
+                f"s1.{var} = s2.{var}"
                 for var in sorted(sch1)
             )
         )
@@ -129,6 +129,7 @@ def delta_diff_sub(
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     new_table_name: str | None = None,
+    append_schemas: bool = True,
 ) -> str:
     """Generates the minus subquery.
 
@@ -146,6 +147,7 @@ def delta_diff_sub(
         first_from_table="delta_"
         + __encode_table_name(part.p1),
         new_table_name=new_table_name,
+        append_schemas=append_schemas,
     )
 
     diff_delta_second_part: str = __delta_on_negate_part(
@@ -389,7 +391,7 @@ def __diffSch2Subquery(
             for var in sorted(sch1.intersection(sch2))
         )
     )
-    if is_delta:
+    if is_delta and delta_swap != "":
         subquery_diff_str += f" AND {delta_swap}s2.k_count = s{index}.k_count"
 
     return subquery_diff_str
@@ -424,6 +426,7 @@ def diff_query_sub(
     first_from_table: str | None = None,
     second_from_table: str | None = None,
     new_table_name: str | None = None,
+    append_schemas: bool = True,
 ) -> str:
     """Generates the difference subquery.
 
@@ -440,6 +443,9 @@ def diff_query_sub(
     if second_from_table is None:
         second_from_table = __encode_table_name(part.p2)
 
+    if new_table_name is None:
+        new_table_name = __encode_table_name(part)
+
     if len(schemas1) == 0 or len(schemas2) == 0:
         raise ValueError("No schemas to join on.")
     else:
@@ -454,7 +460,10 @@ def diff_query_sub(
             else:
                 schemas1_suffix: str = ""
 
-            if __check_if_same_schema(schemas1, schemas2):
+            if (
+                __check_if_same_schema(schemas1, schemas2)
+                or not append_schemas
+            ):
                 schemas_both_suffix: str = ""
             else:
                 schemas_both_suffix: str = (
@@ -499,8 +508,7 @@ def diff_query_sub(
                 )
             curr_diff_query += ";\n"
             diff_query += create_table_w_select(
-                __encode_table_name(part)
-                + schemas_both_suffix,
+                new_table_name + schemas_both_suffix,
                 curr_diff_query,
             )
 

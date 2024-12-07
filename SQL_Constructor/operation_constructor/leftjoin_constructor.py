@@ -1,6 +1,7 @@
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
     __encode_table_name,
+    create_table_w_select,
 )
 from SQL_Constructor.operation_constructor.diff_constructor import (
     delta_diff_sub,
@@ -53,6 +54,50 @@ def __delta_join_part(
         )
 
 
+def countKCountsTogether(
+    part: CompValue,
+    schemas: list[set[str]],
+    to_table: str,
+    from_table: str,
+) -> str:
+    """Counts the k_counts of a already inserted table.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas (list[set[str]]): Schemas of the part
+        to_table (str): Table to insert into
+        from_table (str): Table to select from
+
+    Returns:
+        str: Summed k_counts query
+    """
+    count_queries: str = ""
+    for schema in schemas:
+        curr_count_query: str = (
+            "SELECT "
+            + ", ".join(
+                f"r1.{var}" for var in sorted(schema)
+            )
+            + ", SUM(r1.k_count) as k_count\n"
+            + "FROM "
+            + from_table
+            + " AS r1\n"
+            + "GROUP BY "
+            + ", ".join(
+                f"r1.{var}" for var in sorted(schema)
+            )
+            + ";\n"
+        )
+        count_queries += create_table_w_select(
+            to_table
+            + "_"
+            + __encode_schema_name(str(sorted(schema))),
+            curr_count_query,
+        )
+
+    return count_queries
+
+
 def __delta_diff_part(
     part: CompValue,
     schemas1: list[set[str]],
@@ -71,19 +116,34 @@ def __delta_diff_part(
     if len(schemas1) == 0:
         raise ValueError("No schemas to diff on.")
     elif len(schemas1) == 1:
-        return delta_diff_sub(
+        diff_queries: str = delta_diff_sub(
             part,
             schemas1,
             schemas2,
-            new_table_name="delta_"
+            new_table_name="prep_delta_"
             + __encode_table_name(part)
             + "_"
             + __encode_schema_name(
-                str(sorted(schemas1[0]))
+                str(sorted(schemas1[0])),
             ),
+            append_schemas=False,
         )
     else:
-        return delta_diff_sub(part, schemas1, schemas2)
+        diff_queries: str = delta_diff_sub(
+            part,
+            schemas1,
+            schemas2,
+        )
+
+    diff_queries += countKCountsTogether(
+        part,
+        schemas1,
+        to_table="delta_" + __encode_table_name(part),
+        from_table="prep_delta_"
+        + __encode_table_name(part),
+    )
+
+    return diff_queries
 
 
 def delta_left_join_query(
