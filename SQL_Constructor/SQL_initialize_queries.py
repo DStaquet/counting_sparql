@@ -204,8 +204,8 @@ def build_increm_queries(
             )
             part_schemas = schemas1
         case "Union":
-            union_query: str = (
-                base_constructor.delta_union_query(part)
+            union_query: str = SQL_union.delta_union_query(
+                part, schemas1, schemas2
             )
             write_query_to_output_dir(
                 output_dir,
