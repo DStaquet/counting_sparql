@@ -14,6 +14,7 @@ def __delta_on_negate_part(
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     new_table_name: str | None = None,
+    minus: bool = False,
 ) -> str:
     """Generates the delta on negate part of the left join query.
 
@@ -44,6 +45,14 @@ def __delta_on_negate_part(
     if len(schemas1) == 0:
         raise ValueError("No schemas to join on.")
     for sch1 in schemas1:
+
+        if minus:
+            schemas2 = [
+                sch2
+                for sch2 in schemas2
+                if sch1.intersection(sch2) != set()
+            ]
+
         curr_diff_query_select_left: str = (
             "SELECT * FROM "
             + nu_from_table
@@ -130,6 +139,7 @@ def delta_diff_sub(
     schemas2: list[set[str]],
     new_table_name: str | None = None,
     append_schemas: bool = True,
+    minus: bool = False,
 ) -> str:
     """Generates the minus subquery.
 
@@ -140,18 +150,27 @@ def delta_diff_sub(
         str: Query string of the needed minus operation.
     """
 
+    delta_table_name: str = (
+        "delta_prep_" + __encode_table_name(part)
+    )
+
     diff_delta_first_part: str = diff_query_sub(
         part,
         schemas1,
         schemas2,
         first_from_table="delta_"
         + __encode_table_name(part.p1),
-        new_table_name=new_table_name,
+        new_table_name=delta_table_name,
         append_schemas=append_schemas,
+        minus=minus,
     )
 
     diff_delta_second_part: str = __delta_on_negate_part(
-        part, schemas1, schemas2, new_table_name
+        part,
+        schemas1,
+        schemas2,
+        delta_table_name,
+        minus=minus,
     )
 
     return diff_delta_first_part + diff_delta_second_part

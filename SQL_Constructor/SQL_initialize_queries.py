@@ -193,8 +193,8 @@ def build_increm_queries(
                 part, schemas1, schemas2
             )
         case "Minus":
-            minus_query: str = (
-                base_constructor.delta_minus_query(part)
+            minus_query: str = SQL_minus.delta_minus_query(
+                part, schemas1, schemas2
             )
             write_query_to_output_dir(
                 output_dir,
@@ -202,6 +202,7 @@ def build_increm_queries(
                 base_constructor.get_table_name(part),
                 name="delta_",
             )
+            part_schemas = schemas1
         case "Union":
             union_query: str = (
                 base_constructor.delta_union_query(part)

@@ -115,6 +115,55 @@ def delta_outer_join_long_query(
     return select_part + from_part + ";"
 
 
+def countKCountsTogether(
+    part: CompValue,
+    schemas: list[set[str]],
+    to_table: str,
+    from_table: str,
+) -> str:
+    """Counts the k_counts of a already inserted table.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas (list[set[str]]): Schemas of the part
+        to_table (str): Table to insert into
+        from_table (str): Table to select from
+
+    Returns:
+        str: Summed k_counts query
+    """
+    count_queries: str = ""
+    for schema in schemas:
+        curr_count_query: str = (
+            "SELECT "
+            + ", ".join(
+                f"r1.{var}" for var in sorted(schema)
+            )
+            + ", SUM(r1.k_count) as k_count\n"
+            + "FROM "
+            + from_table
+            + " AS r1\n"
+            + "GROUP BY "
+            + ", ".join(
+                f"r1.{var}" for var in sorted(schema)
+            )
+            + ";\n"
+        )
+        if len(schemas) > 1:
+            count_queries += create_table_w_select(
+                to_table
+                + "_"
+                + __encode_schema_name(str(sorted(schema))),
+                curr_count_query,
+            )
+        else:
+            count_queries += create_table_w_select(
+                to_table, curr_count_query
+            )
+
+    return count_queries
+
+
 def __create_vars(variables: set) -> str:
     var_str: str = ""
     for var in sorted(variables):
@@ -1096,173 +1145,6 @@ def delta_union_table_query(
     )
 
     return (first_query, second_query)
-
-
-def delta_minus_query(part: CompValue) -> str:
-    """Returns the delta minus query.
-
-    Args:
-        part (CompValue): Current part of the query.
-
-    Returns:
-        str: Query string for the delta minus operation.
-    """
-    if part.p1._vars.intersection(part.p2._vars) == set():
-        return (
-            "INSERT INTO delta_"
-            + __encode_table_name(part)
-            + " SELECT * FROM delta_"
-            + __encode_table_name(part.p1)
-            + ";"
-        )
-    # R1 MINUS delta_R2
-    first_query: str = (
-        "INSERT INTO delta_"
-        + __encode_table_name(part)
-        + "\n"
-    )
-    first_query += (
-        "SELECT "
-        + ", ".join(
-            f"p1.{var}" for var in sorted(part.p1._vars)
-        )
-        + ", p1.k_count as k_count\n"
-    )
-    first_query += (
-        "FROM delta_"
-        + __encode_table_name(part.p1)
-        + " AS p1\n"
-    )
-    first_query += "WHERE (" + ", ".join(
-        f"p1.{var}"
-        for var in sorted(
-            part.p1._vars.intersection(part.p2._vars)
-        )
-    )
-    first_query += ") NOT IN (SELECT " + ", ".join(
-        f"p2.{var}"
-        for var in sorted(
-            part.p1._vars.intersection(part.p2._vars)
-        )
-    )
-    first_query += (
-        " FROM "
-        + __encode_table_name(part.p2)
-        + " AS p2)\n"
-    )
-    first_query += "ON CONFLICT DO\nUPDATE SET\n\t"
-    first_query += (
-        "k_count = EXCLUDED.k_count + k_count\n"
-        + "WHERE "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(part.p1._vars)
-        )
-    )
-    if part.p2._vars.difference(part.p1._vars) != set():
-        first_query += " AND " + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    first_query += ";\n"
-
-    # R1_nu MINUS delta_R2 - First part
-    second_query_first: str = (
-        "INSERT INTO delta_"
-        + __encode_table_name(part)
-        + "\n"
-    )
-    second_query_first += (
-        "SELECT "
-        + ", ".join(
-            f"p1.{var}" for var in sorted(part.p1._vars)
-        )
-        + ", p1.k_count as k_count\n"
-    )
-    second_query_first += "FROM "
-    second_query_first += (
-        "nu_"
-        + __encode_table_name(part.p1)
-        + " AS p1, delta_"
-        + __encode_table_name(part.p2)
-        + " AS p2, "
-        + __encode_table_name(part.p2)
-        + " AS p3\n"
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        second_query_first += "WHERE (" + ", ".join(
-            f"p1.{var} = p2.{var}"
-            for var in sorted(
-                part.p1._vars.intersection(part.p2._vars)
-            )
-        )
-        second_query_first += ") AND "
-        second_query_first += ", ".join(
-            f"p1.{var} = p3.{var}"
-            for var in sorted(
-                part.p1._vars.intersection(part.p2._vars)
-            )
-        )
-        second_query_first += (
-            " AND -p2.k_count = p3.k_count;\n"
-        )
-
-    # R1_nu MINUS delta_R2 - Second part
-    second_query_second: str = (
-        "\nINSERT INTO delta_"
-        + __encode_table_name(part)
-        + "\n"
-    )
-    second_query_second += (
-        "SELECT "
-        + ", ".join(
-            f"p1.{var}" for var in sorted(part.p1._vars)
-        )
-        + ", -p1.k_count\n"
-    )
-    second_query_second += "FROM "
-    second_query_second += (
-        "nu_"
-        + __encode_table_name(part.p1)
-        + " AS p1, delta_"
-        + __encode_table_name(part.p2)
-        + " AS p2\n"
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        second_query_second += "WHERE (" + ", ".join(
-            f"p1.{var} = p2.{var}"
-            for var in sorted(
-                part.p1._vars.intersection(part.p2._vars)
-            )
-        )
-        second_query_second += (
-            ") AND EXISTS (SELECT "
-            + ", ".join(
-                f"{var}"
-                for var in sorted(
-                    part.p1._vars.intersection(
-                        part.p2._vars
-                    )
-                )
-            )
-        )
-        second_query_second += (
-            "\nFROM "
-            + __encode_table_name(part.p2)
-            + " AS p3"
-            + " WHERE "
-            + "p2.k_count = p3.k_count)"
-        )
-
-    second_query_second += ";\n"
-
-    second_query: str = (
-        second_query_first + second_query_second
-    )
-
-    return first_query + second_query
 
 
 def delta_union_query(part: CompValue) -> str:
