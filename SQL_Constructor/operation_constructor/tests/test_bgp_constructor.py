@@ -57,16 +57,16 @@ def __all_type_leaves(
     "query_file,expected_sql",
     [
         (
-            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern.sparql",
-            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern.sql",
         ),
         (
-            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern.sparql",
-            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern.sql",
         ),
         (
-            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern.sparql",
-            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern.sql",
         ),
     ],
 )
