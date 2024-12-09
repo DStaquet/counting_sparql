@@ -15,7 +15,7 @@ def __delta_on_negate_part(
     schemas2: list[set[str]],
     new_table_name: str | None = None,
     minus: bool = False,
-) -> str:
+) -> dict[str, list[str]]:
     """Generates the delta on negate part of the left join query.
 
     Args:
@@ -40,12 +40,13 @@ def __delta_on_negate_part(
         part.p2
     )
 
-    diff_queries: str = ""
+    diff_queries: dict[str, list[str]] = dict()
 
     if len(schemas1) == 0:
         raise ValueError("No schemas to join on.")
     for sch1 in schemas1:
 
+        schemas2_len = len(schemas2)
         if minus:
             schemas2 = [
                 sch2
@@ -91,7 +92,7 @@ def __delta_on_negate_part(
                     old_delta_from_table_name,
                     sch2,
                     sch1,
-                    len(schemas2),
+                    schemas2_len,
                     index + 3,
                     is_delta=True,
                     delta_swap="-",
@@ -108,7 +109,7 @@ def __delta_on_negate_part(
                         old_delta_from_table_name,
                         sch2,
                         sch1,
-                        len(schemas2),
+                        schemas2_len,
                         index + 3,
                         is_delta=True,
                     )
@@ -133,12 +134,63 @@ def __delta_on_negate_part(
                 + __encode_schema_name(str(sorted(sch1)))
             )
 
-        diff_queries += insert_into_w_select(
+        """diff_queries += insert_into_w_select(
             new_table_name + schema_both_suffix,
             curr_diff_query,
+        )"""
+
+        curr_table_name = (
+            new_table_name + schema_both_suffix
+        )
+        diff_queries = __add_table_to_dict(
+            curr_table_name, curr_diff_query, diff_queries
         )
 
     return diff_queries
+
+
+def __add_table_to_dict(
+    new_table_name: str,
+    query: str,
+    diff_queries: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Adds a table to the dictionary of queries.
+
+    Args:
+        new_table_name (str): Key of the dictionary.
+        query (str): Query to add.
+        diff_queries (dict[str, list[str]]): Dictionary containing all queries
+        related to the table name.
+
+    Returns:
+        dict[str, list[str]]: Dictionary with table added.
+    """
+    if new_table_name in diff_queries:
+        diff_queries[new_table_name].append(query)
+    else:
+        diff_queries[new_table_name] = [query]
+    return diff_queries
+
+
+def __combine_dict_queries(
+    diff_queries1: dict[str, list[str]],
+    diff_queries2: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Combines two dictionaries of queries.
+
+    Args:
+        diff_queries1 (dict[str, list[str]]): First dictionary of queries.
+        diff_queries2 (dict[str, list[str]]): Second dictionary of queries.
+
+    Returns:
+        str: Combined dictionary of queries.
+    """
+    for key, value in diff_queries2.items():
+        if key in diff_queries1:
+            diff_queries1[key] += value
+        else:
+            diff_queries1[key] = value
+    return diff_queries1
 
 
 def delta_diff_sub(
@@ -148,7 +200,7 @@ def delta_diff_sub(
     new_table_name: str | None = None,
     append_schemas: bool = True,
     minus: bool = False,
-) -> str:
+) -> dict[str, list[str]]:
     """Generates the minus subquery.
 
     Args:
@@ -158,30 +210,36 @@ def delta_diff_sub(
         str: Query string of the needed minus operation.
     """
 
-    delta_table_name: str = (
-        "delta_prep_" + __encode_table_name(part)
+    delta_table_name: str = "delta_" + __encode_table_name(
+        part
     )
 
-    diff_delta_first_part: str = diff_query_sub(
-        part,
-        schemas1,
-        schemas2,
-        first_from_table="delta_"
-        + __encode_table_name(part.p1),
-        new_table_name=delta_table_name,
-        append_schemas=append_schemas,
-        minus=minus,
+    diff_delta_first_part: dict[str, list[str]] = (
+        diff_query_sub(
+            part,
+            schemas1,
+            schemas2,
+            first_from_table="delta_"
+            + __encode_table_name(part.p1),
+            new_table_name=delta_table_name,
+            append_schemas=append_schemas,
+            minus=minus,
+        )
     )
 
-    diff_delta_second_part: str = __delta_on_negate_part(
-        part,
-        schemas1,
-        schemas2,
-        delta_table_name,
-        minus=minus,
+    diff_delta_second_part: dict[str, list[str]] = (
+        __delta_on_negate_part(
+            part,
+            schemas1,
+            schemas2,
+            delta_table_name,
+            minus=minus,
+        )
     )
 
-    return diff_delta_first_part + diff_delta_second_part
+    return __combine_dict_queries(
+        diff_delta_first_part, diff_delta_second_part
+    )
 
 
 def __diffSch2Subquery(
@@ -251,7 +309,6 @@ def __check_if_same_diff_schema(
                 join_schemas.append(
                     sch1.union(sch1.intersection(sch2))
                 )
-    print(join_schemas)
     return len(join_schemas) == 1
 
 
@@ -264,7 +321,7 @@ def diff_query_sub(
     second_from_table: str | None = None,
     new_table_name: str | None = None,
     append_schemas: bool = False,
-) -> str:
+) -> dict[str, list[str]]:
     """Generates the difference subquery.
 
     Args:
@@ -273,7 +330,7 @@ def diff_query_sub(
     Returns:
         str: Query string of the needed difference operation.
     """
-    diff_query = ""
+    diff_query: dict[str, list[str]] = dict()
 
     if first_from_table is None:
         first_from_table = __encode_table_name(part.p1)
@@ -348,65 +405,14 @@ def diff_query_sub(
                     for index, sch2 in enumerate(schemas2)
                 )
             curr_diff_query += ";\n"
-            diff_query += create_table_w_select(
+            """diff_query += create_table_w_select(
                 new_table_name + schemas_both_suffix,
                 curr_diff_query,
-            )
+            )"""
+
+            # Add all queries to the table they need to end up in
+            diff_query[
+                new_table_name + schemas_both_suffix
+            ] = [curr_diff_query]
 
     return diff_query
-    """diff_query: str = (
-        "INSERT INTO "
-        + __encode_table_name(part)
-        + "\n"
-        + "SELECT "
-        + ", ".join(var for var in sorted(part.p1._vars))
-    )
-    if part.p2._vars.difference(part.p1._vars) != set():
-        diff_query += ", " + ", ".join(
-            f"coalesce(p2.{var}, 'UNBOUND')"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    diff_query += (
-        ", p1.k_count as k_count\n"
-        + "FROM "
-        + __encode_table_name(part.p1)
-        + " AS p1\n"
-    )
-    diff_query += "WHERE (" + ", ".join(
-        f"p1.{var}"
-        for var in sorted(
-            part.p1._vars.intersection(part.p2._vars)
-        )
-    )
-    diff_query += ") NOT IN (SELECT " + ", ".join(
-        f"p2.{var}"
-        for var in sorted(
-            part.p1._vars.intersection(part.p2._vars)
-        )
-    )
-    diff_query += (
-        " FROM "
-        + __encode_table_name(part.p2)
-        + " AS p2)\n"
-    )
-    diff_query += "ON CONFLICT DO\nUPDATE SET\n\t"
-    diff_query += (
-        "k_count = EXCLUDED.k_count + k_count\n"
-        + "WHERE "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(part.p1._vars)
-        )
-    )
-    if part.p2._vars.difference(part.p1._vars) != set():
-        diff_query += " AND " + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    diff_query += ";\n"
-
-    return diff_query"""

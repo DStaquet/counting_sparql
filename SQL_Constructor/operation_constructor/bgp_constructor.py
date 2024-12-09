@@ -446,6 +446,8 @@ def delta_bgp_queries(
                     last_delta_query_name + temp_suffix,
                     delta_query_name,
                     known_vars,
+                    "delta_"
+                    + base_constructor.get_table_name(part),
                 )
             )
             delta_join_queries += delta_join_query

@@ -2,6 +2,7 @@ from rdflib.plugins.sparql.sparql import FrozenBindings
 from rdflib.plugins.sparql.parserutils import (
     CompValue,
 )
+from rdflib.term import Variable
 
 
 from pandas import DataFrame
@@ -116,15 +117,13 @@ def delta_outer_join_long_query(
 
 
 def countKCountsTogether(
-    part: CompValue,
-    schemas: list[set[str]],
+    schema: set[str],
     to_table: str,
     from_table: str,
 ) -> str:
     """Counts the k_counts of a already inserted table.
 
     Args:
-        part (CompValue): Current part of the query
         schemas (list[set[str]]): Schemas of the part
         to_table (str): Table to insert into
         from_table (str): Table to select from
@@ -132,36 +131,18 @@ def countKCountsTogether(
     Returns:
         str: Summed k_counts query
     """
-    count_queries: str = ""
-    for schema in schemas:
-        curr_count_query: str = (
-            "SELECT "
-            + ", ".join(
-                f"r1.{var}" for var in sorted(schema)
-            )
-            + ", SUM(r1.k_count) as k_count\n"
-            + "FROM "
-            + from_table
-            + " AS r1\n"
-            + "GROUP BY "
-            + ", ".join(
-                f"r1.{var}" for var in sorted(schema)
-            )
-            + ";\n"
-        )
-        if len(schemas) > 1:
-            count_queries += create_table_w_select(
-                to_table
-                + "_"
-                + __encode_schema_name(str(sorted(schema))),
-                curr_count_query,
-            )
-        else:
-            count_queries += create_table_w_select(
-                to_table, curr_count_query
-            )
-
-    return count_queries
+    curr_count_query: str = (
+        "SELECT "
+        + ", ".join(f"r1.{var}" for var in sorted(schema))
+        + ", SUM(r1.k_count) as k_count\n"
+        + "FROM "
+        + from_table
+        + " AS r1\n"
+        + "GROUP BY "
+        + ", ".join(f"r1.{var}" for var in sorted(schema))
+        + ";\n"
+    )
+    return create_table_w_select(to_table, curr_count_query)
 
 
 def __create_vars(variables: set) -> str:
@@ -690,6 +671,7 @@ def final_outer_join_query(
     left_query: str,
     right_query: str,
     known_vars: set[str],
+    new_table_name: str,
 ) -> str:
     """Generates a query that joins the final tables together.
 
@@ -702,9 +684,7 @@ def final_outer_join_query(
     Returns:
         str: Query that joins both tables as a UNION.
     """
-    join_query: str = (
-        "CREATE TABLE delta_" + __encode_table_name(part)
-    )
+    join_query: str = "CREATE TABLE " + new_table_name
     join_query += " AS SELECT "
     join_query += ", ".join(
         f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}"
