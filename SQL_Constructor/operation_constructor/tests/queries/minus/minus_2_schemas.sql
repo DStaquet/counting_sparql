@@ -1,0 +1,10 @@
+CREATE TABLE Minus_5787900088682136291 AS
+SELECT s1.x AS x,
+       s1.k_count AS k_count
+FROM BGP_747695058721694287 AS s1
+WHERE NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_5536938746033674259 AS s2
+                  WHERE s1.x = s2.x)
+  AND NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_388442962187960249 AS s3
+                  WHERE s1.x = s3.x);

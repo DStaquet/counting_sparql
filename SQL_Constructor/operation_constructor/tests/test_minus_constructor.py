@@ -31,6 +31,47 @@ from pytest import mark
                 }
             ],
         ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_2_schemas.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_2_schemas.sql",
+            [
+                {
+                    Variable("x"),
+                }
+            ],
+            [
+                {
+                    Variable("x"),
+                    Variable("y"),
+                },
+                {
+                    Variable("x"),
+                    Variable("z"),
+                },
+            ],
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas.sql",
+            [
+                {
+                    Variable("x"),
+                },
+                {
+                    Variable("y"),
+                },
+            ],
+            [
+                {
+                    Variable("x"),
+                    Variable("y"),
+                },
+                {
+                    Variable("x"),
+                    Variable("z"),
+                },
+            ],
+        ),
     ],
 )
 def test_minus_query(

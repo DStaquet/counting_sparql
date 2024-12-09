@@ -219,7 +219,7 @@ def __diffSch2Subquery(
     return subquery_diff_str
 
 
-def __check_if_same_schema(
+def __check_if_same_diff_schema(
     schemas1: list[set[str]],
     schemas2: list[set[str]],
 ) -> bool:
@@ -236,7 +236,14 @@ def __check_if_same_schema(
     for sch1 in schemas1:
         join_schemas.append(sch1)
         for sch2 in schemas2:
-            join_schemas.append(sch1.union(sch2))
+            if (
+                sch1.union(sch1.intersection(sch2))
+                not in join_schemas
+            ):
+                join_schemas.append(
+                    sch1.union(sch1.intersection(sch2))
+                )
+    print(join_schemas)
     return len(join_schemas) == 1
 
 
@@ -284,8 +291,10 @@ def diff_query_sub(
                 )
 
             if (
-                __check_if_same_schema(schemas1, schemas2)
-                or not append_schemas
+                __check_if_same_diff_schema(
+                    schemas1, schemas2
+                )
+                and not append_schemas
             ):
                 schemas_both_suffix: str = ""
             else:
@@ -296,6 +305,7 @@ def diff_query_sub(
                     )
                 )
 
+            schemas2_len = len(schemas2)
             if minus:
                 schemas2 = [
                     sch2
@@ -323,7 +333,7 @@ def diff_query_sub(
                         second_from_table,
                         sch2,
                         sch1,
-                        len(schemas2),
+                        schemas2_len,
                         index + 2,
                     )
                     + ")"
