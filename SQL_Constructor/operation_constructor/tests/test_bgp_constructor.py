@@ -10,6 +10,7 @@ from SQL_Constructor.base_constructor import (
     get_table_name,
 )
 from SQL_Constructor.operation_constructor.tests.base_functions import (
+    all_type_leaves,
     reset_seed,
 )
 
@@ -18,39 +19,6 @@ from pytest import mark
 from rdflib.plugins.sparql.parserutils import CompValue
 
 from sqlparse import format
-
-
-def __all_type_leaves(
-    part: CompValue, type_name: str
-) -> list[CompValue]:
-    """Gives a list of all BGP patterns in the query.
-
-    Args:
-        part (Compvalue): Current algebraic expression
-
-    Returns:
-        list[CompValue]: All BGP patterns in the query.
-    """
-    return_list: list[CompValue] = []
-    if (
-        part.p == None
-        and part.p1 == None
-        and part.p2 == None
-        and part.name == type_name
-    ):
-        return_list.append(part)
-    if "p" in part:
-        return return_list + __all_type_leaves(
-            part.p, type_name
-        )
-    elif "p1" in part and "p2" in part:
-        return (
-            return_list
-            + __all_type_leaves(part.p1, type_name)
-            + __all_type_leaves(part.p2, type_name)
-        )
-    else:
-        return return_list
 
 
 @mark.parametrize(
@@ -81,7 +49,7 @@ def test_bgp_table_query(
     ).algebra
 
     # Find only BGP patterns
-    bgp_leaves: list[CompValue] = __all_type_leaves(
+    bgp_leaves: list[CompValue] = all_type_leaves(
         part, "BGP"
     )
 

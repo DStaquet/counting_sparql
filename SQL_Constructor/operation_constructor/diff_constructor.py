@@ -175,203 +175,6 @@ def delta_diff_sub(
 
     return diff_delta_first_part + diff_delta_second_part
 
-    """# R1 MINUS delta_R2
-    first_query: str = (
-        "INSERT INTO delta_"
-        + __encode_table_name(part)
-        + "\n"
-    )
-    first_query += "SELECT " + ", ".join(
-        var for var in sorted(part.p1._vars)
-    )
-    if part.p2._vars.difference(part.p1._vars) != set():
-        first_query += ", " + ", ".join(
-            f"coalesce(p2.{var}, 'UNBOUND')"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    first_query += ", p1.k_count as k_count\n"
-    first_query += (
-        "FROM delta_"
-        + __encode_table_name(part.p1)
-        + " AS p1\n"
-    )
-    first_query += "WHERE (" + ", ".join(
-        f"p1.{var}"
-        for var in sorted(
-            part.p1._vars.intersection(part.p2._vars)
-        )
-    )
-    first_query += ") NOT IN (SELECT " + ", ".join(
-        f"p2.{var}"
-        for var in sorted(
-            part.p1._vars.intersection(part.p2._vars)
-        )
-    )
-    first_query += (
-        " FROM "
-        + __encode_table_name(part.p2)
-        + " AS p2)\n"
-    )
-    first_query += "ON CONFLICT DO\nUPDATE SET\n\t"
-    first_query += (
-        "k_count = EXCLUDED.k_count + k_count\n"
-        + "WHERE "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(part.p1._vars)
-        )
-        + " AND "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    )
-    first_query += ";\n"
-
-    # R1_nu MINUS delta_R2 - First part
-    second_query_first: str = (
-        "INSERT INTO delta_"
-        + __encode_table_name(part)
-        + "\n"
-    )
-    first_query += "SELECT " + ", ".join(
-        var for var in sorted(part.p1._vars)
-    )
-    if part.p2._vars.difference(part.p1._vars) != set():
-        first_query += ", " + ", ".join(
-            f"coalesce(p2.{var}, 'UNBOUND')"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    first_query += ", p1.k_count as k_count\n"
-    second_query_first += "FROM "
-    second_query_first += (
-        "nu_"
-        + __encode_table_name(part.p1)
-        + " AS p1, delta_"
-        + __encode_table_name(part.p2)
-        + " AS delta_p2\n"
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        second_query_first += "WHERE (" + ", ".join(
-            f"p1.{var} = delta_p2.{var}"
-            for var in sorted(
-                part.p1._vars.intersection(part.p2._vars)
-            )
-        )
-        second_query_first += (
-            ", -delta_p2.k_count) IN (SELECT "
-            + ", ".join(
-                f"{var}"
-                for var in sorted(
-                    part.p1._vars.intersection(
-                        part.p2._vars
-                    )
-                )
-            )
-            + ", k_count\n"
-        )
-        second_query_first += (
-            "FROM "
-            + __encode_table_name(part.p2)
-            + " AS p2)\n"
-        )
-    second_query_first += "ON CONFLICT DO\nUPDATE SET\n\t"
-    second_query_first += (
-        "k_count = EXCLUDED.k_count + k_count\n"
-        + "WHERE "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(part.p1._vars)
-        )
-        + " AND "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    )
-    second_query_first += ";\n"
-
-    # R1_nu MINUS delta_R2 - Second part
-    second_query_second: str = (
-        "INSERT INTO delta_"
-        + __encode_table_name(part)
-        + "\n"
-    )
-    first_query += "SELECT " + ", ".join(
-        var for var in sorted(part.p1._vars)
-    )
-    if part.p2._vars.difference(part.p1._vars) != set():
-        first_query += ", " + ", ".join(
-            f"coalesce(p2.{var}, 'UNBOUND')"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    first_query += ", -p1.k_count as k_count\n"
-    second_query_second += "FROM "
-    second_query_second += (
-        "nu_"
-        + __encode_table_name(part.p1)
-        + " AS p1, delta_"
-        + __encode_table_name(part.p2)
-        + " AS delta_p2\n"
-    )
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        second_query_second += "WHERE (" + ", ".join(
-            f"p1.{var} = delta_p2.{var}"
-            for var in sorted(
-                part.p1._vars.intersection(part.p2._vars)
-            )
-        )
-        second_query_second += (
-            ", k_count) NOT IN (SELECT "
-            + ", ".join(
-                f"{var}"
-                for var in sorted(
-                    part.p1._vars.intersection(
-                        part.p2._vars
-                    )
-                )
-            )
-            + ", k_count\n"
-        )
-        second_query_second += (
-            "FROM "
-            + __encode_table_name(part.p2)
-            + " AS p2)\n"
-        )
-    second_query_second += "ON CONFLICT DO\nUPDATE SET\n\t"
-    second_query_second += (
-        "k_count = EXCLUDED.k_count + k_count\n"
-        + "WHERE "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(part.p1._vars)
-        )
-        + " AND "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    )
-    second_query_second += ";\n"
-
-    second_query: str = (
-        second_query_first + second_query_second
-    )
-
-    return first_query + second_query"""
-
 
 def __diffSch2Subquery(
     part: CompValue,
@@ -445,7 +248,7 @@ def diff_query_sub(
     first_from_table: str | None = None,
     second_from_table: str | None = None,
     new_table_name: str | None = None,
-    append_schemas: bool = True,
+    append_schemas: bool = False,
 ) -> str:
     """Generates the difference subquery.
 
@@ -469,15 +272,16 @@ def diff_query_sub(
         raise ValueError("No schemas to join on.")
     else:
         for sch1 in schemas1:
-            if len(schemas1) > 1:
+            if len(schemas1) <= 1:
+                schemas1_suffix: str = ""
+                schemas_both_suffix: str = ""
+            else:
                 schemas1_suffix: str = (
                     "_"
                     + __encode_schema_name(
                         str(sorted(sch1))
                     )
                 )
-            else:
-                schemas1_suffix: str = ""
 
             if (
                 __check_if_same_schema(schemas1, schemas2)
