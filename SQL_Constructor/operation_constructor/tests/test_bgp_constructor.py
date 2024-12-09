@@ -54,7 +54,15 @@ def __all_bgp_leaves(part: CompValue) -> list[CompValue]:
         (
             "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern.sparql",
             "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern.sql",
-        )
+        ),
+        (
+            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern.sparql",
+            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern.sql",
+        ),
+        (
+            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern.sparql",
+            "/home/dore/Documents/1_Universiteit/counting_sparql/counting_sparql/SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern.sql",
+        ),
     ],
 )
 def test_bgp_table_query(
@@ -74,19 +82,14 @@ def test_bgp_table_query(
     for bgp in reversed(bgp_leaves):
         current_query, _ = bgp_table_query(bgp)
 
-        bgp_queries += create_table_w_select(
-            get_table_name(bgp), current_query
-        )
-
-    with open(expected_sql) as f:
-        expected_query = f.read()
-
-    assert (
-        format(
+        bgp_queries += format(
             create_table_w_select(
                 get_table_name(bgp), current_query
             ),
             reindent=True,
         )
-        == expected_query
-    )
+
+    with open(expected_sql) as f:
+        expected_query = f.read()
+
+    assert bgp_queries == expected_query
