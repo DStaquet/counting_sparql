@@ -20,7 +20,9 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from sqlparse import format
 
 
-def __all_bgp_leaves(part: CompValue) -> list[CompValue]:
+def __all_type_leaves(
+    part: CompValue, type_name: str
+) -> list[CompValue]:
     """Gives a list of all BGP patterns in the query.
 
     Args:
@@ -29,23 +31,26 @@ def __all_bgp_leaves(part: CompValue) -> list[CompValue]:
     Returns:
         list[CompValue]: All BGP patterns in the query.
     """
+    return_list: list[CompValue] = []
     if (
         part.p == None
         and part.p1 == None
         and part.p2 == None
-        and part.name == "BGP"
+        and part.name == type_name
     ):
-        return [part]
+        return_list.append(part)
     if "p" in part:
-        return [] + __all_bgp_leaves(part.p)
+        return return_list + __all_type_leaves(
+            part.p, type_name
+        )
     elif "p1" in part and "p2" in part:
         return (
-            []
-            + __all_bgp_leaves(part.p1)
-            + __all_bgp_leaves(part.p2)
+            return_list
+            + __all_type_leaves(part.p1, type_name)
+            + __all_type_leaves(part.p2, type_name)
         )
     else:
-        return []
+        return return_list
 
 
 @mark.parametrize(
@@ -76,7 +81,9 @@ def test_bgp_table_query(
     ).algebra
 
     # Find only BGP patterns
-    bgp_leaves: list[CompValue] = __all_bgp_leaves(part)
+    bgp_leaves: list[CompValue] = __all_type_leaves(
+        part, "BGP"
+    )
 
     bgp_queries: str = ""
     for bgp in reversed(bgp_leaves):
