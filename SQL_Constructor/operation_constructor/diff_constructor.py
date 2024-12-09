@@ -125,8 +125,16 @@ def __delta_on_negate_part(
             + ";\n"
         )
 
+        if __check_if_same_diff_schema(schemas1, schemas2):
+            schema_both_suffix: str = ""
+        else:
+            schema_both_suffix: str = (
+                "_"
+                + __encode_schema_name(str(sorted(sch1)))
+            )
+
         diff_queries += insert_into_w_select(
-            new_table_name,
+            new_table_name + schema_both_suffix,
             curr_diff_query,
         )
 

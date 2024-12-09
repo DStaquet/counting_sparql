@@ -56,7 +56,6 @@ def delta_minus_query(
             schemas1,
             schemas2,
             minus=True,
-            append_schemas=True,
         )
 
     delta_diff_queries += countKCountsTogether(
