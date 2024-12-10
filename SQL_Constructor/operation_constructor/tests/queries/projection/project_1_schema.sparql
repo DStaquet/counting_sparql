@@ -2,7 +2,5 @@ PREFIX : <http://example.org/>
 PREFIX edge: <http://example.org/edges/>
 select ?x
 where {
-    {?w edge:link ?y .}
-    UNION
-    {?z edge:link ?y .}
+    {?x edge:link ?y .}
 }

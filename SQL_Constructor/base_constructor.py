@@ -131,17 +131,21 @@ def countKCountsTogether(
     Returns:
         str: Summed k_counts query
     """
-    curr_count_query: str = (
-        "SELECT "
-        + ", ".join(f"r1.{var}" for var in sorted(schema))
-        + ", SUM(r1.k_count) as k_count\n"
-        + "FROM "
-        + from_table
-        + " AS r1\n"
-        + "GROUP BY "
-        + ", ".join(f"r1.{var}" for var in sorted(schema))
-        + ";\n"
-    )
+    curr_count_query: str = "SELECT "
+    if schema:
+        curr_count_query += (
+            ", ".join(f"r1.{var}" for var in sorted(schema))
+            + ", SUM(r1.k_count) as k_count\n"
+        )
+    else:
+        curr_count_query += "SUM(r1.k_count) as k_count\n"
+    curr_count_query += "FROM " + from_table + " AS r1\n"
+    if schema:
+        curr_count_query += "GROUP BY " + ", ".join(
+            f"r1.{var}" for var in sorted(schema)
+        )
+    curr_count_query += ";\n"
+
     return create_table_w_select(to_table, curr_count_query)
 
 
@@ -252,26 +256,36 @@ def make_group_by(
     all_queries: str = ""
     for key in tables_to_make:
         queries_seen_count = 0
+        prep_prefix = ""
         for query in tables_to_make[key]:
+            if len(tables_to_make[key]) == 1:
+                temp_prefix = ""
+                prep_prefix = ""
+            else:
+                temp_prefix = " TEMP "
+                prep_prefix = "prep_"
+
             if queries_seen_count == 0:
                 all_queries += create_table_w_select(
-                    "prep_" + key,
+                    prep_prefix + key,
                     query,
-                    temp_prefix=" TEMP ",
+                    temp_prefix=temp_prefix,
                 )
             else:
                 all_queries += insert_into_w_select(
-                    "prep_" + key,
+                    prep_prefix + key,
                     query,
                 )
             queries_seen_count += 1
+        if len(tables_to_make[key]) == 1:
+            continue
         for schema in schemas:
             if (
                 schema_in_key(key, schema)
                 or len(schemas) == 1
             ):
                 all_queries += countKCountsTogether(
-                    schema, key, "prep_" + key
+                    schema, key, prep_prefix + key
                 )
     return all_queries
 
@@ -844,7 +858,7 @@ def __from_clause_long_outer_join(
 def final_outer_join_query(
     left_query: str,
     right_query: str,
-    known_vars: set[str],
+    schema: set[str],
     new_table_name: str,
 ) -> str:
     """Generates a query that joins the final tables together.
@@ -860,19 +874,23 @@ def final_outer_join_query(
     """
     join_query: str = "CREATE TABLE " + new_table_name
     join_query += " AS SELECT "
-    join_query += ", ".join(
-        f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}"
-        for var in known_vars
-        if var != "k_count"
-    )
-    join_query += f", (CASE WHEN R1.k_count IS NULL THEN R2.k_count WHEN R2.k_count IS NULL THEN R1.k_count ELSE R1.k_count + R2.k_count END) AS k_count "
-    join_query += f"FROM {left_query} AS R1 FULL OUTER JOIN {right_query} AS R2 ON "
-    join_query += " AND ".join(
-        f"R1.{var} = R2.{var}"
-        for var in known_vars
-        if var != "k_count"
-    )
-    join_query += f";"
+    if schema:
+        join_query += ", ".join(
+            f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}"
+            for var in schema
+            if var != "k_count"
+        )
+        join_query += ", "
+    join_query += f"(CASE WHEN R1.k_count IS NULL THEN R2.k_count WHEN R2.k_count IS NULL THEN R1.k_count ELSE R1.k_count + R2.k_count END) AS k_count "
+    join_query += f"FROM {left_query} AS R1 FULL OUTER JOIN {right_query} AS R2"
+    if schema:
+        join_query += " ON "
+        join_query += " AND ".join(
+            f"R1.{var} = R2.{var}"
+            for var in schema
+            if var != "k_count"
+        )
+    join_query += f";\n"
     return join_query
 
 

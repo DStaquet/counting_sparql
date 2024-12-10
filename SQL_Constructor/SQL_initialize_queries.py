@@ -167,17 +167,32 @@ def build_increm_queries(
             )
         case "Project":
             use_PV = True
-            project_query: str = (
+            project_query_tuple = (
                 SQL_project.delta_project_query(
                     part, schemas1
                 )
             )
+            if isinstance(project_query_tuple, tuple):
+                project_query, project_query_join = (
+                    project_query_tuple
+                )
+            else:
+                project_query = project_query_tuple
+                project_query_join = None
             write_query_to_output_dir(
                 output_dir,
                 project_query,
                 base_constructor.get_table_name(part),
                 filename_prefix="delta_",
             )
+            if project_query_join != None:
+                write_query_to_output_dir(
+                    output_dir,
+                    project_query_join,
+                    base_constructor.get_table_name(part)
+                    + "_join",
+                    filename_prefix="delta_",
+                )
             part_schemas = (
                 SQL_Constructor.hash_writer.project_schemas(
                     part, schemas1
@@ -323,14 +338,28 @@ def build_queries(
             )
             return schemas1
         case "Project":
-            project_query: str = SQL_project.project_query(
+            project_query_tuple = SQL_project.project_query(
                 part, schemas1
             )
+            if isinstance(project_query_tuple, tuple):
+                project_query, project_query_join = (
+                    project_query_tuple
+                )
+            else:
+                project_query = project_query_tuple
+                project_query_join = None
             write_query_to_output_dir(
                 output_dir,
                 project_query,
                 base_constructor.get_table_name(part),
             )
+            if project_query_join != None:
+                write_query_to_output_dir(
+                    output_dir,
+                    project_query_join,
+                    base_constructor.get_table_name(part)
+                    + "_join",
+                )
             return (
                 SQL_Constructor.hash_writer.project_schemas(
                     part, schemas1
