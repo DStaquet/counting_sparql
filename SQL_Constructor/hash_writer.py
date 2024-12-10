@@ -137,7 +137,7 @@ def write_hash_schemas(
                         "Schemas2 cannot be None for a union"
                     )
                 union_schema = union_schemas(
-                    part, schemas1, schemas2
+                    schemas1, schemas2
                 )
                 hash_file.write(
                     '"schema_'

@@ -251,7 +251,7 @@ def build_increm_queries(
                 filename_prefix="delta_",
             )
             part_schemas = SQL_union.union_schemas(
-                part, schemas1, schemas2
+                schemas1, schemas2
             )
         case "SelectQuery":
             select_query: str = (
@@ -431,7 +431,7 @@ def build_queries(
                 base_constructor.get_table_name(part),
             )
             return SQL_union.union_schemas(
-                part, schemas1, schemas2
+                schemas1, schemas2
             )
         case "SelectQuery":
             select_query: str = (
