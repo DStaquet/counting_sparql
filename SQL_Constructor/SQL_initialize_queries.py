@@ -380,7 +380,7 @@ def build_queries(
                 schemas1, schemas2
             )
         case "Join":
-            join_query: str = (
+            join_query_tuple = (
                 SQL_join.join_query_str_constr(
                     part,
                     base_constructor.get_table_name(
@@ -393,6 +393,18 @@ def build_queries(
                     schemas2,
                 )
             )
+            if isinstance(join_query_tuple, tuple):
+                join_query, join_query_outer_join = (
+                    join_query_tuple
+                )
+                write_query_to_output_dir(
+                    output_dir,
+                    join_query_outer_join,
+                    base_constructor.get_table_name(part)
+                    + "_outer_join",
+                )
+            else:
+                join_query = join_query_tuple
             write_query_to_output_dir(
                 output_dir,
                 join_query,

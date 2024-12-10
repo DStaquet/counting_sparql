@@ -5,7 +5,5 @@ where {
     ?y edge:link ?w
     {
         {?x edge:link ?y .}
-        UNION
-        {?y edge:link ?w .}
     }
 }

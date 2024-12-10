@@ -125,7 +125,6 @@ def __join_query_one_schema(
 
 
 def __join_query_mult_schema(
-    part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     table_name_one: str,
@@ -143,27 +142,6 @@ def __join_query_mult_schema(
     """
     join_queries_dict: dict[str, list[str]] = dict()
 
-    """# Construct for prep table
-    already_seen_join_schemas = list()
-    double_schemas = list()
-    for sch1 in schemas1:
-        for sch2 in schemas2:
-            curr_join_schema: set[str] = sch1.union(sch2)
-            if (
-                curr_join_schema
-                not in already_seen_join_schemas
-            ):
-                already_seen_join_schemas.append(
-                    curr_join_schema
-                )
-            else:
-                double_schemas.append(curr_join_schema)
-    already_seen_join_schemas = list()"""
-
-    """join_query: str = ""
-    join_schemas_list = join_schemas(
-        part, schemas1, schemas2
-    )"""
     for sch1 in schemas1:
         for sch2 in schemas2:
             if not len(schemas1) == 1:
@@ -231,15 +209,23 @@ def __join_query_mult_schema(
                 )
 
             curr_join_schema: set[str] = sch1.union(sch2)
-            join_queries_dict = add_table_to_dict(
-                new_table_name
-                + "_"
-                + __encode_schema_name(
-                    str(sorted(curr_join_schema))
-                ),
-                curr_join_query,
-                join_queries_dict,
-            )
+
+            if len(join_schemas(schemas1, schemas2)) == 1:
+                join_queries_dict = add_table_to_dict(
+                    new_table_name,
+                    curr_join_query,
+                    join_queries_dict,
+                )
+            else:
+                join_queries_dict = add_table_to_dict(
+                    new_table_name
+                    + "_"
+                    + __encode_schema_name(
+                        str(sorted(curr_join_schema))
+                    ),
+                    curr_join_query,
+                    join_queries_dict,
+                )
 
     return join_queries_dict
 
@@ -251,7 +237,7 @@ def join_query_str_constr(
     schemas1: list[set[str]] = [],
     schemas2: list[set[str]] = [],
     new_table_name: str | None = None,
-) -> str:
+) -> str | tuple[str, str]:
     """Generates the string with all the join queries.
 
     Args:
@@ -275,17 +261,32 @@ def join_query_str_constr(
     )
 
     join_queries: str = ""
+    join_queries_outer: str | None = None
     for key in join_queries_dict:
         if len(join_queries_dict[key]) > 1:
-            raise ValueError(
-                "More than one query for a single table"
+            join_queries += make_group_by(
+                join_queries_dict,
+                join_schemas(schemas1, schemas2),
             )
+            if join_queries_outer is None:
+                join_queries_outer = make_join(
+                    join_queries_dict,
+                    join_schemas(schemas1, schemas2),
+                )
+            else:
+                join_queries_outer += make_join(
+                    join_queries_dict,
+                    join_schemas(schemas1, schemas2),
+                )
         else:
             join_queries += create_table_w_select(
                 key, join_queries_dict[key][0]
             )
 
-    return join_queries
+    if join_queries_outer is None:
+        return join_queries
+    else:
+        return join_queries, join_queries_outer
 
 
 def join_query(
@@ -329,218 +330,15 @@ def join_query(
             )
         ]
 
-        """# Construct for prep table if delta, otherwise insert into
-        if is_delta_and_first[0]:
-            temp_prefix: str = " TEMP "
-            prep_prefix: str = "prep_"
-        else:
-            temp_prefix: str = ""
-            prep_prefix: str = ""
-        if (
-            is_delta_and_first[0] and is_delta_and_first[1]
-        ) or not is_delta_and_first[0]:
-            join_query = create_table_w_select(
-                prep_prefix + new_table_name,
-                join_query,
-                temp_prefix=temp_prefix,
-            )
-        else:
-            join_query = insert_into_w_select(
-                prep_prefix + new_table_name,
-                join_query,
-                list(schemas1[0].union(schemas2[0])),
-            )
-
-        if (
-            is_delta_and_first[0]
-            and not is_delta_and_first[1]
-        ):
-            join_query += create_table_w_select(
-                new_table_name,
-                "SELECT "
-                + ", ".join(
-                    f"{var}"
-                    for var in sorted(
-                        schemas1[0].union(schemas2[0])
-                    )
-                    if var != "k_count"
-                )
-                + ", SUM(k_count) AS k_count\nFROM "
-                + prep_prefix
-                + new_table_name
-                + "\nGROUP BY "
-                + ", ".join(
-                    f"{var}"
-                    for var in sorted(
-                        schemas1[0].union(schemas2[0])
-                    )
-                    if var != "k_count"
-                )
-                + ";",
-            )"""
-
     else:
 
         join_queries_dict = __join_query_mult_schema(
-            part,
             schemas1,
             schemas2,
             table_name_one,
             table_name_two,
             new_table_name,
         )
-
-        """# Checks if the join schema has already been seen
-                # to insert to same table
-                curr_join_schema: set[str] = sch1.union(
-                    sch2
-                )
-                if (curr_join_schema in double_schemas) or (
-                    is_delta_and_first[0]
-                    and len(join_schemas_list) > 1
-                ):
-                    temp_prefix: str = " TEMP "
-                    prep_prefix: str = "prep_"
-                else:
-                    temp_prefix: str = ""
-                    prep_prefix: str = ""
-                if len(join_schemas_list) == 1:
-                    if (
-                        is_delta_and_first[0]
-                        and is_delta_and_first[1]
-                        and curr_join_schema
-                        not in already_seen_join_schemas
-                    ) or (
-                        not is_delta_and_first[0]
-                        and curr_join_schema
-                        not in already_seen_join_schemas
-                    ):
-                        already_seen_join_schemas.append(
-                            curr_join_schema
-                        )
-                        join_query += create_table_w_select(
-                            prep_prefix + new_table_name,
-                            curr_join_query,
-                            temp_prefix=temp_prefix,
-                        )
-                    else:
-                        join_query += insert_into_w_select(
-                            prep_prefix + new_table_name,
-                            curr_join_query,
-                            list(curr_join_schema),
-                        )
-                else:
-                    if (
-                        is_delta_and_first[0]
-                        and is_delta_and_first[1]
-                        and curr_join_schema
-                        not in already_seen_join_schemas
-                    ) or (
-                        not is_delta_and_first[0]
-                        and curr_join_schema
-                        not in already_seen_join_schemas
-                    ):
-                        already_seen_join_schemas.append(
-                            curr_join_schema
-                        )
-                        join_query += create_table_w_select(
-                            prep_prefix
-                            + new_table_name
-                            + "_"
-                            + __encode_schema_name(
-                                str(
-                                    sorted(curr_join_schema)
-                                )
-                            ),
-                            curr_join_query,
-                            temp_prefix=temp_prefix,
-                        )
-                    else:
-                        join_query += insert_into_w_select(
-                            prep_prefix
-                            + new_table_name
-                            + "_"
-                            + __encode_schema_name(
-                                str(
-                                    sorted(curr_join_schema)
-                                )
-                            ),
-                            curr_join_query,
-                            sorted(sch1)
-                            + sorted(sch2.difference(sch1)),
-                            False,
-                        )"""
-
-        """if not is_delta_and_first[0] or (
-            is_delta_and_first[0]
-            and not is_delta_and_first[1]
-        ):
-            for joined_schemas in double_schemas:
-                if len(join_schemas_list) == 1:
-                    schema_suffix: str = ""
-                else:
-                    schema_suffix: str = (
-                        "_"
-                        + __encode_schema_name(
-                            str(sorted(joined_schemas))
-                        )
-                    )
-                join_query += create_table_w_select(
-                    new_table_name + schema_suffix,
-                    "SELECT "
-                    + ", ".join(
-                        f"{var}"
-                        for var in sorted(joined_schemas)
-                        if var != "k_count"
-                    )
-                    + ", SUM(k_count) AS k_count\nFROM prep_"
-                    + new_table_name
-                    + schema_suffix
-                    + "\nGROUP BY "
-                    + ", ".join(
-                        f"{var}"
-                        for var in sorted(joined_schemas)
-                        if var != "k_count"
-                    )
-                    + ";",
-                )
-        if (
-            is_delta_and_first[0]
-            and not is_delta_and_first[1]
-        ):
-            for joined_schema in [
-                joined_schema
-                for joined_schema in join_schemas_list
-                if joined_schema not in double_schemas
-            ]:
-                if len(join_schemas_list) == 1:
-                    schema_suffix: str = ""
-                else:
-                    schema_suffix: str = (
-                        "_"
-                        + __encode_schema_name(
-                            str(sorted(joined_schema))
-                        )
-                    )
-                join_query += create_table_w_select(
-                    new_table_name + schema_suffix,
-                    "SELECT "
-                    + ", ".join(
-                        f"{var}"
-                        for var in sorted(joined_schema)
-                        if var != "k_count"
-                    )
-                    + ", SUM(k_count) AS k_count\nFROM prep_"
-                    + new_table_name
-                    + schema_suffix
-                    + "\nGROUP BY "
-                    + ", ".join(
-                        f"{var}"
-                        for var in sorted(joined_schema)
-                        if var != "k_count"
-                    )
-                    + ";",
-                )"""
 
     return join_queries_dict
 
@@ -578,17 +376,6 @@ def delta_join_queries_part_func(
         is_delta_and_first=(True, False),
         new_table_name=new_table_name,
     )
-
-    """delta_prep_sum: str = (
-        base_constructor.delta_prep_sum_query(part)
-    )
-    delta_queries_sum = (
-        base_constructor.create_table_w_select(
-            "delta_"
-            + base_constructor.get_table_name(part),
-            delta_prep_sum,
-        )
-    )"""
 
     combined_delta_query_dict = combine_dict_queries(
         first_delta_query, second_delta_query
