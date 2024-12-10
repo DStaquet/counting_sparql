@@ -667,7 +667,6 @@ def __from_clause_long_outer_join(
 
 
 def final_outer_join_query(
-    part: CompValue,
     left_query: str,
     right_query: str,
     known_vars: set[str],
@@ -703,12 +702,10 @@ def final_outer_join_query(
 
 
 def outer_join_queries(
-    part: CompValue,
     delta_table_name: str,
     left_query: str,
     right_query: str,
     known_vars: set[str],
-    index: int,
 ) -> str:
     """Generates a full outer join query between two tables
 

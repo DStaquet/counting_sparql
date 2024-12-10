@@ -23,7 +23,7 @@ def write_query_to_output_dir(
     query: str,
     filename: str,
     append: bool = False,
-    name: str = "",
+    filename_prefix: str = "",
 ) -> None:
     """Writes the query to the output directory
 
@@ -39,13 +39,13 @@ def write_query_to_output_dir(
     )
     if not append:
         with open(
-            f"{output_dir}/{name}{filename}.sql",
+            f"{output_dir}/{filename_prefix}{filename}.sql",
             "w",
         ) as f:
             f.write(query)
     else:
         with open(
-            f"{output_dir}/{name}{filename}.sql",
+            f"{output_dir}/{filename_prefix}{filename}.sql",
             "a",
         ) as f:
             f.write(query)
@@ -141,7 +141,7 @@ def build_increm_queries(
                 output_dir,
                 filter_query,
                 base_constructor.get_table_name(part),
-                name="delta_",
+                filename_prefix="delta_",
             )
             part_schemas = schemas1
         case "Join":
@@ -170,7 +170,7 @@ def build_increm_queries(
                 output_dir,
                 project_query,
                 base_constructor.get_table_name(part),
-                name="delta_",
+                filename_prefix="delta_",
             )
             part_schemas = (
                 SQL_Constructor.hash_writer.project_schemas(
@@ -187,20 +187,29 @@ def build_increm_queries(
                 output_dir,
                 left_join_query,
                 base_constructor.get_table_name(part),
-                name="delta_",
+                filename_prefix="delta_",
             )
             part_schemas = SQL_leftjoin.leftjoin_schemas(
                 part, schemas1, schemas2
             )
         case "Minus":
-            minus_query: str = SQL_minus.delta_minus_query(
-                part, schemas1, schemas2
+            minus_query, minus_query_join = (
+                SQL_minus.delta_minus_query(
+                    part, schemas1, schemas2
+                )
             )
             write_query_to_output_dir(
                 output_dir,
                 minus_query,
                 base_constructor.get_table_name(part),
-                name="delta_",
+                filename_prefix="delta_",
+            )
+            write_query_to_output_dir(
+                output_dir,
+                minus_query_join,
+                base_constructor.get_table_name(part)
+                + "_join",
+                filename_prefix="delta_",
             )
             part_schemas = schemas1
         case "Union":
@@ -211,7 +220,7 @@ def build_increm_queries(
                 output_dir,
                 union_query,
                 base_constructor.get_table_name(part),
-                name="delta_",
+                filename_prefix="delta_",
             )
             part_schemas = SQL_union.union_schemas(
                 part, schemas1, schemas2
@@ -224,7 +233,7 @@ def build_increm_queries(
                 output_dir,
                 select_query,
                 base_constructor.get_table_name(part),
-                name="delta_",
+                filename_prefix="delta_",
             )
     nu_query: str = base_constructor.nu_queries(
         part, use_PV
@@ -233,7 +242,7 @@ def build_increm_queries(
         output_dir,
         nu_query,
         base_constructor.get_table_name(part),
-        name="nu_",
+        filename_prefix="nu_",
     )
 
     if part_schemas == None:

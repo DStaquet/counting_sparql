@@ -187,8 +187,8 @@ def test_delta_minus_query(
 
     minus_queries: str = ""
     for minus in reversed(minus_leaves):
-        current_query = delta_minus_query(
-            minus, schemas1, schemas2
+        current_query, current_join_query = (
+            delta_minus_query(minus, schemas1, schemas2)
         )
 
         minus_queries += format(

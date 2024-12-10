@@ -422,12 +422,10 @@ def delta_bgp_queries(
         ) < len(part.triples):
             delta_join_query = (
                 base_constructor.outer_join_queries(
-                    part,
                     delta_query_name + "_temp",
                     last_delta_query_name + temp_suffix,
                     delta_query_name,
                     known_vars,
-                    triple_index + 1,
                 )
             )
             delta_join_queries += delta_join_query
@@ -442,7 +440,6 @@ def delta_bgp_queries(
                 temp_suffix = "_temp"
             delta_join_query = (
                 base_constructor.final_outer_join_query(
-                    part,
                     last_delta_query_name + temp_suffix,
                     delta_query_name,
                     known_vars,

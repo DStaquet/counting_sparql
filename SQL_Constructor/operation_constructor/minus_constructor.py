@@ -4,6 +4,8 @@ from SQL_Constructor.base_constructor import (
     countKCountsTogether,
     create_table_w_select,
     insert_into_w_select,
+    outer_join_queries,
+    final_outer_join_query,
 )
 from SQL_Constructor.operation_constructor.diff_constructor import (
     diff_query_sub,
@@ -46,7 +48,8 @@ def minus_query(
 
 
 def __make_join(
-    tables_to_make: dict[str, list[str]]
+    tables_to_make: dict[str, list[str]],
+    schemas: list[set[str]],
 ) -> str:
     """Generates the join query string.
 
@@ -58,7 +61,65 @@ def __make_join(
     Returns:
         str: Minus query string with outer join union.
     """
-    return ""
+    all_queries: str = ""
+    for key in tables_to_make:
+        if len(schemas) == 1:
+            curr_schema = schemas[0]
+        else:
+            for schema in schemas:
+                if __schema_in_key(key, schema):
+                    curr_schema = schema
+        for q_index in range(len(tables_to_make[key])):
+            all_queries += create_table_w_select(
+                key + "_" + str(q_index),
+                tables_to_make[key][q_index],
+                temp_prefix=" TEMP ",
+            )
+            if (
+                q_index == 1
+                and len(tables_to_make[key]) > 1
+            ):
+                all_queries += outer_join_queries(
+                    key + "_temp_" + str(q_index),
+                    key + "_" + str(q_index - 1),
+                    key + "_" + str(q_index),
+                    curr_schema,
+                )
+            elif (
+                q_index > 1
+                and q_index < len(tables_to_make[key]) - 1
+            ):
+                all_queries += outer_join_queries(
+                    key + "_temp_" + str(q_index),
+                    key + "_temp_" + str(q_index - 1),
+                    key + "_" + str(q_index),
+                    curr_schema,
+                )
+            elif q_index == len(tables_to_make[key]) - 1:
+                all_queries += final_outer_join_query(
+                    key + "_temp_" + str(q_index - 1),
+                    key + "_" + str(q_index),
+                    curr_schema,
+                    key,
+                )
+    return all_queries
+
+
+def __schema_in_key(key: str, schema: set[str]) -> bool:
+    """Checks if the schema is in the key.
+
+    Args:
+        key (str): The key to check
+        schema (list[set[str]]): The schema to check
+
+    Returns:
+        bool: True if the schema is in the key, False otherwise.
+    """
+    split_schema_check = key.split("_schema_")[-1]
+    return (
+        "schema_" + split_schema_check
+        == __encode_schema_name(str(sorted(schema)))
+    )
 
 
 def __make_group_by(
@@ -94,12 +155,7 @@ def __make_group_by(
                 )
             queries_seen_count += 1
         for schema in schemas:
-            split_schema_check = key.split("_schema_")[-1]
-            if (
-                "schema_" + split_schema_check
-                == __encode_schema_name(str(sorted(schema)))
-                or len(schemas) == 1
-            ):
+            if __schema_in_key(key, schema):
                 all_queries += countKCountsTogether(
                     schema, key, "prep_" + key
                 )
@@ -110,14 +166,17 @@ def delta_minus_query(
     part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
-) -> str:
+) -> tuple[str, str]:
     """Returns the delta minus query.
 
     Args:
         part (CompValue): Current part of the query.
+        schemas1 (list[set[str]]): List of schemas for the first child part query.
+        schemas2 (list[set[str]]): List of schemas for the second child part query.
 
     Returns:
         str: Query string for the delta minus operation.
+        One containing the group by method and one containing the join method.
     """
     if len(schemas1) == 0:
         raise ValueError("Schema 1 is empty")
@@ -153,4 +212,9 @@ def delta_minus_query(
         schemas1,
     )
 
-    return delta_diff_queries_str
+    delta_diff_join_queries: str = __make_join(
+        delta_diff_queries,
+        schemas1,
+    )
+
+    return delta_diff_queries_str, delta_diff_join_queries
