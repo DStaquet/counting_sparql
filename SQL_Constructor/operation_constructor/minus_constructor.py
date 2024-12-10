@@ -69,6 +69,8 @@ def __make_join(
             for schema in schemas:
                 if __schema_in_key(key, schema):
                     curr_schema = schema
+
+        last_made_temp_query: str = ""
         for q_index in range(len(tables_to_make[key])):
             all_queries += create_table_w_select(
                 key + "_" + str(q_index),
@@ -78,6 +80,7 @@ def __make_join(
             if (
                 q_index == 1
                 and len(tables_to_make[key]) > 1
+                and q_index < len(tables_to_make[key]) - 1
             ):
                 all_queries += outer_join_queries(
                     key + "_temp_" + str(q_index),
@@ -85,22 +88,32 @@ def __make_join(
                     key + "_" + str(q_index),
                     curr_schema,
                 )
+                last_made_temp_query = (
+                    key + "_temp_" + str(q_index)
+                )
             elif (
                 q_index > 1
                 and q_index < len(tables_to_make[key]) - 1
             ):
                 all_queries += outer_join_queries(
                     key + "_temp_" + str(q_index),
-                    key + "_temp_" + str(q_index - 1),
+                    last_made_temp_query,
                     key + "_" + str(q_index),
                     curr_schema,
                 )
+                last_made_temp_query: str = (
+                    key + "_temp_" + str(q_index)
+                )
             elif q_index == len(tables_to_make[key]) - 1:
                 all_queries += final_outer_join_query(
-                    key + "_temp_" + str(q_index - 1),
+                    last_made_temp_query,
                     key + "_" + str(q_index),
                     curr_schema,
                     key,
+                )
+            else:
+                last_made_temp_query = (
+                    key + "_" + str(q_index)
                 )
     return all_queries
 
@@ -155,7 +168,10 @@ def __make_group_by(
                 )
             queries_seen_count += 1
         for schema in schemas:
-            if __schema_in_key(key, schema):
+            if (
+                __schema_in_key(key, schema)
+                or len(schemas) == 1
+            ):
                 all_queries += countKCountsTogether(
                     schema, key, "prep_" + key
                 )
@@ -211,6 +227,7 @@ def delta_minus_query(
         delta_diff_queries,
         schemas1,
     )
+    print(delta_diff_queries_str)
 
     delta_diff_join_queries: str = __make_join(
         delta_diff_queries,
