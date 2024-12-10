@@ -3,6 +3,8 @@ from SQL_Constructor.base_constructor import (
     __encode_table_name,
     create_table_w_select,
     insert_into_w_select,
+    combine_dict_queries,
+    add_table_to_dict,
 )
 
 
@@ -142,55 +144,11 @@ def __delta_on_negate_part(
         curr_table_name = (
             new_table_name + schema_both_suffix
         )
-        diff_queries = __add_table_to_dict(
+        diff_queries = add_table_to_dict(
             curr_table_name, curr_diff_query, diff_queries
         )
 
     return diff_queries
-
-
-def __add_table_to_dict(
-    new_table_name: str,
-    query: str,
-    diff_queries: dict[str, list[str]],
-) -> dict[str, list[str]]:
-    """Adds a table to the dictionary of queries.
-
-    Args:
-        new_table_name (str): Key of the dictionary.
-        query (str): Query to add.
-        diff_queries (dict[str, list[str]]): Dictionary containing all queries
-        related to the table name.
-
-    Returns:
-        dict[str, list[str]]: Dictionary with table added.
-    """
-    if new_table_name in diff_queries:
-        diff_queries[new_table_name].append(query)
-    else:
-        diff_queries[new_table_name] = [query]
-    return diff_queries
-
-
-def __combine_dict_queries(
-    diff_queries1: dict[str, list[str]],
-    diff_queries2: dict[str, list[str]],
-) -> dict[str, list[str]]:
-    """Combines two dictionaries of queries.
-
-    Args:
-        diff_queries1 (dict[str, list[str]]): First dictionary of queries.
-        diff_queries2 (dict[str, list[str]]): Second dictionary of queries.
-
-    Returns:
-        str: Combined dictionary of queries.
-    """
-    for key, value in diff_queries2.items():
-        if key in diff_queries1:
-            diff_queries1[key] += value
-        else:
-            diff_queries1[key] = value
-    return diff_queries1
 
 
 def delta_diff_sub(
@@ -237,7 +195,7 @@ def delta_diff_sub(
         )
     )
 
-    return __combine_dict_queries(
+    return combine_dict_queries(
         diff_delta_first_part, diff_delta_second_part
     )
 

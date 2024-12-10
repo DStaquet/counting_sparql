@@ -2,6 +2,8 @@ from SQL_Constructor.base_constructor import (
     __encode_schema_name,
     __encode_table_name,
     countKCountsTogether,
+    make_join,
+    create_table_w_select,
 )
 from SQL_Constructor.operation_constructor.diff_constructor import (
     delta_diff_sub,
@@ -11,9 +13,12 @@ from SQL_Constructor.operation_constructor.diff_constructor import (
 from rdflib.plugins.sparql.parserutils import CompValue
 
 from SQL_Constructor.operation_constructor.join_constructor import (
-    delta_join_sub,
     join_query,
     delta_join_queries_part_func,
+)
+from SQL_Constructor.base_constructor import (
+    make_group_by,
+    make_join,
 )
 
 
@@ -72,7 +77,7 @@ def __delta_diff_part(
     if len(schemas1) == 0:
         raise ValueError("No schemas to diff on.")
     elif len(schemas1) == 1:
-        diff_queries: str = delta_diff_sub(
+        diff_queries: dict[str, list[str]] = delta_diff_sub(
             part,
             schemas1,
             schemas2,
@@ -85,21 +90,24 @@ def __delta_diff_part(
             append_schemas=False,
         )
     else:
-        diff_queries: str = delta_diff_sub(
+        diff_queries: dict[str, list[str]] = delta_diff_sub(
             part,
             schemas1,
             schemas2,
         )
 
-    diff_queries += countKCountsTogether(
-        part,
+    diff_queries_str: str = make_group_by(
+        diff_queries, schemas1
+    )
+
+    """diff_queries_str += countKCountsTogether(
         schemas1,
         to_table="delta_" + __encode_table_name(part),
         from_table="prep_delta_"
         + __encode_table_name(part),
-    )
+    )"""
 
-    return diff_queries
+    return diff_queries_str
 
 
 def delta_left_join_query(
@@ -131,19 +139,8 @@ def delta_left_join_query(
         leftjoin_delta_join_part + leftjoin_diff_delta_part
     )
 
-    """leftjoin_join_delta_query: str = delta_join_sub(
-        part.p1, part.p2, part
-    )
-    leftjoin_minus_delta_query: str = delta_diff_sub(part)
-
-    return (
-        leftjoin_join_delta_query
-        + leftjoin_minus_delta_query
-    )"""
-
 
 def leftjoin_schemas(
-    part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
 ) -> list[set[str]]:
@@ -203,43 +200,6 @@ def __join_part(
             __encode_table_name(part),
         )
 
-    """join_query: str = (
-        "INSERT INTO " + __encode_table_name(part) + "\n"
-    )
-    join_query += "SELECT "
-    join_query += __left_join_select_clause(part)
-    join_query += ", r1.k_count * r2.k_count as k_count\n"
-    join_query += "FROM "
-    join_query += __encode_table_name(part.p1)
-    join_query += " AS r1 JOIN "
-    join_query += __encode_table_name(part.p2)
-    join_query += " AS r2 "
-    if part.p1._vars.intersection(part.p2._vars) != set():
-        join_query += "ON "
-        join_query += " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in sorted(
-                part.p1._vars.intersection(part.p2._vars)
-            )
-        )
-    join_query += "\nON CONFLICT DO\nUPDATE SET\n\t"
-    join_query += (
-        "k_count = EXCLUDED.k_count + k_count\n"
-        + "WHERE "
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(part.p1._vars)
-        )
-        + " AND ".join(
-            f"{var} = EXCLUDED.{var}"
-            for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
-            )
-        )
-    )
-    join_query += ";\n"
-    return join_query"""
-
 
 def left_join_query(
     part: CompValue,
@@ -257,8 +217,18 @@ def left_join_query(
     leftjoin_join: str = __join_part(
         part, schemas1, schemas2
     )
-    leftjoin_diff: str = diff_query_sub(
-        part, schemas1, schemas2
+    leftjoin_diff_dict: dict[str, list[str]] = (
+        diff_query_sub(part, schemas1, schemas2)
     )
+
+    leftjoin_diff: str = ""
+    for key in leftjoin_diff_dict:
+        if len(leftjoin_diff_dict[key]) > 1:
+            raise ValueError(
+                "Left join diff should not have multiple queries."
+            )
+        leftjoin_diff += create_table_w_select(
+            key, leftjoin_diff_dict[key][0]
+        )
 
     return leftjoin_join + leftjoin_diff

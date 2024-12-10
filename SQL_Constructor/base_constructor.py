@@ -145,6 +145,181 @@ def countKCountsTogether(
     return create_table_w_select(to_table, curr_count_query)
 
 
+def schema_in_key(key: str, schema: set[str]) -> bool:
+    """Checks if the schema is in the key.
+
+    Args:
+        key (str): The key to check
+        schema (list[set[str]]): The schema to check
+
+    Returns:
+        bool: True if the schema is in the key, False otherwise.
+    """
+    split_schema_check = key.split("_schema_")[-1]
+    return (
+        "schema_" + split_schema_check
+        == __encode_schema_name(str(sorted(schema)))
+    )
+
+
+def make_join(
+    tables_to_make: dict[str, list[str]],
+    schemas: list[set[str]],
+) -> str:
+    """Generates the join query string.
+
+    Args:
+        tables_to_make (dict[str, list[set[str]]]): Dictionary with key
+        being to table to write to and value being all queries that need
+        to be unioned in the table.
+
+    Returns:
+        str: Minus query string with outer join union.
+    """
+    all_queries: str = ""
+    for key in tables_to_make:
+        if len(schemas) == 1:
+            curr_schema = schemas[0]
+        else:
+            for schema in schemas:
+                if schema_in_key(key, schema):
+                    curr_schema = schema
+
+        last_made_temp_query: str = ""
+        for q_index in range(len(tables_to_make[key])):
+            all_queries += create_table_w_select(
+                key + "_" + str(q_index),
+                tables_to_make[key][q_index],
+                temp_prefix=" TEMP ",
+            )
+            if (
+                q_index == 1
+                and len(tables_to_make[key]) > 1
+                and q_index < len(tables_to_make[key]) - 1
+            ):
+                all_queries += outer_join_queries(
+                    key + "_temp_" + str(q_index),
+                    key + "_" + str(q_index - 1),
+                    key + "_" + str(q_index),
+                    curr_schema,
+                )
+                last_made_temp_query = (
+                    key + "_temp_" + str(q_index)
+                )
+            elif (
+                q_index > 1
+                and q_index < len(tables_to_make[key]) - 1
+            ):
+                all_queries += outer_join_queries(
+                    key + "_temp_" + str(q_index),
+                    last_made_temp_query,
+                    key + "_" + str(q_index),
+                    curr_schema,
+                )
+                last_made_temp_query: str = (
+                    key + "_temp_" + str(q_index)
+                )
+            elif q_index == len(tables_to_make[key]) - 1:
+                all_queries += final_outer_join_query(
+                    last_made_temp_query,
+                    key + "_" + str(q_index),
+                    curr_schema,
+                    key,
+                )
+            else:
+                last_made_temp_query = (
+                    key + "_" + str(q_index)
+                )
+    return all_queries
+
+
+def make_group_by(
+    tables_to_make: dict[str, list[str]],
+    schemas: list[set[str]],
+) -> str:
+    """Generates the group by query string.
+
+    Args:
+        tables_to_make (dict[str, list[set[str]]]): Dictionary with key
+        being to table to write to and value being all queries that need
+        to be unioned in the table.
+        schemas (list[set[Variable]]): List of schemas
+        to use for group by
+
+    Returns:
+        str: Minus query string with group by.
+    """
+    all_queries: str = ""
+    for key in tables_to_make:
+        queries_seen_count = 0
+        for query in tables_to_make[key]:
+            if queries_seen_count == 0:
+                all_queries += create_table_w_select(
+                    "prep_" + key,
+                    query,
+                    temp_prefix=" TEMP ",
+                )
+            else:
+                all_queries += insert_into_w_select(
+                    "prep_" + key,
+                    query,
+                )
+            queries_seen_count += 1
+        for schema in schemas:
+            if (
+                schema_in_key(key, schema)
+                or len(schemas) == 1
+            ):
+                all_queries += countKCountsTogether(
+                    schema, key, "prep_" + key
+                )
+    return all_queries
+
+
+def combine_dict_queries(
+    diff_queries1: dict[str, list[str]],
+    diff_queries2: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Combines two dictionaries of queries.
+
+    Args:
+        diff_queries1 (dict[str, list[str]]): First dictionary of queries.
+        diff_queries2 (dict[str, list[str]]): Second dictionary of queries.
+
+    Returns:
+        str: Combined dictionary of queries.
+    """
+    for key, value in diff_queries2.items():
+        if key in diff_queries1:
+            diff_queries1[key] += value
+        else:
+            diff_queries1[key] = value
+    return diff_queries1
+
+
+def add_table_to_dict(
+    new_table_name: str,
+    query: str,
+    dict_queries: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Adds a table to the dictionary of queries.
+
+    Args:
+        new_table_name (str): Key of the dictionary.
+        query (str): Query to add.
+        dict_queries (dict[str, list[str]]): Dictionary containing all queries
+        related to the table name.
+
+    Returns:
+        dict[str, list[str]]: Dictionary with table added.
+    """
+    if new_table_name in dict_queries:
+        dict_queries[new_table_name].append(query)
+    else:
+        dict_queries[new_table_name] = [query]
+    return dict_queries
+
+
 def __create_vars(variables: set) -> str:
     var_str: str = ""
     for var in sorted(variables):

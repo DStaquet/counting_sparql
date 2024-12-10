@@ -145,7 +145,7 @@ def build_increm_queries(
             )
             part_schemas = schemas1
         case "Join":
-            join_query: str = (
+            join_query, join_query_outer_join = (
                 SQL_join.delta_join_queries_part_func(
                     part, schemas1, schemas2
                 )
@@ -156,8 +156,15 @@ def build_increm_queries(
                 "delta_"
                 + base_constructor.get_table_name(part),
             )
+            write_query_to_output_dir(
+                output_dir,
+                join_query_outer_join,
+                "delta_"
+                + base_constructor.get_table_name(part)
+                + "_outer_join",
+            )
             part_schemas = SQL_join.join_schemas(
-                part, schemas1, schemas2
+                schemas1, schemas2
             )
         case "Project":
             use_PV = True
@@ -190,7 +197,7 @@ def build_increm_queries(
                 filename_prefix="delta_",
             )
             part_schemas = SQL_leftjoin.leftjoin_schemas(
-                part, schemas1, schemas2
+                schemas1, schemas2
             )
         case "Minus":
             minus_query, minus_query_join = (
@@ -335,24 +342,28 @@ def build_queries(
                 base_constructor.get_table_name(part),
             )
             return SQL_leftjoin.leftjoin_schemas(
-                part, schemas1, schemas2
+                schemas1, schemas2
             )
         case "Join":
-            join_query: str = SQL_join.join_query(
-                part,
-                base_constructor.get_table_name(part.p1),
-                base_constructor.get_table_name(part.p2),
-                schemas1,
-                schemas2,
+            join_query: str = (
+                SQL_join.join_query_str_constr(
+                    part,
+                    base_constructor.get_table_name(
+                        part.p1
+                    ),
+                    base_constructor.get_table_name(
+                        part.p2
+                    ),
+                    schemas1,
+                    schemas2,
+                )
             )
             write_query_to_output_dir(
                 output_dir,
                 join_query,
                 base_constructor.get_table_name(part),
             )
-            return SQL_join.join_schemas(
-                part, schemas1, schemas2
-            )
+            return SQL_join.join_schemas(schemas1, schemas2)
         case "Minus":
             minus_query: str = SQL_minus.minus_query(
                 part, schemas1, schemas2

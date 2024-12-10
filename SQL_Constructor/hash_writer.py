@@ -81,7 +81,7 @@ def write_hash_schemas(
                         "Schemas2 cannot be None for a left join"
                     )
                 leftjoin_schema = leftjoin_schemas(
-                    part, schemas1, schemas2
+                    schemas1, schemas2
                 )
                 hash_file.write(
                     '"schema_'
@@ -102,7 +102,7 @@ def write_hash_schemas(
                         "Schemas2 cannot be None for a join"
                     )
                 join_schema = join_schemas(
-                    part, schemas1, schemas2
+                    schemas1, schemas2
                 )
                 hash_file.write(
                     '"schema_'

@@ -1,12 +1,9 @@
 from SQL_Constructor.base_constructor import (
     __encode_table_name,
-    __encode_schema_name,
-    countKCountsTogether,
     create_table_w_select,
-    insert_into_w_select,
-    outer_join_queries,
-    final_outer_join_query,
 )
+from SQL_Constructor.base_constructor import make_join
+from SQL_Constructor.base_constructor import make_group_by
 from SQL_Constructor.operation_constructor.diff_constructor import (
     diff_query_sub,
     delta_diff_sub,
@@ -45,137 +42,6 @@ def minus_query(
         )
 
     return all_minus_queries
-
-
-def __make_join(
-    tables_to_make: dict[str, list[str]],
-    schemas: list[set[str]],
-) -> str:
-    """Generates the join query string.
-
-    Args:
-        tables_to_make (dict[str, list[set[str]]]): Dictionary with key
-        being to table to write to and value being all queries that need
-        to be unioned in the table.
-
-    Returns:
-        str: Minus query string with outer join union.
-    """
-    all_queries: str = ""
-    for key in tables_to_make:
-        if len(schemas) == 1:
-            curr_schema = schemas[0]
-        else:
-            for schema in schemas:
-                if __schema_in_key(key, schema):
-                    curr_schema = schema
-
-        last_made_temp_query: str = ""
-        for q_index in range(len(tables_to_make[key])):
-            all_queries += create_table_w_select(
-                key + "_" + str(q_index),
-                tables_to_make[key][q_index],
-                temp_prefix=" TEMP ",
-            )
-            if (
-                q_index == 1
-                and len(tables_to_make[key]) > 1
-                and q_index < len(tables_to_make[key]) - 1
-            ):
-                all_queries += outer_join_queries(
-                    key + "_temp_" + str(q_index),
-                    key + "_" + str(q_index - 1),
-                    key + "_" + str(q_index),
-                    curr_schema,
-                )
-                last_made_temp_query = (
-                    key + "_temp_" + str(q_index)
-                )
-            elif (
-                q_index > 1
-                and q_index < len(tables_to_make[key]) - 1
-            ):
-                all_queries += outer_join_queries(
-                    key + "_temp_" + str(q_index),
-                    last_made_temp_query,
-                    key + "_" + str(q_index),
-                    curr_schema,
-                )
-                last_made_temp_query: str = (
-                    key + "_temp_" + str(q_index)
-                )
-            elif q_index == len(tables_to_make[key]) - 1:
-                all_queries += final_outer_join_query(
-                    last_made_temp_query,
-                    key + "_" + str(q_index),
-                    curr_schema,
-                    key,
-                )
-            else:
-                last_made_temp_query = (
-                    key + "_" + str(q_index)
-                )
-    return all_queries
-
-
-def __schema_in_key(key: str, schema: set[str]) -> bool:
-    """Checks if the schema is in the key.
-
-    Args:
-        key (str): The key to check
-        schema (list[set[str]]): The schema to check
-
-    Returns:
-        bool: True if the schema is in the key, False otherwise.
-    """
-    split_schema_check = key.split("_schema_")[-1]
-    return (
-        "schema_" + split_schema_check
-        == __encode_schema_name(str(sorted(schema)))
-    )
-
-
-def __make_group_by(
-    tables_to_make: dict[str, list[str]],
-    schemas: list[set[str]],
-) -> str:
-    """Generates the group by query string.
-
-    Args:
-        tables_to_make (dict[str, list[set[str]]]): Dictionary with key
-        being to table to write to and value being all queries that need
-        to be unioned in the table.
-        schemas (list[set[Variable]]): List of schemas
-        to use for group by
-
-    Returns:
-        str: Minus query string with group by.
-    """
-    all_queries: str = ""
-    for key in tables_to_make:
-        queries_seen_count = 0
-        for query in tables_to_make[key]:
-            if queries_seen_count == 0:
-                all_queries += create_table_w_select(
-                    "prep_" + key,
-                    query,
-                    temp_prefix=" TEMP ",
-                )
-            else:
-                all_queries += insert_into_w_select(
-                    "prep_" + key,
-                    query,
-                )
-            queries_seen_count += 1
-        for schema in schemas:
-            if (
-                __schema_in_key(key, schema)
-                or len(schemas) == 1
-            ):
-                all_queries += countKCountsTogether(
-                    schema, key, "prep_" + key
-                )
-    return all_queries
 
 
 def delta_minus_query(
@@ -223,13 +89,12 @@ def delta_minus_query(
         "delta_prep_" + __encode_table_name(part),
     )"""
 
-    delta_diff_queries_str: str = __make_group_by(
+    delta_diff_queries_str: str = make_group_by(
         delta_diff_queries,
         schemas1,
     )
-    print(delta_diff_queries_str)
 
-    delta_diff_join_queries: str = __make_join(
+    delta_diff_join_queries: str = make_join(
         delta_diff_queries,
         schemas1,
     )
