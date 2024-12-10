@@ -23,7 +23,15 @@ from sqlparse import format
             "SQL_Constructor/operation_constructor/tests/queries/projection/project_1_schema.sparql",
             "SQL_Constructor/operation_constructor/tests/queries/projection/project_1_schema.sql",
             [{Variable("x"), Variable("y")}],
-        )
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/projection/project_2_schema.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/projection/project_2_schema.sql",
+            [
+                {Variable("x"), Variable("y")},
+                {Variable("x"), Variable("z")},
+            ],
+        ),
     ],
 )
 def test_project_query(
@@ -42,11 +50,23 @@ def test_project_query(
 
     project_queries: str = ""
     for project in reversed(project_leaves):
-        project_queries += format(
-            project_query(project, schemas),
-            reindent=True,
-            uppercase=True,
+        project_query_tuple = project_query(
+            project, schemas
         )
+        if isinstance(project_query_tuple, tuple):
+            project_query_curr: str = project_query_tuple[0]
+            project_queries_formatted: str = format(
+                project_query_curr,
+                reindent=True,
+                keyword_case="upper",
+            )
+            project_queries += project_queries_formatted
+        else:
+            project_queries += format(
+                project_query_tuple,
+                reindent=True,
+                keyword_case="upper",
+            )
 
     with open(expected_sql, "r") as f:
         expected = f.read()
@@ -61,7 +81,15 @@ def test_project_query(
             "SQL_Constructor/operation_constructor/tests/queries/projection/project_1_schema.sparql",
             "SQL_Constructor/operation_constructor/tests/queries/projection/project_1_schema_delta.sql",
             [{Variable("x"), Variable("y")}],
-        )
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/projection/project_2_schema.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/projection/project_2_schema_delta.sql",
+            [
+                {Variable("x"), Variable("y")},
+                {Variable("x"), Variable("z")},
+            ],
+        ),
     ],
 )
 def test_delta_project_query(
@@ -80,11 +108,23 @@ def test_delta_project_query(
 
     project_queries: str = ""
     for project in reversed(project_leaves):
-        project_queries += format(
-            delta_project_query(project, schemas),
-            reindent=True,
-            uppercase=True,
+        project_query_tuple = delta_project_query(
+            project, schemas
         )
+        if isinstance(project_query_tuple, tuple):
+            project_query_curr: str = project_query_tuple[0]
+            project_queries_formatted: str = format(
+                project_query_curr,
+                reindent=True,
+                keyword_case="upper",
+            )
+            project_queries += project_queries_formatted
+        else:
+            project_queries += format(
+                project_query_tuple,
+                reindent=True,
+                keyword_case="upper",
+            )
 
     with open(expected_sql, "r") as f:
         expected = f.read()
