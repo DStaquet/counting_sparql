@@ -91,6 +91,7 @@ def __union_query_sub_same_schema(
 def __union_query_sub(
     part: CompValue,
     schema1: set[str],
+    from_table: str,
     add_schemas: bool = False,
     is_delta: bool = False,
 ) -> str:
@@ -113,21 +114,10 @@ def __union_query_sub(
         + ", k_count\n"
         + "FROM "
         + delta_prefix
-        + __encode_table_name(part.p1)
+        + from_table
         + sch1_suffix
         + ";\n"
     )
-
-    """right_union_query: str = (
-        "SELECT "
-        + ", ".join(f"{var}" for var in sorted(schema2))
-        + ", k_count\n"
-        + "FROM "
-        + delta_prefix
-        + __encode_table_name(part.p2)
-        + sch2_suffix
-        + ";\n"
-    )"""
 
     union_query = create_table_w_select(
         delta_prefix
@@ -136,14 +126,6 @@ def __union_query_sub(
         + __encode_schema_name(str(sorted(schema1))),
         left_union_query,
     )
-
-    """union_query += create_table_w_select(
-        delta_prefix
-        + __encode_table_name(part)
-        + "_"
-        + __encode_schema_name(str(sorted(schema2))),
-        right_union_query,
-    )"""
 
     return union_query
 
@@ -177,10 +159,12 @@ def union_query(
             return __union_query_sub(
                 part,
                 schemas1[0],
+                __encode_table_name(part.p1),
                 is_delta=is_delta,
             ) + __union_query_sub(
                 part,
                 schemas2[0],
+                __encode_table_name(part.p2),
                 is_delta=is_delta,
             )
     else:
@@ -207,6 +191,17 @@ def union_query(
             all_queries += __union_query_sub(
                 part,
                 sch1,
+                __encode_table_name(part.p1),
+                True,
+                is_delta=is_delta,
+            )
+        for sch2 in schemas2:
+            if sch2 in already_seen:
+                continue
+            all_queries += __union_query_sub(
+                part,
+                sch2,
+                __encode_table_name(part.p2),
                 True,
                 is_delta=is_delta,
             )
