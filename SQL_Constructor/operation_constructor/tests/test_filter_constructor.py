@@ -1,0 +1,87 @@
+from SQL_Constructor.operation_constructor.filter_constructor import (
+    filter_query,
+)
+from SQL_Constructor.operation_constructor.tests.base_functions import (
+    reset_seed,
+    all_type_leaves,
+)
+from incremental_query_parser import (
+    get_query_object,
+    readQueryFile,
+)
+
+from rdflib.term import Variable
+from pytest import mark
+from sqlparse import format
+
+
+@mark.parametrize(
+    "query_file,expected_sql,expected_delta,schemas",
+    [
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_1_schema.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_1_schema.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_1_schema_delta.sql",
+            [{Variable("x"), Variable("z")}],
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_2_schemas.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_2_schemas.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_2_schemas_delta.sql",
+            [
+                {Variable("x"), Variable("z")},
+                {Variable("x"), Variable("y")},
+            ],
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_1_schema_with.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_1_schema_with.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/filter/filter_1_schema_with_delta.sql",
+            [{Variable("x"), Variable("y")}],
+        ),
+    ],
+)
+def test_filter_query(
+    query_file: str,
+    expected_sql: str,
+    expected_delta: str,
+    schemas: list[set[str]],
+) -> None:
+    """Tests if the filter_query function works correctly.
+
+    Args:
+        query_file (str): Query file to read query from.
+        expected_sql (str): SQL file that's expected
+    """
+    reset_seed()
+
+    part = get_query_object(
+        readQueryFile(query_file)
+    ).algebra
+
+    # Find only Filter patterns
+    filter_leaves = all_type_leaves(part, "Filter")
+
+    filter_queries: str = ""
+    delta_filter_queries: str = ""
+    for filter_leaf in reversed(filter_leaves):
+        filter_queries += format(
+            filter_query(filter_leaf, schemas),
+            reindent=True,
+            uppercase=True,
+        )
+        delta_filter_queries += format(
+            filter_query(
+                filter_leaf, schemas, is_delta=True
+            ),
+            reindent=True,
+            uppercase=True,
+        )
+
+    with open(expected_sql) as f:
+        sql_queries = f.read()
+    with open(expected_delta) as f:
+        delta_sql_queries = f.read()
+
+    assert filter_queries == sql_queries
+    assert delta_filter_queries == delta_sql_queries

@@ -1,0 +1,6 @@
+CREATE TABLE delta_Filter_5867829970618114298 AS
+SELECT x,
+       y,
+       k_count
+FROM delta_BGP_4313253051102226119
+WHERE x != y;

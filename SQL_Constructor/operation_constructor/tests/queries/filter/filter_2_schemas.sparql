@@ -3,6 +3,8 @@ PREFIX edge: <http://example.org/edges/>
 select ?x ?z
 where {
     {
+        {?x edge:link ?z .}
+        UNION
         {?x edge:link ?y .}
     }
     FILTER (?x != ?y)
