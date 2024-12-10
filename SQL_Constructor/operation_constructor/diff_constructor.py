@@ -17,6 +17,7 @@ def __delta_on_negate_part(
     schemas2: list[set[str]],
     new_table_name: str | None = None,
     minus: bool = False,
+    append_schemas: bool = False,
 ) -> dict[str, list[str]]:
     """Generates the delta on negate part of the left join query.
 
@@ -128,7 +129,10 @@ def __delta_on_negate_part(
             + ";\n"
         )
 
-        if __check_if_same_diff_schema(schemas1, schemas2):
+        if (
+            __check_if_same_diff_schema(schemas1, schemas2)
+            and not append_schemas
+        ):
             schema_both_suffix: str = ""
         else:
             schema_both_suffix: str = (
@@ -192,6 +196,7 @@ def delta_diff_sub(
             schemas2,
             delta_table_name,
             minus=minus,
+            append_schemas=append_schemas,
         )
     )
 

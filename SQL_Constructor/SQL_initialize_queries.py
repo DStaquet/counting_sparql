@@ -3,7 +3,6 @@ from SQL_Constructor import base_constructor
 from typing import Union
 
 import sqlparse
-import json
 
 import SQL_Constructor.hash_writer
 from SQL_Constructor.operation_constructor import (

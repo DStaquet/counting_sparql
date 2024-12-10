@@ -22,7 +22,7 @@ from SQL_Constructor.base_constructor import (
 )
 
 
-def __delta_join_part(
+'''def __delta_join_part(
     part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
@@ -56,13 +56,14 @@ def __delta_join_part(
             part,
             schemas1,
             schemas2,
-        )
+        )'''
 
 
 def __delta_diff_part(
     part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
+    is_leftjoin_part: bool = False,
 ) -> str:
     """Generates the delta diff part of the left join query.
 
@@ -81,13 +82,7 @@ def __delta_diff_part(
             part,
             schemas1,
             schemas2,
-            new_table_name="prep_delta_"
-            + __encode_table_name(part)
-            + "_"
-            + __encode_schema_name(
-                str(sorted(schemas1[0])),
-            ),
-            append_schemas=False,
+            append_schemas=is_leftjoin_part,
         )
     else:
         diff_queries: dict[str, list[str]] = delta_diff_sub(
@@ -95,6 +90,8 @@ def __delta_diff_part(
             schemas1,
             schemas2,
         )
+
+    print(diff_queries, schemas1, schemas2)
 
     diff_queries_str: str = make_group_by(
         diff_queries, schemas1
@@ -117,14 +114,14 @@ def delta_left_join_query(
 ) -> str:
     # First delta rules of the left join
     # Join deltas
-    leftjoin_delta_join_part: str = (
-        delta_join_queries_part_func(
-            part,
-            schemas1,
-            schemas2,
-            new_table_name="delta_"
-            + __encode_table_name(part),
-        )
+    (
+        leftjoin_delta_join_part,
+        leftjoin_delta_join_part_outer_join,
+    ) = delta_join_queries_part_func(
+        part,
+        schemas1,
+        schemas2,
+        new_table_name="delta_" + __encode_table_name(part),
     )
 
     # Second part of the leftjoin delta
@@ -133,6 +130,7 @@ def delta_left_join_query(
         part,
         schemas1,
         schemas2,
+        is_leftjoin_part=True,
     )
 
     return (
@@ -166,7 +164,7 @@ def __join_part(
     part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
-) -> str:
+) -> dict[str, list[str]]:
     """Generates the join query.
 
     Args:
@@ -201,6 +199,46 @@ def __join_part(
         )
 
 
+def __leftJoinWithCreate(
+    leftjoin_join_dict: dict[str, list[str]],
+    leftjoin_diff_dict: dict[str, list[str]],
+) -> str:
+    """Generates the leftjoin query.
+
+    Args:
+        leftjoin_join_dict (dict[str, list[str]]): Dictionary containing the join
+        queries of the leftjoin
+        leftjoin_diff_dict (dict[str, list[str]]): Dictionary containing the diff
+        queries of the leftjoin
+
+    Returns:
+        str: String of the leftjoin queries
+    """
+    # Join queries
+    leftjoin_join: str = ""
+    for key in leftjoin_join_dict:
+        if len(leftjoin_join_dict[key]) > 1:
+            raise ValueError(
+                "Left join should not have multiple queries."
+            )
+        leftjoin_join += create_table_w_select(
+            key, leftjoin_join_dict[key][0]
+        )
+
+    # Diff queries
+    leftjoin_diff: str = ""
+    for key in leftjoin_diff_dict:
+        if len(leftjoin_diff_dict[key]) > 1:
+            raise ValueError(
+                "Left join diff should not have multiple queries."
+            )
+        leftjoin_diff += create_table_w_select(
+            key, leftjoin_diff_dict[key][0]
+        )
+
+    return leftjoin_join + leftjoin_diff
+
+
 def left_join_query(
     part: CompValue,
     schemas1: list[set[str]] = [],
@@ -214,21 +252,13 @@ def left_join_query(
     Returns:
         str: Query string for the leftjoin operation.
     """
-    leftjoin_join: str = __join_part(
+    leftjoin_join_dict: dict[str, list[str]] = __join_part(
         part, schemas1, schemas2
     )
     leftjoin_diff_dict: dict[str, list[str]] = (
         diff_query_sub(part, schemas1, schemas2)
     )
 
-    leftjoin_diff: str = ""
-    for key in leftjoin_diff_dict:
-        if len(leftjoin_diff_dict[key]) > 1:
-            raise ValueError(
-                "Left join diff should not have multiple queries."
-            )
-        leftjoin_diff += create_table_w_select(
-            key, leftjoin_diff_dict[key][0]
-        )
-
-    return leftjoin_join + leftjoin_diff
+    return __leftJoinWithCreate(
+        leftjoin_join_dict, leftjoin_diff_dict
+    )
