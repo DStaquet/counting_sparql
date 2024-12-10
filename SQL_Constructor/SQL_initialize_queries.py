@@ -184,7 +184,7 @@ def build_increm_queries(
                 )
             )
         case "LeftJoin":
-            left_join_query: str = (
+            left_join_query, left_join_query_outer_join = (
                 SQL_leftjoin.delta_left_join_query(
                     part, schemas1, schemas2
                 )
@@ -193,6 +193,13 @@ def build_increm_queries(
                 output_dir,
                 left_join_query,
                 base_constructor.get_table_name(part),
+                filename_prefix="delta_",
+            )
+            write_query_to_output_dir(
+                output_dir,
+                left_join_query_outer_join,
+                base_constructor.get_table_name(part)
+                + "_outer_join",
                 filename_prefix="delta_",
             )
             part_schemas = SQL_leftjoin.leftjoin_schemas(

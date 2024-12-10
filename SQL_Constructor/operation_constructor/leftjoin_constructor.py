@@ -64,7 +64,7 @@ def __delta_diff_part(
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     is_leftjoin_part: bool = False,
-) -> str:
+) -> tuple[str, str]:
     """Generates the delta diff part of the left join query.
 
     Args:
@@ -91,9 +91,11 @@ def __delta_diff_part(
             schemas2,
         )
 
-    print(diff_queries, schemas1, schemas2)
-
     diff_queries_str: str = make_group_by(
+        diff_queries, schemas1
+    )
+
+    diff_queries_outer_join: str = make_join(
         diff_queries, schemas1
     )
 
@@ -104,14 +106,24 @@ def __delta_diff_part(
         + __encode_table_name(part),
     )"""
 
-    return diff_queries_str
+    return diff_queries_str, diff_queries_outer_join
 
 
 def delta_left_join_query(
     part: CompValue,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
-) -> str:
+) -> tuple[str, str]:
+    """Generates the leftjoin query strings
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set[str]]): Schemas of the first child of the part
+        schemas2 (list[set[str]]): Schemas of the second child of the part
+
+    Returns:
+        tuple[str, str]: Tuple containing the leftjoin query strings
+    """
     # First delta rules of the left join
     # Join deltas
     (
@@ -126,7 +138,10 @@ def delta_left_join_query(
 
     # Second part of the leftjoin delta
     # Diff deltas
-    leftjoin_diff_delta_part: str = __delta_diff_part(
+    (
+        leftjoin_diff_delta_part,
+        leftjoin_diff_delta_part_outer_join,
+    ) = __delta_diff_part(
         part,
         schemas1,
         schemas2,
@@ -134,7 +149,9 @@ def delta_left_join_query(
     )
 
     return (
-        leftjoin_delta_join_part + leftjoin_diff_delta_part
+        leftjoin_delta_join_part + leftjoin_diff_delta_part,
+        leftjoin_delta_join_part_outer_join
+        + leftjoin_diff_delta_part_outer_join,
     )
 
 
