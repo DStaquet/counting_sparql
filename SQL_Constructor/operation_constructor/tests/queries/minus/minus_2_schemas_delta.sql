@@ -11,7 +11,8 @@ WHERE NOT EXISTS (
 
 
 INSERT INTO prep_delta_Minus_5787900088682136291 (x, k_count)
-SELECT *
+SELECT s1.x AS x,
+       s1.k_count AS k_count
 FROM nu_BGP_747695058721694287 AS s1
 JOIN delta_Union_6981146949604561737 AS s2 ON s1.x = s2.x
 WHERE EXISTS (

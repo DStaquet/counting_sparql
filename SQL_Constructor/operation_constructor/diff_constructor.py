@@ -11,6 +11,18 @@ from SQL_Constructor.base_constructor import (
 from rdflib.plugins.sparql.parserutils import CompValue
 
 
+def __varsToJoinOn(
+    sch1: set[str], schemas2: list[set[str]]
+) -> set[str]:
+    """Finds the variables to join on."""
+    vars_to_join_on: set[str] = set()
+    for sch2 in schemas2:
+        vars_to_join_on = vars_to_join_on.union(
+            sch1.intersection(sch2)
+        )
+    return vars_to_join_on
+
+
 def __delta_on_negate_part(
     part: CompValue,
     schemas1: list[set[str]],
@@ -57,17 +69,27 @@ def __delta_on_negate_part(
                 if sch1.intersection(sch2) != set()
             ]
 
+        vars_to_join_on = __varsToJoinOn(sch1, schemas2)
         curr_diff_query_select_left: str = (
-            "SELECT * FROM "
+            "SELECT "
+            + ", ".join(
+                f"s1.{var} as {var}" for var in sorted(sch1)
+            )
+            + ", s1.k_count as k_count"
+            + " FROM "
             + nu_from_table
             + " as s1 JOIN "
             + delta_from_table
-            + " as s2 ON "
-            + " AND ".join(
-                f"s1.{var} = s2.{var}"
-                for var in sorted(schemas1[0])
-            )
+            + " as s2 "
         )
+        if vars_to_join_on:
+            curr_diff_query_select_left += (
+                "ON "
+                + " AND ".join(
+                    f"s1.{var} = s2.{var}"
+                    for var in sorted(vars_to_join_on)
+                )
+            )
         curr_diff_query_select_right: str = (
             "SELECT "
             + ", ".join(
@@ -78,12 +100,16 @@ def __delta_on_negate_part(
             + nu_from_table
             + " as s1 JOIN "
             + delta_from_table
-            + " as s2 ON "
-            + " AND ".join(
-                f"s1.{var} = s2.{var}"
-                for var in sorted(sch1)
-            )
+            + " as s2 "
         )
+        if vars_to_join_on:
+            curr_diff_query_select_right += (
+                "ON "
+                + " AND ".join(
+                    f"s1.{var} = s2.{var}"
+                    for var in sorted(vars_to_join_on)
+                )
+            )
 
         curr_diff_query_left: str = ""
         curr_diff_query_right: str = ""
@@ -139,11 +165,6 @@ def __delta_on_negate_part(
                 "_"
                 + __encode_schema_name(str(sorted(sch1)))
             )
-
-        """diff_queries += insert_into_w_select(
-            new_table_name + schema_both_suffix,
-            curr_diff_query,
-        )"""
 
         curr_table_name = (
             new_table_name + schema_both_suffix

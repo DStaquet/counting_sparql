@@ -82,13 +82,6 @@ def delta_minus_query(
             )
         )
 
-    """delta_diff_queries += countKCountsTogether(
-        part,
-        schemas1,
-        "delta_" + __encode_table_name(part),
-        "delta_prep_" + __encode_table_name(part),
-    )"""
-
     delta_diff_queries_str: str = make_group_by(
         delta_diff_queries,
         schemas1,
