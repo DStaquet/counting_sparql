@@ -51,6 +51,28 @@ def sch2SelectClause(sch1: set[str], sch2: set[str]) -> str:
     )
 
 
+def __sortVarsByTuples(
+    schema1: set[str], schema2: set[str] | None
+) -> list[tuple[str, str]]:
+    """Sorts the schemas by the number of variables.
+
+    Args:
+        schemas1 (list[set[str]]): Schema of the left child of the join
+        schemas2 (list[set[str]] | None): Schema of the right child of the join
+
+    Returns:
+        list[tuple[str, str]]: Sorted schemas
+    """
+    sorted_vars: list[tuple[str, str]] = list()
+    for var in schema1:
+        sorted_vars.append(("r1", var))
+    if schema2 is not None:
+        for var in schema2:
+            if var not in schema1:
+                sorted_vars.append(("r2", var))
+    return sorted(sorted_vars, key=lambda x: x[1])
+
+
 def __join_query_one_schema(
     part: CompValue,
     schemas1: list[set[str]],
@@ -99,13 +121,15 @@ def __join_query_one_schema(
         join_query += ";\n"
 
     else:
+        sorted_vars = __sortVarsByTuples(
+            schemas1[0], schemas2[0]
+        )
         join_query: str = (
             "SELECT "
             + ", ".join(
-                f"r1.{var} AS {var}"
-                for var in sorted(schemas1[0])
+                f"{key}.{var} AS {var}"
+                for key, var in sorted_vars
             )
-            + sch2SelectClause(schemas1[0], schemas2[0])
             + ", r1.k_count * r2.k_count as k_count\n"
             + "FROM "
             + table_name_one
@@ -163,14 +187,14 @@ def __join_query_mult_schema(
             else:
                 sch2_suffix: str = ""
 
+            sorted_vars = __sortVarsByTuples(sch1, sch2)
             if sch1.intersection(sch2) == set():
                 curr_join_query: str = (
                     "SELECT "
                     + ", ".join(
-                        f"r1.{var} AS {var}"
-                        for var in sorted(sch1)
+                        f"{key}.{var} AS {var}"
+                        for key, var in sorted_vars
                     )
-                    + sch2SelectClause(sch1, sch2)
                     + ", r1.k_count * r2.k_count as k_count\n"
                 )
                 curr_join_query += "FROM "
@@ -186,10 +210,9 @@ def __join_query_mult_schema(
                 curr_join_query: str = (
                     "SELECT "
                     + ", ".join(
-                        f"r1.{var} AS {var}"
-                        for var in sorted(sch1)
+                        f"{key}.{var} AS {var}"
+                        for key, var in sorted_vars
                     )
-                    + sch2SelectClause(sch1, sch2)
                     + ", r1.k_count * r2.k_count as k_count\n"
                     + "FROM "
                     + table_name_one

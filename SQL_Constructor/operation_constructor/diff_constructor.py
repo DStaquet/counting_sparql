@@ -368,10 +368,6 @@ def diff_query_sub(
                     for index, sch2 in enumerate(schemas2)
                 )
             curr_diff_query += ";\n"
-            """diff_query += create_table_w_select(
-                new_table_name + schemas_both_suffix,
-                curr_diff_query,
-            )"""
 
             # Add all queries to the table they need to end up in
             diff_query[

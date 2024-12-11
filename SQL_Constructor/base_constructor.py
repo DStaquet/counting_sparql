@@ -272,9 +272,16 @@ def make_group_by(
                     temp_prefix=temp_prefix,
                 )
             else:
+                for schema in schemas:
+                    if (
+                        schema_in_key(key, schema)
+                        or len(schemas) == 1
+                    ):
+                        curr_schema = list(schema)
                 all_queries += insert_into_w_select(
                     prep_prefix + key,
                     query,
+                    curr_schema,
                 )
             queries_seen_count += 1
         if len(tables_to_make[key]) == 1:

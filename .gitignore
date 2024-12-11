@@ -169,6 +169,7 @@ data/*.ttl
 data/*
 database/*
 testing_query_folder/*
+temp_tests/*
 
 # VS code
 .vscode/

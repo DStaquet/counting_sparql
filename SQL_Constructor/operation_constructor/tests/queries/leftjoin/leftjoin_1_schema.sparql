@@ -5,8 +5,6 @@ where {
     ?x a :Node .
     OPTIONAL {
         {?x edge:link ?y .}
-        UNION
-        {?x edge:link ?w .}
     }
 
 }
