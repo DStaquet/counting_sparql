@@ -1,0 +1,88 @@
+CREATE TEMP TABLE delta_Minus_5001696111420667855_schema_5974201903695169563_0 AS
+SELECT s1.x AS x,
+       s1.k_count AS k_count
+FROM delta_Union_1443468051870521748_schema_5974201903695169563 AS s1
+WHERE NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_5536938746033674259 AS s2
+                  WHERE s1.x = s2.x)
+  AND NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_388442962187960249 AS s3
+                  WHERE s1.x = s3.x);
+
+
+CREATE TEMP TABLE delta_Minus_5001696111420667855_schema_5974201903695169563_1 AS
+SELECT *
+FROM nu_Union_1443468051870521748 AS s1
+JOIN delta_Union_6981146949604561737 AS s2 ON s1.x = s2.x
+WHERE EXISTS (
+              FROM Union_6981146949604561737_schema_5536938746033674259 AS s3
+              WHERE s1.x = s3.x
+                AND -s2.k_count = s3.k_count)
+  AND EXISTS (
+              FROM Union_6981146949604561737_schema_388442962187960249 AS s4
+              WHERE s1.x = s4.x
+                AND -s2.k_count = s4.k_count)
+UNION
+SELECT s1.x AS x, -s1.k_count AS k_count
+FROM nu_Union_1443468051870521748 AS s1
+JOIN delta_Union_6981146949604561737 AS s2 ON s1.x = s2.x
+WHERE NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_5536938746033674259 AS s3
+                  WHERE s1.x = s3.x)
+  AND NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_388442962187960249 AS s4
+                  WHERE s1.x = s4.x);
+
+
+CREATE TABLE delta_Minus_5001696111420667855_schema_5974201903695169563 AS
+SELECT (CASE
+            WHEN R1.x NOT NULL THEN R1.x
+            ELSE R2.x
+        END) AS x,
+       (CASE
+            WHEN R1.k_count IS NULL THEN R2.k_count
+            WHEN R2.k_count IS NULL THEN R1.k_count
+            ELSE R1.k_count + R2.k_count
+        END) AS k_count
+FROM delta_Minus_5001696111420667855_schema_5974201903695169563_0 AS R1
+FULL OUTER JOIN delta_Minus_5001696111420667855_schema_5974201903695169563_1 AS R2 ON R1.x = R2.x;
+
+
+CREATE TEMP TABLE delta_Minus_5001696111420667855_schema_6925710393041315400_0 AS
+SELECT s1.y AS y,
+       s1.k_count AS k_count
+FROM delta_Union_1443468051870521748_schema_6925710393041315400 AS s1
+WHERE NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_5536938746033674259 AS s2
+                  WHERE s1.y = s2.y);
+
+
+CREATE TEMP TABLE delta_Minus_5001696111420667855_schema_6925710393041315400_1 AS
+SELECT *
+FROM nu_Union_1443468051870521748 AS s1
+JOIN delta_Union_6981146949604561737 AS s2 ON s1.x = s2.x
+WHERE EXISTS (
+              FROM Union_6981146949604561737_schema_5536938746033674259 AS s3
+              WHERE s1.y = s3.y
+                AND -s2.k_count = s3.k_count)
+UNION
+SELECT s1.y AS y, -s1.k_count AS k_count
+FROM nu_Union_1443468051870521748 AS s1
+JOIN delta_Union_6981146949604561737 AS s2 ON s1.y = s2.y
+WHERE NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_5536938746033674259 AS s3
+                  WHERE s1.y = s3.y);
+
+
+CREATE TABLE delta_Minus_5001696111420667855_schema_6925710393041315400 AS
+SELECT (CASE
+            WHEN R1.y NOT NULL THEN R1.y
+            ELSE R2.y
+        END) AS y,
+       (CASE
+            WHEN R1.k_count IS NULL THEN R2.k_count
+            WHEN R2.k_count IS NULL THEN R1.k_count
+            ELSE R1.k_count + R2.k_count
+        END) AS k_count
+FROM delta_Minus_5001696111420667855_schema_6925710393041315400_0 AS R1
+FULL OUTER JOIN delta_Minus_5001696111420667855_schema_6925710393041315400_1 AS R2 ON R1.y = R2.y;

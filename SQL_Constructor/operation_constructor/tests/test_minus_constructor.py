@@ -117,11 +117,12 @@ def test_minus_query(
 
 
 @mark.parametrize(
-    "query_file,expected_sql,schemas1,schemas2",
+    "query_file,expected_sql,expected_sql_join,schemas1,schemas2",
     [
         (
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_1_schema.sparql",
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_1_schema_delta.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_1_schema_delta_join.sql",
             [{Variable("x")}],
             [
                 {
@@ -133,6 +134,7 @@ def test_minus_query(
         (
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_2_schemas.sparql",
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_2_schemas_delta.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_2_schemas_delta_join.sql",
             [
                 {
                     Variable("x"),
@@ -152,6 +154,7 @@ def test_minus_query(
         (
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas.sparql",
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta_join.sql",
             [
                 {
                     Variable("x"),
@@ -176,6 +179,7 @@ def test_minus_query(
 def test_delta_minus_query(
     query_file: str,
     expected_sql: str,
+    expected_sql_join: str,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
 ) -> None:
@@ -192,6 +196,7 @@ def test_delta_minus_query(
     )
 
     minus_queries: str = ""
+    minus_queries_join: str = ""
     for minus in reversed(minus_leaves):
         current_query, current_join_query = (
             delta_minus_query(minus, schemas1, schemas2)
@@ -203,10 +208,20 @@ def test_delta_minus_query(
             keyword_case="upper",
         )
 
+        minus_queries_join += format(
+            current_join_query,
+            reindent=True,
+            keyword_case="upper",
+        )
+
     with open(expected_sql) as f:
         sql_queries = f.read()
 
+    with open(expected_sql_join) as f:
+        sql_join_queries = f.read()
+
     assert minus_queries == sql_queries
+    assert minus_queries_join == sql_join_queries
 
 
 def __buildBGPs(
