@@ -6,7 +6,7 @@ FROM delta_BGP_747695058721694287 AS r1,
      BGP_4313253051102226119 AS r2 ON r1.x = r2.x;
 
 
-INSERT INTO prep_delta_LeftJoin_5062614984795814045
+INSERT INTO prep_delta_LeftJoin_5062614984795814045 (x, y, k_count)
 SELECT r1.x AS x,
        r2.y AS y,
        r1.k_count * r2.k_count AS k_count
@@ -32,7 +32,7 @@ WHERE NOT EXISTS (
                   WHERE s1.x = s2.x);
 
 
-INSERT INTO prep_delta_LeftJoin_5062614984795814045_schema_5974201903695169563
+INSERT INTO prep_delta_LeftJoin_5062614984795814045_schema_5974201903695169563 (x, k_count)
 SELECT *
 FROM nu_BGP_747695058721694287 AS s1
 JOIN delta_BGP_4313253051102226119 AS s2 ON s1.x = s2.x
