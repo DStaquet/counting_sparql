@@ -1,5 +1,7 @@
 from rdflib.plugins.sparql.parserutils import CompValue
 
+from duckdb import DuckDBPyConnection, connect
+
 
 def reset_seed():
     """Resets the hashing seed to have deterministic results."""
