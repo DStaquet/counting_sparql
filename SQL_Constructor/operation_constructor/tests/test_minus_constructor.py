@@ -227,12 +227,11 @@ def test_delta_minus_query(
 def __buildBGPs(
     bgp_name_one: str,
     bgp_name_two: str,
-    minus_table: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Builds up the BGPs for the query."""
     # Drop tables if they exist
-    for table in [bgp_name_one, bgp_name_two, minus_table]:
+    for table in [bgp_name_one, bgp_name_two]:
         duckdb_conn.execute(
             "DROP TABLE IF EXISTS " + table + ";"
         )
@@ -315,9 +314,7 @@ def test_minus_output(
     duckdb_conn = connect(database)
 
     # Build the BGPs
-    __buildBGPs(
-        bgp_name_one, bgp_name_two, minus_table, duckdb_conn
-    )
+    __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
 
     # Execute the query
     duckdb_conn.execute(minus_queries)
@@ -334,11 +331,10 @@ def test_minus_output(
 def __buildDeltaBGPs(
     bgp_name_one: str,
     bgp_name_two: str,
-    minus_table: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Builds up the BGPs for the query."""
-    all_tables = [bgp_name_one, bgp_name_two, minus_table]
+    all_tables = [bgp_name_one, bgp_name_two]
     delta_tables = [
         "delta_" + table for table in all_tables
     ]
@@ -394,6 +390,19 @@ def __buildDeltaBGPs(
         "INSERT INTO "
         + nu_tables[1]
         + " (y, k_count) VALUES ('d', 1);"
+    )
+
+
+def __dropMinusTables(
+    minus_table: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Drops the minus tables."""
+    duckdb_conn.execute(
+        "DROP TABLE IF EXISTS " + minus_table + ";"
+    )
+    duckdb_conn.execute(
+        "DROP TABLE IF EXISTS delta_" + minus_table + ";"
     )
 
 
@@ -457,13 +466,13 @@ def test_minus_delta_output(
     duckdb_conn = connect(database)
 
     # Build the BGPs
-    __buildBGPs(
-        bgp_name_one, bgp_name_two, minus_table, duckdb_conn
-    )
+    __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
     # Build the delta BGPs
     __buildDeltaBGPs(
-        bgp_name_one, bgp_name_two, minus_table, duckdb_conn
+        bgp_name_one, bgp_name_two, duckdb_conn
     )
+    # Drop the minus tables
+    __dropMinusTables(minus_table, duckdb_conn)
 
     # Execute the query
     duckdb_conn.execute(minus_queries)
