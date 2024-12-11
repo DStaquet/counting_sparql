@@ -326,10 +326,6 @@ def test_minus_output(
         "SELECT * FROM " + minus_table + ";"
     ).df()
 
-    """to_compare_df = DataFrame(
-        expected_output, columns=["x", "y", "k_count"]
-    )"""
-
     values = output_df.values.tolist()
 
     assert values == expected_output
