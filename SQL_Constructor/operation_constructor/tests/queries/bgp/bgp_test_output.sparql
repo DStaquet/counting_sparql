@@ -1,0 +1,7 @@
+PREFIX : <http://example.org/>
+select ?x ?z
+where {
+    ?w :r ?x .
+    ?x :r ?y .
+    ?y :r ?z .
+}

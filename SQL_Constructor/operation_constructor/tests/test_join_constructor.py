@@ -318,7 +318,7 @@ def __constructDeltaBGPs(
             [("c", "a", "d", -1), ("d", "a", "b", 1)],
             [{Variable("y"), Variable("w")}],
             [{Variable("x"), Variable("y")}],
-            "database/join_test.db",
+            ":memory:",
             "BGP_5127379026335911785",
             "BGP_4313253051102226119",
             "Join_1233181518159936422",
