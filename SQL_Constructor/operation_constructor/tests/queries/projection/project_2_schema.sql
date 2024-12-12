@@ -14,4 +14,5 @@ CREATE TABLE Project_719589965937824876 AS
 SELECT r1.x,
        SUM(r1.k_count) AS k_count
 FROM prep_Project_719589965937824876 AS r1
-GROUP BY r1.x;
+GROUP BY r1.x
+HAVING SUM(r1.k_count) > 0;

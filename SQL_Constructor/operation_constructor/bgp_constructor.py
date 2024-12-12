@@ -9,6 +9,8 @@ from rdflib.term import Variable
 
 from SQL_Constructor.base_constructor import (
     delta_outer_join_long_query,
+    make_group_by,
+    make_join,
 )
 
 
@@ -227,9 +229,6 @@ def bgp_table_query(
 def bgp_delta_table_query(
     part: CompValue, triple_count: int
 ) -> tuple[str, set[str]]:
-    bgp_delta_table_name = "delta_" + __encode_table_name(
-        part
-    )
     g_per_triple: dict[tuple[str, str, str], str] = dict()
 
     # FROM clause
@@ -385,7 +384,7 @@ def bgp_delta_table_query(
 
 def delta_bgp_queries(
     part: CompValue,
-) -> tuple[str, str, str, str]:
+) -> tuple[str, str]:
     """Builds up the different delta BGP queries for the incremental query.
 
     Args:
@@ -397,7 +396,37 @@ def delta_bgp_queries(
     delta_queries: str = ""
     delta_join_queries: str = ""
     delta_join_tables: str = ""
-    last_delta_query_name: str = ""
+
+    bgp_name: str = (
+        "delta_" + base_constructor.get_table_name(part)
+    )
+
+    dict_with_bgps: dict[str, list[str]] = dict()
+    for triple_index in range(len(part.triples)):
+        if bgp_name not in dict_with_bgps:
+            dict_with_bgps[bgp_name] = [
+                bgp_delta_table_query(
+                    part, triple_index + 1
+                )[0]
+                + ";\n"
+            ]
+        else:
+            dict_with_bgps[bgp_name].append(
+                bgp_delta_table_query(
+                    part, triple_index + 1
+                )[0]
+                + ";\n"
+            )
+
+    delta_join_queries = make_join(
+        dict_with_bgps, [part._vars]
+    )
+
+    delta_queries = make_group_by(
+        dict_with_bgps, [part._vars], True
+    )
+
+    """last_delta_query_name: str = ""
     first_insert = True
     temp_suffix = ""
     for triple_index in range(len(part.triples)):
@@ -492,11 +521,9 @@ def delta_bgp_queries(
             + base_constructor.get_table_name(part),
             delta_long_join_query,
         )
-    )
+    )"""
 
     return (
         delta_queries,
         delta_join_queries,
-        delta_long_w_create,
-        delta_join_tables,
     )

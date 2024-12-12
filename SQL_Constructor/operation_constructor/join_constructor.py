@@ -407,6 +407,7 @@ def delta_join_queries_part_func(
     join_delta_queries: str = make_group_by(
         combined_delta_query_dict,
         join_schemas(schemas1, schemas2),
+        is_delta=True,
     )
 
     join_delta_queries_outer_join: str = make_join(

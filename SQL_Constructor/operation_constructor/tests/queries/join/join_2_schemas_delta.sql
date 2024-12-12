@@ -46,4 +46,5 @@ SELECT r1.w,
 FROM prep_delta_Join_8039763548589018781 AS r1
 GROUP BY r1.w,
          r1.x,
-         r1.y;
+         r1.y
+HAVING SUM(r1.k_count) != 0;

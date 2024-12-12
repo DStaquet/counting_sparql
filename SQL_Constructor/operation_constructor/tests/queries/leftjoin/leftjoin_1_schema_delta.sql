@@ -22,7 +22,8 @@ SELECT r1.x,
        SUM(r1.k_count) AS k_count
 FROM prep_delta_LeftJoin_5062614984795814045 AS r1
 GROUP BY r1.x,
-         r1.y;
+         r1.y
+HAVING SUM(r1.k_count) != 0;
 
 
 CREATE TEMP TABLE prep_delta_LeftJoin_5062614984795814045_schema_5974201903695169563 AS
@@ -56,4 +57,5 @@ CREATE TABLE delta_LeftJoin_5062614984795814045_schema_5974201903695169563 AS
 SELECT r1.x,
        SUM(r1.k_count) AS k_count
 FROM prep_delta_LeftJoin_5062614984795814045_schema_5974201903695169563 AS r1
-GROUP BY r1.x;
+GROUP BY r1.x
+HAVING SUM(r1.k_count) != 0;

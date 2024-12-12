@@ -85,6 +85,7 @@ def delta_minus_query(
     delta_diff_queries_str: str = make_group_by(
         delta_diff_queries,
         schemas1,
+        is_delta=True,
     )
 
     delta_diff_join_queries: str = make_join(

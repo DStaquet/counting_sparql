@@ -1,5 +1,6 @@
 from SQL_Constructor.operation_constructor.bgp_constructor import (
     bgp_table_query,
+    delta_bgp_queries,
 )
 from incremental_query_parser import (
     readQueryFile,
@@ -102,7 +103,14 @@ def __constructDeltaBaseGraph(
         "CREATE OR REPLACE TABLE delta_G (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO Delta_G (s, p, o, k_count) VALUES ('a', 'http://example.org/r', 'b', -1), ('b', http://example.org/r', 'd', 1);"
+        "INSERT INTO Delta_G (s, p, o, k_count) VALUES ('a', 'http://example.org/r', 'b', -1), ('b', 'http://example.org/r', 'd', 1);"
+    )
+
+    duckdb_conn.execute(
+        "CREATE OR REPLACE TABLE nu_G (s TEXT, p TEXT, o TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        "INSERT INTO nu_G (s, p, o, k_count) VALUES ('a', 'http://example.org/r', 'd', 1), ('b', 'http://example.org/r', 'c', 1), ('b', 'http://example.org/r', 'd', 1), ('d', 'http://example.org/r', 'c', 1), ('c', 'http://example.org/r', 'e', 1);"
     )
 
 
@@ -115,7 +123,7 @@ def __constructDeltaBaseGraph(
                 ("a", "d", "c", "e", 1),
                 ("a", "b", "c", "e", 1),
             ],
-            ":memory:",
+            "database/bgp_test.db",
         )
     ],
 )
@@ -153,6 +161,53 @@ def test_bgp_query_output(
 
             result = con.execute(
                 f"SELECT * FROM {get_table_name(bgp)}"
+            ).fetchall()
+
+        assert result == expected_output
+
+
+@mark.parametrize(
+    "query_file,expected_output,database",
+    [
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_output.sparql",
+            [
+                ("a", "b", "c", "e", -1),
+                ("b", "d", "c", "e", 1),
+            ],
+            "database/bgp_test.db",
+        )
+    ],
+)
+def test_bgp_query_output_delta(
+    query_file: str,
+    expected_output,
+    database: str,
+) -> None:
+    """Checks if the delta output of a BGP query is as expected."""
+    reset_seed()
+
+    part = get_query_object(
+        readQueryFile(query_file)
+    ).algebra
+
+    # Find only BGP patterns
+    bgp_leaves: list[CompValue] = all_type_leaves(
+        part, "BGP"
+    )
+
+    for bgp in bgp_leaves:
+        current_query, _ = delta_bgp_queries(bgp)
+
+        with connect(database) as con:
+            __constructBaseGraph(con)
+            __constructDeltaBaseGraph(con)
+
+            __dropBGPTables(get_table_name(bgp), con)
+            con.execute(current_query)
+
+            result = con.execute(
+                f"SELECT * FROM delta_{get_table_name(bgp)}"
             ).fetchall()
 
         assert result == expected_output

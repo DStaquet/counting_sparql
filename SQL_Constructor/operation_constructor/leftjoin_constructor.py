@@ -92,7 +92,7 @@ def __delta_diff_part(
         )
 
     diff_queries_str: str = make_group_by(
-        diff_queries, schemas1
+        diff_queries, schemas1, is_delta=True
     )
 
     diff_queries_outer_join: str = make_join(

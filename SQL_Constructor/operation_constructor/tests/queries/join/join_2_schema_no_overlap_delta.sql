@@ -26,7 +26,8 @@ SELECT r1.w,
 FROM prep_delta_Join_6729856109576745271_schema_57734893926349734 AS r1
 GROUP BY r1.w,
          r1.x,
-         r1.y;
+         r1.y
+HAVING SUM(r1.k_count) != 0;
 
 
 CREATE TEMP TABLE prep_delta_Join_6729856109576745271_schema_3615708767843743351 AS
@@ -55,4 +56,5 @@ SELECT r1.w,
        SUM(r1.k_count) AS k_count
 FROM prep_delta_Join_6729856109576745271_schema_3615708767843743351 AS r1
 GROUP BY r1.w,
-         r1.y;
+         r1.y
+HAVING SUM(r1.k_count) != 0;

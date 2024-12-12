@@ -226,7 +226,9 @@ def project_query(
         )
 
         project_strs: str = make_group_by(
-            project_dict, project_schemas(part, schemas1)
+            project_dict,
+            project_schemas(part, schemas1),
+            is_delta=is_delta,
         )
         project_str_join: str = make_join(
             project_dict, project_schemas(part, schemas1)

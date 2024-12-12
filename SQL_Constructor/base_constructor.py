@@ -120,6 +120,7 @@ def countKCountsTogether(
     schema: set[str],
     to_table: str,
     from_table: str,
+    is_delta: bool = False,
 ) -> str:
     """Counts the k_counts of a already inserted table.
 
@@ -144,6 +145,14 @@ def countKCountsTogether(
         curr_count_query += "GROUP BY " + ", ".join(
             f"r1.{var}" for var in sorted(schema)
         )
+        if is_delta:
+            curr_count_query += (
+                " HAVING SUM(r1.k_count) != 0"
+            )
+        else:
+            curr_count_query += (
+                " HAVING SUM(r1.k_count) > 0"
+            )
     curr_count_query += ";\n"
 
     return create_table_w_select(to_table, curr_count_query)
@@ -240,6 +249,7 @@ def make_join(
 def make_group_by(
     tables_to_make: dict[str, list[str]],
     schemas: list[set[str]],
+    is_delta: bool = False,
 ) -> str:
     """Generates the group by query string.
 
@@ -292,7 +302,7 @@ def make_group_by(
                 or len(schemas) == 1
             ):
                 all_queries += countKCountsTogether(
-                    schema, key, prep_prefix + key
+                    schema, key, prep_prefix + key, is_delta
                 )
     return all_queries
 
