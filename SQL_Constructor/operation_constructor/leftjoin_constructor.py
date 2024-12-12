@@ -202,7 +202,7 @@ def __join_part(
             __encode_table_name(part)
             + "_"
             + __encode_schema_name(
-                str(sorted(schemas1[0])),
+                str(sorted(schemas1[0].union(schemas2[0]))),
             ),
         )
     else:
@@ -273,7 +273,9 @@ def left_join_query(
         part, schemas1, schemas2
     )
     leftjoin_diff_dict: dict[str, list[str]] = (
-        diff_query_sub(part, schemas1, schemas2)
+        diff_query_sub(
+            part, schemas1, schemas2, append_schemas=True
+        )
     )
 
     return __leftJoinWithCreate(

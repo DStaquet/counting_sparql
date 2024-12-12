@@ -2,7 +2,6 @@ from SQL_Constructor.operation_constructor.leftjoin_constructor import (
     left_join_query,
     delta_left_join_query,
 )
-from SQL_Constructor.base_constructor import get_table_name
 from SQL_Constructor.operation_constructor.tests.base_functions import (
     all_type_leaves,
     reset_seed,
@@ -16,6 +15,8 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Variable
 from sqlparse import format
 from pytest import mark
+
+from duckdb import DuckDBPyConnection, connect
 
 
 @mark.parametrize(
@@ -119,3 +120,114 @@ def test_delta_left_join_query(
         expected = f.read()
 
     assert delta_leftjoin_query == expected
+
+
+def __dropLeftjoinTables(
+    duckdb_conn: DuckDBPyConnection,
+    leftjoin_name: str,
+) -> None:
+    """Drops the left join tables."""
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS {leftjoin_name};"
+    )
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS delta_{leftjoin_name};"
+    )
+
+
+def __buildBGPs(
+    bgp_one_name: str,
+    bgp_two_name: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Builds the BGP tables"""
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE {bgp_one_name} (x TEXT, y TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE {bgp_two_name} (y TEXT, z TEXT, k_count INT);"
+    )
+
+    # Insert data into the tables
+    duckdb_conn.execute(
+        f"INSERT INTO {bgp_one_name} VALUES ('a', 'b', 1), ('a', 'd', 1);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO {bgp_two_name} VALUES ('b', 'c', 1);"
+    )
+
+
+@mark.parametrize(
+    "query_file,expected_output_joined,expected_output_not_joined,schemas1,schemas2,bgp_one_name,bgp_two_name,leftjoin_name_joined,leftjoin_name_not_joined,database_name",
+    [
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/leftjoin/leftjoin_test_output.sparql",
+            [("a", "b", "c", 1)],
+            [("a", "d", 1)],
+            [{Variable("x"), Variable("y")}],
+            [{Variable("y"), Variable("z")}],
+            "BGP_4313253051102226119",
+            "BGP_5439676414810165533",
+            "LeftJoin_5968519747945714539_schema_2520463472976857627",
+            "LeftJoin_5968519747945714539_schema_5536938746033674259",
+            "database/leftjoin_test_output.db",
+        ),
+    ],
+)
+def test_leftjoin_query_output(
+    query_file: str,
+    expected_output_joined,
+    expected_output_not_joined,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+    bgp_one_name: str,
+    bgp_two_name: str,
+    leftjoin_name_joined: str,
+    leftjoin_name_not_joined: str,
+    database_name: str,
+) -> None:
+    """Tests if the output of the left join query is correct."""
+    reset_seed()
+
+    # Read the query file
+    part = get_query_object(
+        readQueryFile(query_file)
+    ).algebra
+
+    leftjoin_leaves = all_type_leaves(part, "LeftJoin")
+
+    for leftjoin_leaf in reversed(leftjoin_leaves):
+        leftjoin_query: str = format(
+            left_join_query(
+                leftjoin_leaf, schemas1, schemas2
+            ),
+            reindent=True,
+            keyword_case="upper",
+        )
+
+    # Execute the query
+    duckdb_conn: DuckDBPyConnection = connect(database_name)
+
+    # Create the tables
+    __buildBGPs(bgp_one_name, bgp_two_name, duckdb_conn)
+
+    for leftjoin_table_name in [
+        leftjoin_name_joined,
+        leftjoin_name_not_joined,
+    ]:
+        __dropLeftjoinTables(
+            duckdb_conn, leftjoin_table_name
+        )
+    duckdb_conn.execute(leftjoin_query)
+
+    # Check if the joined output is correct
+    result = duckdb_conn.execute(
+        f"SELECT * FROM {leftjoin_name_joined};"
+    ).fetchall()
+    assert result == expected_output_joined
+
+    # Check if the not joined output is correct
+    result = duckdb_conn.execute(
+        f"SELECT * FROM {leftjoin_name_not_joined};"
+    ).fetchall()
+    assert result == expected_output_not_joined
