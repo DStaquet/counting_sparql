@@ -272,3 +272,108 @@ def test_join_query_output(
         f"SELECT * FROM {join_name};"
     ).fetchall()
     assert result == expected_output
+
+
+def __constructDeltaBGPs(
+    bgp_one_name: str,
+    bgp_two_name: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Constructs the BGPs for the join query."""
+    # Build the delta tables
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE delta_{bgp_one_name} (y TEXT, w TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO delta_{bgp_one_name} (y, w, k_count) VALUES ('d', 'c', -1), ('b', 'd', 1);"
+    )
+
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE delta_{bgp_two_name} (x TEXT, y TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO delta_{bgp_two_name} (x, y, k_count) VALUES ('d', 'c', -1), ('b', 'd', 1);"
+    )
+
+    # Build the nu tables
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE nu_{bgp_one_name} (y TEXT, w TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO nu_{bgp_one_name} (y, w, k_count) VALUES ('a', 'b', 1), ('b', 'c', 1), ('a', 'd', 1), ('b', 'd', 1);"
+    )
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE nu_{bgp_two_name} (x TEXT, y TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO nu_{bgp_two_name} (x, y, k_count) VALUES ('a', 'b', 1), ('b', 'c', 1), ('a', 'd', 1), ('b', 'd', 1);"
+    )
+
+
+@mark.parametrize(
+    "query_file,expected_output,schemas1,schemas2,database_name,bgp_one,bgp_two,join_name",
+    [
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/join/join_1_schema.sparql",
+            [("c", "a", "d", -1), ("d", "a", "b", 1)],
+            [{Variable("y"), Variable("w")}],
+            [{Variable("x"), Variable("y")}],
+            "database/join_test.db",
+            "BGP_5127379026335911785",
+            "BGP_4313253051102226119",
+            "Join_1233181518159936422",
+        )
+    ],
+)
+def test_join_query_delta(
+    query_file: str,
+    expected_output: str,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+    database_name: str,
+    bgp_one: str,
+    bgp_two: str,
+    join_name: str,
+) -> None:
+    """Check if the join query output is correct."""
+    reset_seed()
+
+    # Read the query file
+    part = get_query_object(
+        readQueryFile(query_file)
+    ).algebra
+
+    join_leaves = all_type_leaves(part, "Join")
+
+    # Execute the join query
+    join_queries: str = ""
+
+    for join_leaf in join_leaves:
+        join_query, _ = delta_join_queries_part_func(
+            join_leaf,
+            schemas1,
+            schemas2,
+        )
+        join_queries += format(
+            join_query,
+            reindent=True,
+            keyword_case="upper",
+        )
+
+    # Execute the join query
+    duckdb_conn: DuckDBPyConnection = connect(database_name)
+
+    # Constructs the BGPs for the join query
+    __constructBGPs(bgp_one, bgp_two, duckdb_conn)
+    __constructDeltaBGPs(bgp_one, bgp_two, duckdb_conn)
+    # Drops the join table
+    __dropJoinTables(join_name, duckdb_conn)
+
+    # Execute the join query
+    duckdb_conn.execute(join_queries)
+
+    # Check the output of the join query
+    result = duckdb_conn.execute(
+        f"SELECT * FROM delta_{join_name};"
+    ).fetchall()
+    assert result == expected_output
