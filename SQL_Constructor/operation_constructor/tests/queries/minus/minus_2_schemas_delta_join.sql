@@ -46,4 +46,5 @@ SELECT (CASE
             ELSE R1.k_count + R2.k_count
         END) AS k_count
 FROM delta_Minus_5787900088682136291_0 AS R1
-FULL OUTER JOIN delta_Minus_5787900088682136291_1 AS R2 ON R1.x = R2.x;
+FULL OUTER JOIN delta_Minus_5787900088682136291_1 AS R2 ON R1.x = R2.x
+WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) != 0;

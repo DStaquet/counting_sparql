@@ -43,4 +43,5 @@ SELECT (CASE
 FROM delta_BGP_2691716057464995186_0 AS R1
 FULL OUTER JOIN delta_BGP_2691716057464995186_1 AS R2 ON R1.y = R2.y
 AND R1.z = R2.z
-AND R1.x = R2.x;
+AND R1.x = R2.x
+WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) != 0;

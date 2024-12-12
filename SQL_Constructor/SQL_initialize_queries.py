@@ -95,14 +95,6 @@ def build_increm_queries(
                 False,
                 "delta_",
             )
-            """write_query_to_output_dir(
-                output_dir,
-                delta_queries_sum,
-                base_constructor.get_table_name(part)
-                + "_sum",
-                False,
-                "delta_",
-            )"""
             write_query_to_output_dir(
                 output_dir,
                 delta_join_queries,
@@ -111,14 +103,6 @@ def build_increm_queries(
                 False,
                 "delta_",
             )
-            """write_query_to_output_dir(
-                output_dir,
-                delta_long_join_query,
-                base_constructor.get_table_name(part)
-                + "_long_join",
-                False,
-                "delta_",
-            )"""
             part_schemas = [part._vars]
         case "Filter":
             filter_query: str = SQL_filter.filter_query(

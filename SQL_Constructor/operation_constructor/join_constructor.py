@@ -154,6 +154,7 @@ def __join_query_mult_schema(
     table_name_one: str,
     table_name_two: str,
     new_table_name: str,
+    is_leftjoin_part: bool = False,
 ) -> dict[str, list[str]]:
     """Constructs a join query for multiple schemas.
 
@@ -233,7 +234,10 @@ def __join_query_mult_schema(
 
             curr_join_schema: set[str] = sch1.union(sch2)
 
-            if len(join_schemas(schemas1, schemas2)) == 1:
+            if (
+                len(join_schemas(schemas1, schemas2)) == 1
+                and not is_leftjoin_part
+            ):
                 join_queries_dict = add_table_to_dict(
                     new_table_name,
                     curr_join_query,
@@ -320,6 +324,7 @@ def join_query(
     schemas2: list[set[str]] = [],
     new_table_name: str | None = None,
     is_delta_and_first: tuple[bool, bool] = (False, False),
+    is_leftjoin_part: bool = False,
 ) -> dict[str, list[str]]:
     """Generates the join part according to two parts in the parse tree.
 
@@ -341,7 +346,9 @@ def join_query(
 
     if len(schemas1) == 0 or len(schemas2) == 0:
         raise ValueError("No schemas to join on.")
-    elif len(schemas1) == 1 and len(schemas2) == 1:
+    elif (
+        len(schemas1) == 1 and len(schemas2) == 1
+    ) and not is_leftjoin_part:
 
         join_queries_dict[new_table_name] = [
             __join_query_one_schema(
@@ -361,6 +368,7 @@ def join_query(
             table_name_one,
             table_name_two,
             new_table_name,
+            is_leftjoin_part=is_leftjoin_part,
         )
 
     return join_queries_dict
@@ -371,6 +379,7 @@ def delta_join_queries_part_func(
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     new_table_name: str | None = None,
+    is_leftjoin_part: bool = False,
 ) -> tuple[str, str]:
     """Constructs the delta join queries
 
@@ -388,6 +397,7 @@ def delta_join_queries_part_func(
         schemas2,
         is_delta_and_first=(True, True),
         new_table_name=new_table_name,
+        is_leftjoin_part=is_leftjoin_part,
     )
 
     second_delta_query: dict[str, list[str]] = join_query(
@@ -398,6 +408,7 @@ def delta_join_queries_part_func(
         schemas2,
         is_delta_and_first=(True, False),
         new_table_name=new_table_name,
+        is_leftjoin_part=is_leftjoin_part,
     )
 
     combined_delta_query_dict = combine_dict_queries(
@@ -413,6 +424,7 @@ def delta_join_queries_part_func(
     join_delta_queries_outer_join: str = make_join(
         combined_delta_query_dict,
         join_schemas(schemas1, schemas2),
+        is_delta=True,
     )
 
     return join_delta_queries, join_delta_queries_outer_join

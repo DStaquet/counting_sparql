@@ -100,4 +100,5 @@ FROM delta_BGP_5122102145835688356_temp_1 AS R1
 FULL OUTER JOIN delta_BGP_5122102145835688356_2 AS R2 ON R1.y = R2.y
 AND R1.z = R2.z
 AND R1.w = R2.w
-AND R1.x = R2.x;
+AND R1.x = R2.x
+WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) != 0;

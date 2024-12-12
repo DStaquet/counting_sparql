@@ -96,7 +96,7 @@ def __delta_diff_part(
     )
 
     diff_queries_outer_join: str = make_join(
-        diff_queries, schemas1
+        diff_queries, schemas1, is_delta=True
     )
 
     """diff_queries_str += countKCountsTogether(
@@ -134,6 +134,7 @@ def delta_left_join_query(
         schemas1,
         schemas2,
         new_table_name="delta_" + __encode_table_name(part),
+        is_leftjoin_part=True,
     )
 
     # Second part of the leftjoin delta

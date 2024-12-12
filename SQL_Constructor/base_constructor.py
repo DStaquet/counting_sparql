@@ -178,6 +178,7 @@ def schema_in_key(key: str, schema: set[str]) -> bool:
 def make_join(
     tables_to_make: dict[str, list[str]],
     schemas: list[set[str]],
+    is_delta: bool = False,
 ) -> str:
     """Generates the join query string.
 
@@ -238,6 +239,7 @@ def make_join(
                     key + "_" + str(q_index),
                     curr_schema,
                     key,
+                    is_delta=is_delta,
                 )
             else:
                 last_made_temp_query = (
@@ -877,6 +879,7 @@ def final_outer_join_query(
     right_query: str,
     schema: set[str],
     new_table_name: str,
+    is_delta: bool = False,
 ) -> str:
     """Generates a query that joins the final tables together.
 
@@ -907,6 +910,10 @@ def final_outer_join_query(
             for var in schema
             if var != "k_count"
         )
+        if is_delta:
+            join_query += " WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) != 0"
+        else:
+            join_query += " WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) > 0"
     join_query += f";\n"
     return join_query
 

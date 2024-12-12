@@ -22,4 +22,5 @@ SELECT (CASE
         END) AS k_count
 FROM AS R1
 FULL OUTER JOIN delta_BGP_4313253051102226119_0 AS R2 ON R1.y = R2.y
-AND R1.x = R2.x;
+AND R1.x = R2.x
+WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) != 0;

@@ -419,7 +419,7 @@ def delta_bgp_queries(
             )
 
     delta_join_queries = make_join(
-        dict_with_bgps, [part._vars]
+        dict_with_bgps, [part._vars], True
     )
 
     delta_queries = make_group_by(
