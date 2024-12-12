@@ -15,6 +15,8 @@ from pytest import mark
 from rdflib.term import Variable
 from sqlparse import format
 
+from duckdb import DuckDBPyConnection, connect
+
 
 @mark.parametrize(
     "query_file,expected_sql,schemas1,schemas2",
@@ -130,3 +132,223 @@ def test_delta_union_query(
         expected_sql = f.read()
 
     assert union_queries == expected_sql
+
+
+def __dropUnionTables(
+    duckdb_conn: DuckDBPyConnection,
+    union_name_first: str,
+    union_name_second: str = "",
+) -> None:
+    """Drops the union tables."""
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS {union_name_first};"
+    )
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS delta_{union_name_first};"
+    )
+    if union_name_second != "":
+        duckdb_conn.execute(
+            f"DROP TABLE IF EXISTS {union_name_second};"
+        )
+        duckdb_conn.execute(
+            f"DROP TABLE IF EXISTS delta_{union_name_second};"
+        )
+
+
+def __buildBGPs(
+    bgp_name_one: str,
+    bgp_name_two: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Builds the BGPs for the union query."""
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE {bgp_name_one} (x TEXT, y TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO {bgp_name_one} (x, y, k_count) VALUES ('a', 'b', 1), ('b', 'a', 1), ('b', 'c', 1);"
+    )
+
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE {bgp_name_two} (y TEXT, z TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO {bgp_name_two} (y, z, k_count) VALUES ('a', 'b', 1), ('b', 'a', 1), ('b', 'c', 1);"
+    )
+
+
+def __buildOverlapBGPs(
+    bgp_name_one: str,
+    bgp_name_two: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Constructs the BPGS for the overlap query."""
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE {bgp_name_one} (x TEXT, y TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO {bgp_name_one} (x, y, k_count) VALUES ('a', 'b', 1), ('b', 'a', 1), ('b', 'c', 1);"
+    )
+
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE {bgp_name_two} (y TEXT, x TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        f"INSERT INTO {bgp_name_two} (y, x, k_count) VALUES ('a', 'b', 1), ('b', 'a', 1), ('b', 'c', 1);"
+    )
+
+
+@mark.parametrize(
+    "query_file,expected_output_first,expected_output_second,schemas1,schemas2,bgp_name_one,bgp_name_two,union_name_first,union_name_second,database_name",
+    [
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/union/union_test_output.sparql",
+            [("a", "b", 1), ("b", "a", 1), ("b", "c", 1)],
+            [("a", "b", 1), ("b", "a", 1), ("b", "c", 1)],
+            [
+                {Variable("x"), Variable("y")},
+            ],
+            [
+                {Variable("y"), Variable("z")},
+            ],
+            "BGP_4313253051102226119",
+            "BGP_5439676414810165533",
+            "Union_5968519747945714539_schema_5536938746033674259",
+            "Union_5968519747945714539_schema_7808164217916843974",
+            "database/union_test_output.db",
+        )
+    ],
+)
+def test_union_query_output_no_overlap(
+    query_file: str,
+    expected_output_first,
+    expected_output_second,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+    bgp_name_one: str,
+    bgp_name_two: str,
+    union_name_first: str,
+    union_name_second: str,
+    database_name: str,
+) -> None:
+    """Test if the union_query function works correctly."""
+    reset_seed()
+
+    part = get_query_object(
+        readQueryFile(query_file)
+    ).algebra
+
+    union_leaves = all_type_leaves(part, "Union")
+
+    union_queries: str = ""
+    for union in reversed(union_leaves):
+        union_query_str = union_query(
+            union, schemas1, schemas2
+        )
+        union_queries = format(
+            union_query_str,
+            reindent=True,
+            keyword_case="upper",
+        )
+
+    # Connect to the database
+    duckdb_conn = connect(database_name)
+
+    # Build the BGPs
+    __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
+
+    # Drop the union tables
+    __dropUnionTables(
+        duckdb_conn, union_name_first, union_name_second
+    )
+
+    # Execute the query
+    duckdb_conn.execute(union_queries)
+
+    # Get the result
+    result_first = duckdb_conn.execute(
+        f"SELECT * FROM {union_name_first};"
+    ).fetchall()
+
+    # Get the second result
+    result_second = duckdb_conn.execute(
+        f"SELECT * FROM {union_name_second};"
+    ).fetchall()
+
+    assert result_first == expected_output_first
+    assert result_second == expected_output_second
+
+
+@mark.parametrize(
+    "query_file,expected_output,schemas1,schemas2,bgp_name_one,bgp_name_two,union_name,database_name",
+    [
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/union/union_test_output_overlap.sparql",
+            [
+                ("a", "b", 2),
+                ("b", "a", 2),
+                ("b", "c", 1),
+                ("c", "b", 1),
+            ],
+            [
+                {Variable("x"), Variable("y")},
+            ],
+            [
+                {Variable("y"), Variable("x")},
+            ],
+            "BGP_4313253051102226119",
+            "BGP_6645479908510283233",
+            "Union_7307959202823151433",
+            "database/union_test_output_overlap.db",
+        )
+    ],
+)
+def test_union_query_output_overlap(
+    query_file: str,
+    expected_output,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+    bgp_name_one: str,
+    bgp_name_two: str,
+    union_name: str,
+    database_name: str,
+) -> None:
+    """Test if the union_query function works correctly."""
+    reset_seed()
+
+    part = get_query_object(
+        readQueryFile(query_file)
+    ).algebra
+
+    union_leaves = all_type_leaves(part, "Union")
+
+    union_queries: str = ""
+    for union in reversed(union_leaves):
+        union_query_str = union_query(
+            union, schemas1, schemas2
+        )
+        union_queries = format(
+            union_query_str,
+            reindent=True,
+            keyword_case="upper",
+        )
+
+    # Connect to the database
+    duckdb_conn = connect(database_name)
+
+    # Build the BGPs
+    __buildOverlapBGPs(
+        bgp_name_one, bgp_name_two, duckdb_conn
+    )
+
+    # Drop the union tables
+    __dropUnionTables(duckdb_conn, union_name)
+
+    # Execute the query
+    duckdb_conn.execute(union_queries)
+
+    # Get the result
+    result = duckdb_conn.execute(
+        f"SELECT * FROM {union_name};"
+    ).fetchall()
+
+    assert sorted(result) == sorted(expected_output)
