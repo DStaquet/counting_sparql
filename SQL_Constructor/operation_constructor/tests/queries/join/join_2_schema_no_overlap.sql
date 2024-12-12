@@ -4,7 +4,8 @@ SELECT r1.w AS w,
        r1.y AS y,
        r1.k_count * r2.k_count AS k_count
 FROM BGP_5127379026335911785 AS r1,
-     Union_1860242193064701327_schema_5536938746033674259 AS r2 ON r1.y = r2.y;
+     Union_1860242193064701327_schema_5536938746033674259 AS r2
+WHERE r1.y = r2.y;
 
 
 CREATE TABLE Join_6729856109576745271_schema_3615708767843743351 AS
@@ -12,5 +13,6 @@ SELECT r1.w AS w,
        r1.y AS y,
        r1.k_count * r2.k_count AS k_count
 FROM BGP_5127379026335911785 AS r1,
-     Union_1860242193064701327_schema_3615708767843743351 AS r2 ON r1.w = r2.w
-AND r1.y = r2.y;
+     Union_1860242193064701327_schema_3615708767843743351 AS r2
+WHERE r1.w = r2.w
+  AND r1.y = r2.y;

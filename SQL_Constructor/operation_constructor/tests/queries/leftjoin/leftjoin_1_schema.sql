@@ -3,7 +3,8 @@ SELECT r1.x AS x,
        r2.y AS y,
        r1.k_count * r2.k_count AS k_count
 FROM BGP_747695058721694287 AS r1,
-     BGP_4313253051102226119 AS r2 ON r1.x = r2.x;
+     BGP_4313253051102226119 AS r2
+WHERE r1.x = r2.x;
 
 
 CREATE TABLE LeftJoin_5062614984795814045 AS

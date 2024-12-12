@@ -135,7 +135,7 @@ def __join_query_one_schema(
             + table_name_one
             + " AS r1, "
             + table_name_two
-            + " AS r2 ON "
+            + " AS r2 WHERE "
             + " AND ".join(
                 f"r1.{var} = r2.{var}"
                 for var in sorted(
@@ -221,7 +221,7 @@ def __join_query_mult_schema(
                     + table_name_two
                     + sch2_suffix
                     + " AS r2 "
-                    + "ON "
+                    + "WHERE "
                     + " AND ".join(
                         f"r1.{var} = r2.{var}"
                         for var in sorted(

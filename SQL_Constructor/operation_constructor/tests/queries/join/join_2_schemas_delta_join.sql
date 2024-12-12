@@ -4,7 +4,8 @@ SELECT r1.w AS w,
        r2.x AS x,
        r1.k_count * r2.k_count AS k_count
 FROM delta_BGP_5127379026335911785 AS r1,
-     Union_3180718904663486803_schema_5536938746033674259 AS r2 ON r1.y = r2.y;
+     Union_3180718904663486803_schema_5536938746033674259 AS r2
+WHERE r1.y = r2.y;
 
 
 CREATE TEMP TABLE delta_Join_8039763548589018781_1 AS
@@ -13,7 +14,8 @@ SELECT r1.w AS w,
        r2.x AS x,
        r1.k_count * r2.k_count AS k_count
 FROM delta_BGP_5127379026335911785 AS r1,
-     Union_3180718904663486803_schema_122147079200776137 AS r2 ON r1.w = r2.w;
+     Union_3180718904663486803_schema_122147079200776137 AS r2
+WHERE r1.w = r2.w;
 
 
 CREATE TEMP TABLE delta_Join_8039763548589018781_temp_1 AS
@@ -45,7 +47,8 @@ SELECT r1.w AS w,
        r2.x AS x,
        r1.k_count * r2.k_count AS k_count
 FROM nu_BGP_5127379026335911785 AS r1,
-     delta_Union_3180718904663486803_schema_5536938746033674259 AS r2 ON r1.y = r2.y;
+     delta_Union_3180718904663486803_schema_5536938746033674259 AS r2
+WHERE r1.y = r2.y;
 
 
 CREATE TEMP TABLE delta_Join_8039763548589018781_temp_2 AS
@@ -77,7 +80,8 @@ SELECT r1.w AS w,
        r2.x AS x,
        r1.k_count * r2.k_count AS k_count
 FROM nu_BGP_5127379026335911785 AS r1,
-     delta_Union_3180718904663486803_schema_122147079200776137 AS r2 ON r1.w = r2.w;
+     delta_Union_3180718904663486803_schema_122147079200776137 AS r2
+WHERE r1.w = r2.w;
 
 
 CREATE TABLE delta_Join_8039763548589018781 AS
