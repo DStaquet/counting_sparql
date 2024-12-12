@@ -73,6 +73,72 @@ def test_bgp_table_query(
     assert bgp_queries == expected_query
 
 
+@mark.parametrize(
+    "query_file,expected_sql,expected_join_sql",
+    [
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern_delta.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_1_pattern_delta_join.sql",
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern_delta.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_2_pattern_delta_join.sql",
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern_delta.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/bgp/bgp_test_3_pattern_delta_join.sql",
+        ),
+    ],
+)
+def test_bgp_table_delta_query(
+    query_file: str,
+    expected_sql: str,
+    expected_join_sql: str,
+) -> None:
+    """Tests the delta_bgp_queries function."""
+    reset_seed()
+
+    part = get_query_object(
+        readQueryFile(query_file)
+    ).algebra
+
+    # Find only BGP patterns
+    bgp_leaves: list[CompValue] = all_type_leaves(
+        part, "BGP"
+    )
+
+    bgp_queries: str = ""
+    bgp_join_queries: str = ""
+    for bgp in reversed(bgp_leaves):
+        current_query, current_join_query = (
+            delta_bgp_queries(bgp)
+        )
+
+        bgp_queries += format(
+            current_query,
+            reindent=True,
+            keyword_case="upper",
+        )
+
+        bgp_join_queries += format(
+            current_join_query,
+            reindent=True,
+        )
+
+    with open(expected_sql) as f:
+        expected_query = f.read()
+
+    assert bgp_queries == expected_query
+
+    with open(expected_join_sql) as f:
+        expected_join_query = f.read()
+
+    assert bgp_join_queries == expected_join_query
+
+
 def __constructBaseGraph(
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
