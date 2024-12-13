@@ -206,11 +206,19 @@ def make_join(
 
         last_made_temp_query: str = ""
         for q_index in range(len(tables_to_make[key])):
+            if len(tables_to_make[key]) == 1:
+                temp_prefix = ""
+                key_suffix = ""
+            else:
+                temp_prefix = " TEMP "
+                key_suffix = "_" + str(q_index)
             all_queries += create_table_w_select(
-                key + "_" + str(q_index),
+                key + key_suffix,
                 tables_to_make[key][q_index],
-                temp_prefix=" TEMP ",
+                temp_prefix=temp_prefix,
             )
+            if len(tables_to_make[key]) == 1:
+                continue
             if (
                 q_index == 1
                 and len(tables_to_make[key]) > 1

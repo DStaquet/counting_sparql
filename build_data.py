@@ -66,7 +66,6 @@ def build_data(
 def setup_query_files(
     query_str: str,
     output_dir: str,
-    duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Constructs the BGP queries and writes them to the output directory.
 
@@ -83,7 +82,7 @@ def setup_query_files(
         get_query_output_dir,
         setup_tables,
     )
-    from rdflib.plugins.sparql import parser, algebra
+    from rdflib.plugins.sparql import algebra
 
     q_query_object: iqp.Query = iqp.get_query_object(
         iqp.readQueryFile(query_str)
@@ -132,8 +131,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("query", help="The query to test")
     parser.add_argument(
-        "input",
-        help="The input directory to grab the tables from",
+        "output",
+        help="The output directory to grab the tables from",
     )
     parser.add_argument(
         "-d",
@@ -169,14 +168,18 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Connect to the database
-    duckdb_conn = duckdb.connect(args.db)
-
-    setup_query_files(args.query, args.input, duckdb_conn)
+    setup_query_files(args.query, args.output)
 
     if args.setup:
+        try:
+            # Connect to the database
+            duckdb_conn = duckdb.connect(args.db)
+        except Exception as e:
+            print(f"Error connecting to the database: {e}")
+            sys.exit(1)
+
         build_data(
-            args.input,
+            args.output,
             args.query,
             duckdb_conn,
             args.data,
