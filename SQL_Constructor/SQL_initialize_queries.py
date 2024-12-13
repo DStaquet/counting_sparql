@@ -73,21 +73,12 @@ def build_increm_queries(
         schemas2 = build_increm_queries(part.p2, output_dir)
     part_schemas: Union[list[set[str]], None] = None
     # Construct the SQL query
-    use_PV = False
     match part.name:
         case "BGP":
             (
                 delta_queries,
                 delta_join_queries,
             ) = SQL_bgp.delta_bgp_queries(part)
-            """write_query_to_output_dir(
-                output_dir,
-                delta_join_tables,
-                base_constructor.get_table_name(part)
-                + "_tables",
-                False,
-                "delta_",
-            )"""
             write_query_to_output_dir(
                 output_dir,
                 delta_queries,
@@ -138,7 +129,6 @@ def build_increm_queries(
                 schemas1, schemas2
             )
         case "Project":
-            use_PV = True
             project_query_tuple = (
                 SQL_project.delta_project_query(
                     part, schemas1
@@ -235,8 +225,10 @@ def build_increm_queries(
                 base_constructor.get_table_name(part),
                 filename_prefix="delta_",
             )
-    nu_query: str = base_constructor.nu_queries(
-        part, use_PV
+    if part_schemas == None:
+        part_schemas = schemas1
+    nu_query, nu_query_sum = base_constructor.nu_queries(
+        part, part_schemas
     )
     write_query_to_output_dir(
         output_dir,
@@ -244,9 +236,13 @@ def build_increm_queries(
         base_constructor.get_table_name(part),
         filename_prefix="nu_",
     )
+    write_query_to_output_dir(
+        output_dir,
+        nu_query_sum,
+        base_constructor.get_table_name(part) + "_sum",
+        filename_prefix="nu_",
+    )
 
-    if part_schemas == None:
-        part_schemas = schemas1
     return part_schemas
 
 
@@ -407,7 +403,9 @@ def build_queries(
             )
         case "SelectQuery":
             select_query: str = (
-                base_constructor.select_query(part)
+                base_constructor.select_query(
+                    part, schemas1
+                )
             )
             write_query_to_output_dir(
                 output_dir,

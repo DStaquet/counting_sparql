@@ -179,6 +179,7 @@ def make_join(
     tables_to_make: dict[str, list[str]],
     schemas: list[set[str]],
     is_delta: bool = False,
+    is_select: bool = False,
 ) -> str:
     """Generates the join query string.
 
@@ -194,6 +195,10 @@ def make_join(
     for key in tables_to_make:
         if len(schemas) == 1:
             curr_schema = schemas[0]
+        elif is_select:
+            curr_schema = set()
+            for schema in schemas:
+                curr_schema = curr_schema.union(schema)
         else:
             for schema in schemas:
                 if schema_in_key(key, schema):
@@ -240,6 +245,7 @@ def make_join(
                     curr_schema,
                     key,
                     is_delta=is_delta,
+                    is_select=is_select,
                 )
             else:
                 last_made_temp_query = (
@@ -880,6 +886,7 @@ def final_outer_join_query(
     schema: set[str],
     new_table_name: str,
     is_delta: bool = False,
+    is_select: bool = False,
 ) -> str:
     """Generates a query that joins the final tables together.
 
@@ -892,8 +899,12 @@ def final_outer_join_query(
     Returns:
         str: Query that joins both tables as a UNION.
     """
-    join_query: str = "CREATE TABLE " + new_table_name
-    join_query += " AS SELECT "
+    join_query: str = ""
+    if not is_select:
+        join_query += (
+            "CREATE TABLE " + new_table_name + " AS "
+        )
+    join_query += "SELECT "
     if schema:
         join_query += ", ".join(
             f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}"
@@ -1168,10 +1179,34 @@ def project_table_query(part: CompValue) -> str:
     return project_str
 
 
-def select_query(part: CompValue) -> str:
+def select_query(
+    part: CompValue, schemas: list[set[str]]
+) -> str:
     table_name = __encode_table_name(part.p)
-    select_str = "SELECT " + "* FROM " + table_name + ";"
-    return select_str
+
+    if len(schemas) == 1:
+        return f"SELECT * FROM {table_name};"
+    else:
+        select_dict: dict[str, list[str]] = dict()
+        for schema in schemas:
+            new_table_name: str = (
+                table_name
+                + "_"
+                + __encode_schema_name(str(sorted(schema)))
+            )
+            if table_name not in select_dict:
+                select_dict[table_name] = [
+                    f"SELECT * FROM {new_table_name};"
+                ]
+            else:
+                select_dict[table_name].append(
+                    f"SELECT * FROM {new_table_name};"
+                )
+
+        select_str: str = make_join(
+            select_dict, schemas, is_select=True
+        )
+        return select_str
 
 
 def delta_select_query(part: CompValue) -> str:
@@ -1342,8 +1377,8 @@ def delta_union_table_query(
 
 
 def nu_queries(
-    part: CompValue, use_PV: bool = False
-) -> str:
+    part: CompValue, schemas: list[set[str]]
+) -> tuple[str, str]:
     """Constructs a query for the nu table.
 
     Args:
@@ -1352,52 +1387,7 @@ def nu_queries(
     Returns:
         str: Query string for the nu table.
     """
-    """if use_PV:
-        if part.PV is None:
-            part.PV = part.p.PV
-        variables = part.PV
-    else:
-        variables = part._vars
-
-    nu_query: str = (
-        "INSERT INTO nu_"
-        + get_table_name(part)
-        + "  ("
-        + ", ".join(
-            var
-            for var in sorted(variables)
-            if var != "k_count"
-        )
-        + ", k_count) select "
-    )
-    nu_query += ", ".join(
-        "(CASE WHEN r1."
-        + var
-        + " NOT NULL THEN r1."
-        + var
-        + " ELSE r2."
-        + var
-        + " END) as "
-        + var
-        for var in sorted(variables)
-        if var != "k_count"
-    )
-    nu_query += ", coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count"
-    nu_query += (
-        " from "
-        + get_table_name(part)
-        + " AS r1 FULL OUTER JOIN delta_"
-        + get_table_name(part)
-        + " AS r2 ON "
-        + " AND ".join(
-            f"r1.{var} = r2.{var}"
-            for var in sorted(variables)
-            if var != "k_count"
-        )
-        + " WHERE (coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0)) > 0"
-        + ";"
-    )"""
-    variables = part._vars
+    """variables = part._vars
     if use_PV:
         if part.PV is None:
             part.PV = part.p.PV
@@ -1446,13 +1436,50 @@ def nu_queries(
         variables,
     )
     nu_query += sum_query_w_insert
-    nu_query += " HAVING SUM(k_count) > 0;"
+    nu_query += " HAVING SUM(k_count) > 0;"""
 
-    """# Remove unwanted records
-    nu_query += (
-        "DELETE FROM nu_"
-        + __encode_table_name(part)
-        + " WHERE k_count <= 0;"
-    )"""
+    dict_nu_queries: dict[str, list[str]] = dict()
 
-    return nu_query
+    if len(schemas) == 1:
+        dict_nu_queries = add_table_to_dict(
+            "nu_" + __encode_table_name(part),
+            f"SELECT * FROM {__encode_table_name(part)};",
+            dict_nu_queries,
+        )
+        dict_nu_queries = add_table_to_dict(
+            "nu_" + __encode_table_name(part),
+            f"SELECT * FROM delta_{__encode_table_name(part)};",
+            dict_nu_queries,
+        )
+    else:
+        for schema in schemas:
+            schemas_suffix: str = __encode_schema_name(
+                str(sorted(schema))
+            )
+            curr_table_name = (
+                __encode_table_name(part)
+                + "_"
+                + schemas_suffix
+            )
+            dict_nu_queries = add_table_to_dict(
+                "nu_" + curr_table_name,
+                f"SELECT * FROM {curr_table_name};",
+                dict_nu_queries,
+            )
+            dict_nu_queries = add_table_to_dict(
+                "nu_" + curr_table_name,
+                f"SELECT * FROM delta_{curr_table_name};",
+                dict_nu_queries,
+            )
+
+    nu_query: str = make_join(
+        dict_nu_queries,
+        schemas,
+    )
+
+    nu_query_groupby: str = make_group_by(
+        dict_nu_queries,
+        schemas,
+    )
+
+    return nu_query, nu_query_groupby
