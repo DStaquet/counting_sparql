@@ -1,8 +1,7 @@
 from SQL_Constructor.hash_writer import setup_hash_values
-from build_data import readQueryFile
+from build_data import dropTablesRec, readQueryFile
 from eval_incremental.eval_incremental import (
     constructTablesRec,
-    dropTablesRec,
     deleteTablesRec,
 )
 from SQL_Constructor import SQL_initialize_queries
@@ -61,7 +60,7 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
     handle.close()
 
     # Drop all the tables before the setup
-    drop_queries: str = dropTablesRec(query)
+    drop_queries, _ = dropTablesRec(query)
     # Delete all the tables before the setup
     delete_queries: str = deleteTablesRec(query)
     # Construct the tables

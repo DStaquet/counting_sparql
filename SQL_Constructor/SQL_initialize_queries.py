@@ -13,7 +13,6 @@ from SQL_Constructor.operation_constructor import (
     leftjoin_constructor as SQL_leftjoin,
     minus_constructor as SQL_minus,
     union_constructor as SQL_union,
-    join_constructor as SQL_join,
 )
 
 
@@ -155,10 +154,8 @@ def build_increm_queries(
                     + "_join",
                     filename_prefix="delta_",
                 )
-            part_schemas = (
-                SQL_Constructor.hash_writer.project_schemas(
-                    part, schemas1
-                )
+            part_schemas = SQL_project.project_schemas(
+                part, schemas1
             )
         case "LeftJoin":
             left_join_query, left_join_query_outer_join = (

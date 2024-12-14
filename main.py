@@ -1,5 +1,4 @@
-def run_query(query_file: str, query_files: str) -> None:
-    pass
+from benchmarker.benchmark import run_benchmark
 
 
 if __name__ == "__main__":
@@ -61,6 +60,13 @@ if __name__ == "__main__":
         default=False,
         help="Construct the SQL queries before running the benchmark",
     )
+    parser.add_argument(
+        "-r",
+        "--runs",
+        type=int,
+        default=10,
+        help="The number of runs to do",
+    )
 
     args = parser.parse_args()
 
@@ -70,7 +76,7 @@ if __name__ == "__main__":
     # Connect to the database
     duckdb_conn = connect(args.db)
 
-    # Build up the data
+    """ # Build up the data
     build_data(
         args.query_files,
         args.query,
@@ -79,4 +85,12 @@ if __name__ == "__main__":
         delta_file=args.delta,
         nu_file=args.nu_file,
         csv=True,
+    ) """
+
+    run_benchmark(
+        args.query,
+        args.query_files,
+        args.runs,
+        duckdb_conn,
+        args.data,
     )

@@ -96,31 +96,6 @@ def delete_all_tables(part: CompValue) -> str:
     )
 
 
-def drop_all_tables(part) -> str:
-    (
-        drop_query,
-        drop_delta_query,
-        drop_nu_query,
-        drop_nu_prep_query,
-    ) = base_constructor.drop_all_tables(part)
-    delta_table_drop_query, delta_prep_table_drop_query = (
-        base_constructor.drop_delta_table(part)
-    )
-    return (
-        drop_query
-        + "\n"
-        + drop_delta_query
-        + "\n"
-        + drop_nu_query
-        + "\n"
-        + drop_nu_prep_query
-        + "\n"
-        + delta_table_drop_query
-        + "\n"
-        + delta_prep_table_drop_query
-    )
-
-
 def construct_tables(part) -> str:
     (
         table_query,
@@ -339,20 +314,6 @@ def deleteTablesRec(part: CompValue) -> str:
             deleteTablesRec(part.p1)
             + deleteTablesRec(part.p2)
             + delete_all_tables(part)
-        )
-    return ""
-
-
-def dropTablesRec(part) -> str:
-    if part == None:
-        return ""
-    if "p" in part or part.name == "BGP":
-        return dropTablesRec(part.p) + drop_all_tables(part)
-    elif "p1" in part and "p2" in part:
-        return (
-            dropTablesRec(part.p1)
-            + dropTablesRec(part.p2)
-            + drop_all_tables(part)
         )
     return ""
 

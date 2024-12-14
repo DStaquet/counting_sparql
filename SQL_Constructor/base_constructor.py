@@ -46,35 +46,60 @@ def delete_all_tables(
     )
 
 
-def drop_all_tables(part) -> tuple[str, str, str, str]:
-    drop_query: str = (
-        "DROP TABLE IF EXISTS "
-        + __encode_table_name(part)
-        + ";"
-    )
+def drop_all_tables(
+    part: CompValue, schemas: list[set[str]]
+) -> tuple[str, str, str]:
+    """Generates the drop table queries.
 
-    drop_delta_query: str = (
-        "DROP TABLE IF EXISTS delta_"
-        + __encode_table_name(part)
-        + ";"
-    )
+    Args:
+        part (CompValue): Current part of the query
+        schemas (list[set[str]]): Schemas of this part of the query
 
-    drop_nu_query: str = (
-        "DROP TABLE IF EXISTS nu_"
-        + __encode_table_name(part)
-        + ";"
+    Returns:
+        tuple[str, str, str]: All drop table queries for this part.
+    """
+    drop_queries, drop_delta_queries, drop_nu_queries = (
+        "",
+        "",
+        "",
     )
-    drop_nu_prep_query: str = (
-        "DROP TABLE IF EXISTS nu_prep_"
-        + __encode_table_name(part)
-        + ";"
-    )
+    for sch in schemas:
+        if len(schemas) == 1:
+            schema_suffix = ""
+        else:
+            schema_suffix = "_" + __encode_schema_name(
+                str(sorted(sch))
+            )
+
+        drop_query: str = (
+            "DROP TABLE IF EXISTS "
+            + __encode_table_name(part)
+            + schema_suffix
+            + ";"
+        )
+
+        drop_delta_query: str = (
+            "DROP TABLE IF EXISTS delta_"
+            + __encode_table_name(part)
+            + schema_suffix
+            + ";"
+        )
+
+        drop_nu_query: str = (
+            "DROP TABLE IF EXISTS nu_"
+            + __encode_table_name(part)
+            + schema_suffix
+            + ";"
+        )
+
+        drop_queries += drop_query + "\n"
+        drop_delta_queries += drop_delta_query + "\n"
+        drop_nu_queries += drop_nu_query + "\n"
 
     return (
-        drop_query,
-        drop_delta_query,
-        drop_nu_query,
-        drop_nu_prep_query,
+        drop_queries,
+        drop_delta_queries,
+        drop_nu_queries,
     )
 
 

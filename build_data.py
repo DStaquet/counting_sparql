@@ -2,9 +2,17 @@ from os.path import join
 from duckdb import DuckDBPyConnection
 from rdflib.plugins.sparql import algebra, parser
 from rdflib.plugins.sparql.parser import parseQuery
+from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql.sparql import Query
 
 from SQL_Constructor import base_constructor
+from SQL_Constructor.operation_constructor import (
+    project_constructor as SQL_project,
+    join_constructor as SQL_join,
+    leftjoin_constructor as SQL_leftjoin,
+    union_constructor as SQL_union,
+)
+
 from experiments.experiments import (
     load_table_in_graph,
     load_delta_table_in_graph,
@@ -151,6 +159,91 @@ def setup_query_files(
         q_query_object.algebra,
         query_output_dir,
     )
+
+
+def drop_all_tables(
+    part: CompValue, schemas: list[set[str]]
+) -> str:
+    (
+        drop_query,
+        drop_delta_query,
+        drop_nu_query,
+    ) = base_constructor.drop_all_tables(part, schemas)
+    """delta_table_drop_query, delta_prep_table_drop_query = (
+        base_constructor.drop_delta_table(part)
+    ) """
+    return (
+        drop_query
+        + "\n"
+        + drop_delta_query
+        + "\n"
+        + drop_nu_query
+    )
+
+
+def dropTablesRec(
+    part: CompValue,
+) -> tuple[str, list[set[str]]]:
+    """Recursively go through all tables to setup to drop them file.
+
+    Args:
+        part (CompValue): Current part of the query.
+
+    Returns:
+        tuple[str, list[set[str]]]: Tuple containing the drop queries and the set of schemas
+        from the child branch.
+    """
+    prev_query = ""
+    if part is None:
+        return prev_query, []
+    if "p" in part or part.name == "BGP":
+        prev_query, schemas1 = dropTablesRec(part.p)
+    elif "p1" in part and "p2" in part:
+        prev_query1, schemas1 = dropTablesRec(part.p1)
+        prev_query2, schemas2 = dropTablesRec(part.p2)
+        prev_query = prev_query1 + "\n" + prev_query2
+
+    # Return with right schemas
+    match part.name:
+        case "BGP":
+            curr_schemas: list[set[str]] = [part._vars]
+        case "Filter":
+            curr_schemas = schemas1
+        case "Project":
+            curr_schemas = SQL_project.project_schemas(
+                part, schemas1
+            )
+        case "Join":
+            curr_schemas: list[set[str]] = (
+                SQL_join.join_schemas(schemas1, schemas2)
+            )
+        case "LeftJoin":
+            curr_schemas: list[set[str]] = (
+                SQL_leftjoin.leftjoin_schemas(
+                    schemas1, schemas2
+                )
+            )
+        case "Union":
+            curr_schemas: list[set[str]] = (
+                SQL_union.union_schemas(schemas1, schemas2)
+            )
+        case "Minus":
+            curr_schemas: list[set[str]] = schemas1
+        case "SelectQuery":
+            curr_schemas = schemas1
+        case _:
+            raise NotImplementedError(
+                f"Drop tables for {part.name} not implemented"
+            )
+
+    # Construct the drop query for the current part
+    drop_query = (
+        prev_query
+        + "\n"
+        + drop_all_tables(part, curr_schemas)
+    )
+
+    return drop_query, curr_schemas
 
 
 if __name__ == "__main__":

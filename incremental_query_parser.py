@@ -24,6 +24,7 @@ from os.path import join
 import sys, os
 
 from build_data import (
+    dropTablesRec,
     get_query_input,
     get_query_object,
     readQueryFile,
@@ -31,7 +32,6 @@ from build_data import (
 from eval_incremental import VALUES
 from eval_incremental.eval_incremental import (
     constructTablesRec,
-    dropTablesRec,
 )
 from eval_incremental import delta_inserter
 from eval_incremental.eval_incremental import (
