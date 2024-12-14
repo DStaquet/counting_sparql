@@ -1,6 +1,7 @@
 from rdflib.plugins.sparql.parserutils import CompValue
 from duckdb import DuckDBPyConnection
 from os.path import join
+from time import time
 
 from build_data import (
     get_query_object,
@@ -11,10 +12,11 @@ from experiments.experiments import (
     load_table_in_graph,
 )
 from SQL_Constructor.base_constructor import get_table_name
+from benchmarker.dict_maker import constructDictFromTree
 
 
 def run_file_query(
-    query_file: str,
+    query_to_run: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Runs the given query.
@@ -23,15 +25,12 @@ def run_file_query(
         query_file (str): The given query file.
         duckdb_conn (DuckDBPyConnection): Connection to the database.
     """
-    with open(query_file, "r") as file:
-        query = file.read()
-
-        duckdb_conn.execute(query)
+    duckdb_conn.execute(query_to_run)
 
 
 def run_query(
     part: CompValue,
-    query_file_dir: str,
+    queries_dict: dict[str, str],
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Runs the given query.
@@ -41,13 +40,13 @@ def run_query(
         duckdb_conn (DuckDBPyConnection): Connection to the database.
     """
     if "p" in part:
-        run_query(part.p, query_file_dir, duckdb_conn)
+        run_query(part.p, queries_dict, duckdb_conn)
     elif "p1" in part and "p2" in part:
-        run_query(part.p1, query_file_dir, duckdb_conn)
-        run_query(part.p2, query_file_dir, duckdb_conn)
+        run_query(part.p1, queries_dict, duckdb_conn)
+        run_query(part.p2, queries_dict, duckdb_conn)
 
     run_file_query(
-        join(query_file_dir, get_table_name(part)) + ".sql",
+        queries_dict[get_table_name(part)],
         duckdb_conn,
     )
 
@@ -73,12 +72,36 @@ def run_benchmark(
         query_files_dir, q_query_object
     )
 
-    for _ in range(runs):
+    drop_tables = readQueryFile(
+        join(query_input_dir, "drop_tables.sql")
+    )
+
+    # Build dictionary with SQL queries
+    SQL_queries = constructDictFromTree(
+        q_query_object.algebra, query_input_dir
+    )
+
+    print("Running the benchmark")
+    total_time: float = 0.0
+    for run in range(runs):
+        print(f"Run: {run + 1} of {runs}")
+        # Drop the tables
+        duckdb_conn.execute(drop_tables)
         # Prepare the G table
         load_table_in_graph(data_file, duckdb_conn)
 
+        # Time counter
+        start_time: float = time()
+        # Run the query
         run_query(
-            q_query_object.algebra,
-            query_input_dir,
+            q_query_object.algebra.p,
+            SQL_queries,
             duckdb_conn,
         )
+        # End time
+        end_time: float = time()
+        # Calculate the time
+        total_time += (end_time - start_time) * 1000
+        print(f"Time: {(end_time - start_time) * 1000}ms")
+        print(f"Average time: {total_time / (run + 1)}ms")
+    print(f"Average time: {total_time / runs}ms")
