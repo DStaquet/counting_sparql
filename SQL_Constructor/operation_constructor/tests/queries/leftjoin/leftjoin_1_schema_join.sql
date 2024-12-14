@@ -50,10 +50,9 @@ SELECT s1.x AS x,
        s1.k_count AS k_count
 FROM nu_BGP_747695058721694287 AS s1
 JOIN delta_BGP_4313253051102226119 AS s2 ON s1.x = s2.x
-WHERE EXISTS (
-              FROM BGP_4313253051102226119 AS s3
-              WHERE s1.x = s3.x
-                AND -s2.k_count = s3.k_count)
+WHERE NOT EXISTS (
+                  FROM nu_BGP_4313253051102226119 AS s3
+                  WHERE s1.x = s3.x)
 UNION
 SELECT s1.x AS x, -s1.k_count AS k_count
 FROM nu_BGP_747695058721694287 AS s1

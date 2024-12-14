@@ -261,6 +261,23 @@ def __buildBGPs(
     )
 
 
+def __build2SchemaExtraBGPs(
+    bgp_name_two: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Constructs the second schema BGP for the minus query."""
+    duckdb_conn.execute(
+        "CREATE OR REPLACE TABLE "
+        + bgp_name_two
+        + " (x TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        "INSERT INTO "
+        + bgp_name_two
+        + " (x, k_count) VALUES ('b', 1), ('d', 1);"
+    )
+
+
 @mark.parametrize(
     "query_file,expected_output,database,schemas1,schemas2,bgp_name_one,bgp_name_two,minus_table",
     [
@@ -273,7 +290,20 @@ def __buildBGPs(
             "BGP_2112036525527516625",
             "BGP_1699582530383365185",
             "Minus_6413830616648920484",
-        )
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_output_test_2_schemas.sparql",
+            [["a", "d", 1]],
+            ":memory:",
+            [{Variable("x"), Variable("y")}],
+            [{Variable("y")}, {Variable("x")}],
+            "BGP_2112036525527516625",
+            [
+                "Union_5876689305829364457_schema_6925710393041315400",
+                "Union_5876689305829364457_schema_5974201903695169563",
+            ],
+            "Minus_1904994787727423016",
+        ),
     ],
 )
 def test_minus_output(
@@ -283,7 +313,7 @@ def test_minus_output(
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     bgp_name_one: str,
-    bgp_name_two: str,
+    bgp_name_two: str | list[str],
     minus_table: str,
 ) -> None:
     """Tests the output of the minus query."""
@@ -314,7 +344,18 @@ def test_minus_output(
     duckdb_conn = connect(database)
 
     # Build the BGPs
-    __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
+    if type(bgp_name_two) == str:
+        __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
+    else:
+        __buildBGPs(
+            bgp_name_one, bgp_name_two[0], duckdb_conn
+        )
+        __build2SchemaExtraBGPs(
+            bgp_name_two[1], duckdb_conn
+        )
+
+    # Drop the minus table
+    __dropMinusTables(minus_table, duckdb_conn)
 
     # Execute the query
     duckdb_conn.execute(minus_queries)
@@ -393,6 +434,34 @@ def __buildDeltaBGPs(
     )
 
 
+def __build2SchemaExtraDeltaBGPs(
+    bgp_name_two: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Constructs the second schema delta BGP for the minus query."""
+    delta_table = "delta_" + bgp_name_two
+
+    duckdb_conn.execute(
+        "CREATE OR REPLACE TABLE "
+        + delta_table
+        + " (x TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        "INSERT INTO "
+        + delta_table
+        + " (x, k_count) VALUES ('b', -1), ('b', 1);"
+    )
+
+    duckdb_conn.execute(
+        f"CREATE OR REPLACE TABLE nu_{bgp_name_two} (x TEXT, k_count INT);"
+    )
+    duckdb_conn.execute(
+        "INSERT INTO nu_"
+        + bgp_name_two
+        + " (x, k_count) VALUES ('b', 1), ('d', 1);"
+    )
+
+
 def __dropMinusTables(
     minus_table: str,
     duckdb_conn: DuckDBPyConnection,
@@ -418,7 +487,20 @@ def __dropMinusTables(
             "BGP_2112036525527516625",
             "BGP_1699582530383365185",
             "Minus_6413830616648920484",
-        )
+        ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_output_test_2_schemas.sparql",
+            [["a", "d", -1]],
+            "database/minus_test.db",
+            [{Variable("x"), Variable("y")}],
+            [{Variable("y")}, {Variable("x")}],
+            "BGP_2112036525527516625",
+            [
+                "Union_5876689305829364457_schema_6925710393041315400",
+                "Union_5876689305829364457_schema_5974201903695169563",
+            ],
+            "Minus_1904994787727423016",
+        ),
     ],
 )
 def test_minus_delta_output(
@@ -428,7 +510,7 @@ def test_minus_delta_output(
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     bgp_name_one: str,
-    bgp_name_two: str,
+    bgp_name_two: str | list[str],
     minus_table: str,
 ) -> None:
     """Tests if the delta output of the minus query is correct."""
@@ -465,12 +547,29 @@ def test_minus_delta_output(
     # Connect to the database
     duckdb_conn = connect(database)
 
-    # Build the BGPs
-    __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
-    # Build the delta BGPs
-    __buildDeltaBGPs(
-        bgp_name_one, bgp_name_two, duckdb_conn
-    )
+    if type(bgp_name_two) == str:
+        # Build the BGPs
+        __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
+        # Build the delta BGPs
+        __buildDeltaBGPs(
+            bgp_name_one, bgp_name_two, duckdb_conn
+        )
+    else:
+        # Build the BGPs
+        __buildBGPs(
+            bgp_name_one, bgp_name_two[0], duckdb_conn
+        )
+        __build2SchemaExtraBGPs(
+            bgp_name_two[1], duckdb_conn
+        )
+        # Build the delta BGPs
+        __buildDeltaBGPs(
+            bgp_name_one, bgp_name_two[0], duckdb_conn
+        )
+        __build2SchemaExtraDeltaBGPs(
+            bgp_name_two[1], duckdb_conn
+        )
+
     # Drop the minus tables
     __dropMinusTables(minus_table, duckdb_conn)
 

@@ -12,15 +12,16 @@ from rdflib.plugins.sparql.parserutils import CompValue
 
 
 def __varsToJoinOn(
-    sch1: set[str], schemas2: list[set[str]]
+    sch1: set[str], sch2: set[str]
 ) -> set[str]:
     """Finds the variables to join on."""
-    vars_to_join_on: set[str] = set()
-    for sch2 in schemas2:
+    """vars_to_join_on: set[str] = set()
+    for sch2 in sch2:
         vars_to_join_on = vars_to_join_on.union(
             sch1.intersection(sch2)
         )
-    return vars_to_join_on
+    return vars_to_join_on"""
+    return sch1.intersection(sch2)
 
 
 def __delta_on_negate_part(
@@ -57,74 +58,96 @@ def __delta_on_negate_part(
 
     diff_queries: dict[str, list[str]] = dict()
 
+    curr_left_selects: list[str] = list()
+    curr_right_selects: list[str] = list()
+
     if len(schemas1) == 0:
         raise ValueError("No schemas to join on.")
     for sch1 in schemas1:
+        for sch2 in schemas2:
+            schemas2_len = len(schemas2)
+            if minus:
+                schemas2 = [
+                    sch2
+                    for sch2 in schemas2
+                    if sch1.intersection(sch2) != set()
+                ]
 
-        schemas2_len = len(schemas2)
-        if minus:
-            schemas2 = [
-                sch2
-                for sch2 in schemas2
-                if sch1.intersection(sch2) != set()
-            ]
+            if len(schemas2) > 1:
+                sch2_suffix: str = (
+                    "_"
+                    + __encode_schema_name(
+                        str(sorted(sch2))
+                    )
+                )
+            else:
+                sch2_suffix: str = ""
 
-        vars_to_join_on = __varsToJoinOn(sch1, schemas2)
-        curr_diff_query_select_left: str = (
-            "SELECT "
-            + ", ".join(
-                f"s1.{var} as {var}" for var in sorted(sch1)
-            )
-            + ", s1.k_count as k_count"
-            + " FROM "
-            + nu_from_table
-            + " as s1 JOIN "
-            + delta_from_table
-            + " as s2 "
-        )
-        if vars_to_join_on:
-            curr_diff_query_select_left += (
-                "ON "
-                + " AND ".join(
-                    f"s1.{var} = s2.{var}"
-                    for var in sorted(vars_to_join_on)
+            vars_to_join_on = __varsToJoinOn(sch1, sch2)
+            curr_diff_query_select_left: str = (
+                "SELECT "
+                + ", ".join(
+                    f"s1.{var} as {var}"
+                    for var in sorted(sch1)
                 )
+                + ", s1.k_count as k_count"
+                + " FROM "
+                + nu_from_table
+                + " as s1 JOIN "
+                + delta_from_table
+                + sch2_suffix
+                + " as s2 "
             )
-        curr_diff_query_select_right: str = (
-            "SELECT "
-            + ", ".join(
-                f"s1.{var} as {var}" for var in sorted(sch1)
-            )
-            + ", -s1.k_count as k_count"
-            + " FROM "
-            + nu_from_table
-            + " as s1 JOIN "
-            + delta_from_table
-            + " as s2 "
-        )
-        if vars_to_join_on:
-            curr_diff_query_select_right += (
-                "ON "
-                + " AND ".join(
-                    f"s1.{var} = s2.{var}"
-                    for var in sorted(vars_to_join_on)
+            if vars_to_join_on:
+                curr_diff_query_select_left += (
+                    "ON "
+                    + " AND ".join(
+                        f"s1.{var} = s2.{var}"
+                        for var in sorted(vars_to_join_on)
+                    )
                 )
+            curr_diff_query_select_right: str = (
+                "SELECT "
+                + ", ".join(
+                    f"s1.{var} as {var}"
+                    for var in sorted(sch1)
+                )
+                + ", -s1.k_count as k_count"
+                + " FROM "
+                + nu_from_table
+                + " as s1 JOIN "
+                + delta_from_table
+                + sch2_suffix
+                + " as s2 "
+            )
+            if vars_to_join_on:
+                curr_diff_query_select_right += (
+                    "ON "
+                    + " AND ".join(
+                        f"s1.{var} = s2.{var}"
+                        for var in sorted(vars_to_join_on)
+                    )
+                )
+            curr_left_selects.append(
+                curr_diff_query_select_left
+            )
+            curr_right_selects.append(
+                curr_diff_query_select_right
             )
 
         curr_diff_query_left: str = ""
         curr_diff_query_right: str = ""
         if len(schemas2) > 0:
             curr_diff_query_left = " WHERE " + " AND ".join(
-                f" EXISTS ("
+                f" NOT EXISTS ("
                 + __diffSch2Subquery(
                     part,
-                    old_delta_from_table_name,
+                    "nu_" + old_delta_from_table_name,
                     sch2,
                     sch1,
                     schemas2_len,
                     index + 3,
                     is_delta=True,
-                    delta_swap="-",
                 )
                 + ")"
                 for index, sch2 in enumerate(schemas2)
@@ -146,32 +169,40 @@ def __delta_on_negate_part(
                     for index, sch2 in enumerate(schemas2)
                 )
             )
-        curr_diff_query = (
-            curr_diff_query_select_left
-            + curr_diff_query_left
-            + " UNION "
-            + curr_diff_query_select_right
-            + curr_diff_query_right
-            + ";\n"
-        )
 
-        if (
-            __check_if_same_diff_schema(schemas1, schemas2)
-            and not append_schemas
-        ):
-            schema_both_suffix: str = ""
-        else:
-            schema_both_suffix: str = (
-                "_"
-                + __encode_schema_name(str(sorted(sch1)))
+        for schema_index in range(len(schemas2)):
+            curr_diff_query = (
+                curr_left_selects[schema_index]
+                + curr_diff_query_left
+                + " UNION "
+                + curr_right_selects[schema_index]
+                + curr_diff_query_right
+                + ";\n"
             )
 
-        curr_table_name = (
-            new_table_name + schema_both_suffix
-        )
-        diff_queries = add_table_to_dict(
-            curr_table_name, curr_diff_query, diff_queries
-        )
+            if (
+                __check_if_same_diff_schema(
+                    schemas1, schemas2
+                )
+                and not append_schemas
+            ):
+                schema_both_suffix: str = ""
+            else:
+                schema_both_suffix: str = (
+                    "_"
+                    + __encode_schema_name(
+                        str(sorted(sch1))
+                    )
+                )
+
+            curr_table_name = (
+                new_table_name + schema_both_suffix
+            )
+            diff_queries = add_table_to_dict(
+                curr_table_name,
+                curr_diff_query,
+                diff_queries,
+            )
 
     return diff_queries
 

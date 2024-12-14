@@ -88,7 +88,7 @@ def insertParseQuery(
         print(triple)"""
 
 
-def queryParser(
+"""def queryParser(
     size: int,
     increm_bool: bool,
     g: graph.Graph,
@@ -235,7 +235,7 @@ def queryParser(
             )
             f.write("Result query 4:\n")
             f.write(str(result))
-            f.write("\n\n")
+            f.write("\n\n")"""
 
 
 def readQueryFile(filename: str) -> str:

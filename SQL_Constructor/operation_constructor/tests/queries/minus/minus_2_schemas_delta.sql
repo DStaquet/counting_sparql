@@ -14,19 +14,40 @@ INSERT INTO prep_delta_Minus_5787900088682136291 (x, k_count)
 SELECT s1.x AS x,
        s1.k_count AS k_count
 FROM nu_BGP_747695058721694287 AS s1
-JOIN delta_Union_6981146949604561737 AS s2 ON s1.x = s2.x
-WHERE EXISTS (
-              FROM Union_6981146949604561737_schema_5536938746033674259 AS s3
-              WHERE s1.x = s3.x
-                AND -s2.k_count = s3.k_count)
-  AND EXISTS (
-              FROM Union_6981146949604561737_schema_388442962187960249 AS s4
-              WHERE s1.x = s4.x
-                AND -s2.k_count = s4.k_count)
+JOIN delta_Union_6981146949604561737_schema_5536938746033674259 AS s2 ON s1.x = s2.x
+WHERE NOT EXISTS (
+                  FROM nu_Union_6981146949604561737_schema_5536938746033674259 AS s3
+                  WHERE s1.x = s3.x)
+  AND NOT EXISTS (
+                  FROM nu_Union_6981146949604561737_schema_388442962187960249 AS s4
+                  WHERE s1.x = s4.x)
 UNION
 SELECT s1.x AS x, -s1.k_count AS k_count
 FROM nu_BGP_747695058721694287 AS s1
-JOIN delta_Union_6981146949604561737 AS s2 ON s1.x = s2.x
+JOIN delta_Union_6981146949604561737_schema_5536938746033674259 AS s2 ON s1.x = s2.x
+WHERE NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_5536938746033674259 AS s3
+                  WHERE s1.x = s3.x)
+  AND NOT EXISTS (
+                  FROM Union_6981146949604561737_schema_388442962187960249 AS s4
+                  WHERE s1.x = s4.x);
+
+
+INSERT INTO prep_delta_Minus_5787900088682136291 (x, k_count)
+SELECT s1.x AS x,
+       s1.k_count AS k_count
+FROM nu_BGP_747695058721694287 AS s1
+JOIN delta_Union_6981146949604561737_schema_388442962187960249 AS s2 ON s1.x = s2.x
+WHERE NOT EXISTS (
+                  FROM nu_Union_6981146949604561737_schema_5536938746033674259 AS s3
+                  WHERE s1.x = s3.x)
+  AND NOT EXISTS (
+                  FROM nu_Union_6981146949604561737_schema_388442962187960249 AS s4
+                  WHERE s1.x = s4.x)
+UNION
+SELECT s1.x AS x, -s1.k_count AS k_count
+FROM nu_BGP_747695058721694287 AS s1
+JOIN delta_Union_6981146949604561737_schema_388442962187960249 AS s2 ON s1.x = s2.x
 WHERE NOT EXISTS (
                   FROM Union_6981146949604561737_schema_5536938746033674259 AS s3
                   WHERE s1.x = s3.x)

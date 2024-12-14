@@ -1,7 +1,13 @@
+def run_query(query_file: str, query_files: str) -> None:
+    pass
+
+
 if __name__ == "__main__":
     import os, sys
     import argparse
     from duckdb import DuckDBPyConnection, connect
+
+    from build_data import setup_query_files
 
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
@@ -50,3 +56,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    if args.setup:
+        setup_query_files(args.query, args.query_files)
+
+    # Connect to the database
+    duckdb_conn = connect(args.db)
