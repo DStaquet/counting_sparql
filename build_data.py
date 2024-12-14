@@ -1,4 +1,43 @@
+from os.path import join
 from duckdb import DuckDBPyConnection
+from rdflib.plugins.sparql import algebra, parser
+from rdflib.plugins.sparql.parser import parseQuery
+from rdflib.plugins.sparql.sparql import Query
+
+from SQL_Constructor import base_constructor
+from experiments.experiments import (
+    load_table_in_graph,
+    load_delta_table_in_graph,
+)
+
+
+def get_query_object(query: str) -> Query:
+    query_tree = parseQuery(str(query))
+    return algebra.translateQuery(query_tree)
+
+
+def get_query_input(
+    query_file_dir: str, q_query_object: Query
+) -> str:
+    query_input_dir: str = join(
+        query_file_dir,
+        "query_"
+        + base_constructor.get_table_name(
+            q_query_object.algebra
+        ),
+    )
+    return query_input_dir
+
+
+def readQueryFile(filename: str) -> str:
+    """Read query file.
+
+    Args:
+        filename (str): filename to be read.
+    """
+
+    with open(filename, "r") as file:
+        return file.read()
 
 
 def build_data(
@@ -8,6 +47,8 @@ def build_data(
     data_file: str | None = None,
     delf: str | None = None,
     insf: str | None = None,
+    delta_file: str | None = None,
+    nu_file: str | None = None,
     csv: bool = False,
 ) -> None:
     """Builds up the data from the data file.
@@ -16,26 +57,28 @@ def build_data(
         data_file (str): String containing the data file.
     """
     if csv:
-        from experiments.delta_bgp_join import (
-            load_table_in_graph,
-        )
 
         if data_file is None:
             raise ValueError(
                 "Data file must be provided when using CSV"
             )
         load_table_in_graph(data_file, duckdb_conn)
+        if delta_file is not None and nu_file is not None:
+            load_delta_table_in_graph(
+                delta_file, duckdb_conn, nu_file
+            )
+
         return
 
-    import incremental_query_parser as iqp
+    # import incremental_query_parser as iqp
 
-    query_input_dir: str = iqp.get_query_input(
+    """query_input_dir: str = get_query_input(
         input_dir,
-        iqp.get_query_object(iqp.readQueryFile(query)),
+        get_query_object(readQueryFile(query)),
     )
 
     # Set up tables in case they don't exist
-    iqp.setup_tables(query_input_dir)
+    # iqp.setup_tables(query_input_dir, duckdb_conn)
 
     # Read the data file and put original data into the database
     duckdb_conn.execute(
@@ -43,7 +86,7 @@ def build_data(
     )
     duckdb_conn.execute(f"DELETE FROM G;")
     if data_file is not None:
-        data: str = iqp.readQueryFile(data_file)
+        data: str = readQueryFile(data_file)
         iqp.insert_data(duckdb_conn, data)
 
     # Clear the delta G table
@@ -52,15 +95,15 @@ def build_data(
 
     # Read the deleted data file and put deleted data into the database's delta G table.
     if delf is not None:
-        del_data: str = iqp.readQueryFile(delf)
+        del_data: str = readQueryFile(delf)
         iqp.insert_delete_delta_data(duckdb_conn, del_data)
 
     # Read the inserted data file and put inserted data into the database's delta G table.
     if insf is not None:
-        ins_data: str = iqp.readQueryFile(insf)
+        ins_data: str = readQueryFile(insf)
         iqp.insert_insert_delta_data(duckdb_conn, ins_data)
     # Combine the original and deleted data into the new version of the data.
-    iqp.insert_nu_data(duckdb_conn)
+    iqp.insert_nu_data(duckdb_conn) """
 
 
 def setup_query_files(
@@ -77,15 +120,16 @@ def setup_query_files(
     from SQL_Constructor import (
         SQL_initialize_queries as SQLiq,
     )
-    import incremental_query_parser as iqp
+
+    # import incremental_query_parser as iqp
     from setup_queries import (
         get_query_output_dir,
         setup_tables,
     )
     from rdflib.plugins.sparql import algebra
 
-    q_query_object: iqp.Query = iqp.get_query_object(
-        iqp.readQueryFile(query_str)
+    q_query_object: Query = get_query_object(
+        readQueryFile(query_str)
     )
     algebra.pprintAlgebra(q_query_object)
 

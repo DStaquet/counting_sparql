@@ -4,6 +4,11 @@ from duckdb import DuckDBPyConnection
 from os.path import join
 from numpy import ndarray
 
+from experiments.experiments import (
+    load_delta_table_in_graph,
+    load_table_in_graph,
+)
+
 
 def go_through_algebra_for_test(
     part: CompValue,
@@ -213,50 +218,6 @@ def run_query_time(
     return avg_time_val
 
 
-def load_delta_table_in_graph(
-    delta_table: str,
-    duckdb_conn: DuckDBPyConnection,
-    nu_table: str,
-) -> None:
-    """Loads the delta table into the graph.
-
-    Args:
-        delta_table (str): The given delta table.
-        duckdb_conn (DuckDBPyConnection): Connection to the database.
-        nu_table (str): The given nu table.
-    """
-    # DROP THE TABLES BEFORE MAKING THEM ANEW
-    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_G;")
-    duckdb_conn.execute(f"DROP TABLE IF EXISTS nu_G;")
-
-    # CREATE THE TABLES
-    duckdb_conn.execute(
-        f"CREATE TABLE nu_G AS FROM '{nu_table}';"
-    )
-    duckdb_conn.execute(
-        f"CREATE TABLE delta_G AS FROM '{delta_table}';"
-    )
-
-
-def load_table_in_graph(
-    table: str,
-    duckdb_conn: DuckDBPyConnection,
-) -> None:
-    """Loads the table into the graph.
-
-    Args:
-        table (str): The given table.
-        duckdb_conn (DuckDBPyConnection): Connection to the database.
-    """
-    # DROP THE TABLES BEFORE MAKING THEM ANEW
-    duckdb_conn.execute(f"DROP TABLE IF EXISTS G;")
-
-    # CREATE THE TABLES
-    duckdb_conn.execute(
-        f"CREATE TABLE G AS FROM '{table}';"
-    )
-
-
 def join_delta_rules_bgp_test(
     group_by_filename: str,
     join_filename: str,
@@ -287,7 +248,7 @@ def join_delta_rules_bgp_test(
             containing the average time to execute both the group by and
             join queries.
     """
-    import incremental_query_parser as iqp
+    import build_data as iqp
     from numpy import append, array
 
     # Read the query file

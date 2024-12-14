@@ -400,7 +400,7 @@ def load_graph(data_file: str) -> Graph:
     Returns:
         list[Graph]: List of graphs.
     """
-    import incremental_query_parser as iqp
+    import build_data as iqp
 
     data: str = iqp.readQueryFile(data_file)
     return Graph().parse(data=data)

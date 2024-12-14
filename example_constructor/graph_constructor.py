@@ -104,6 +104,7 @@ class Graph:
         vertices_uri: str,
         edges_uri: str,
         swap_int: int = 1,
+        nu_bool: bool = False,
     ) -> list[tuple[str, str, str, str]]:
         """Converts the graph to a list of triples.
 
@@ -129,9 +130,13 @@ class Graph:
                         vertex not in known_vertices
                         and swap_int > 0
                     ):
+                        if nu_bool:
+                            write_vertex = edge[2]
+                        else:
+                            write_vertex = vertex
                         triples.append(
                             (
-                                f"'{vertices_uri}{vertex}'",
+                                f"'{vertices_uri}{write_vertex}'",
                                 "'https://www.w3.org/1999/02/22-rdf-syntax-ns#type'",
                                 f"'{vertices_uri}Node'",
                                 str(swap_int * 1),
@@ -519,7 +524,9 @@ def select_delta_edges_hop_graph(
     Returns:
         Graph: Graph containing the edges that need to be deleted.
     """
-    from random import sample
+    from random import sample, seed
+
+    seed(13)
 
     # select k edges
     edges = g.edges
@@ -566,7 +573,11 @@ def select_delta_edges_hop_graph(
 
 if __name__ == "__main__":
     import argparse
-    from save_graph import save_graph_to_file
+    import sys
+
+    from save_graph import (
+        save_graph_to_file,
+    )
 
     parser = argparse.ArgumentParser(
         description="Construct a graph",
@@ -687,16 +698,19 @@ if __name__ == "__main__":
         )
     if args.delta_csv:
         save_graph_to_file(
-            delta_graph_del,
-            args.delta_csv,
-            csv=True,
-            delta=True,
-        )
-        save_graph_to_file(
             delta_graph_ins,
             args.delta_csv,
             csv=True,
             delta=True,
+            nu=True,
+            swap=1,
+        )
+        save_graph_to_file(
+            delta_graph_del,
+            args.delta_csv,
+            csv=True,
+            delta=True,
+            swap=-1,
             append=True,
         )
     if args.nu_csv:

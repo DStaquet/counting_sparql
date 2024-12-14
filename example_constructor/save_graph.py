@@ -9,6 +9,8 @@ def save_graph_to_file(
     csv: bool = False,
     delta: bool = False,
     append: bool = False,
+    nu: bool = False,
+    swap: int = 1,
 ) -> None:
     """Saves the graph to a file.
 
@@ -49,7 +51,10 @@ def save_graph_to_file(
                     for (
                         triple
                     ) in graph.graph_to_triple_list_delta(
-                        vertices_uri, edges_uri, -1
+                        vertices_uri,
+                        edges_uri,
+                        swap_int=swap,
+                        nu_bool=nu,
                     ):
                         write_handle.writerow(triple)
     else:
@@ -76,6 +81,9 @@ def save_graph_to_file(
                     for (
                         triple
                     ) in graph.graph_to_triple_list_delta(
-                        vertices_uri, edges_uri, 1
+                        vertices_uri,
+                        edges_uri,
+                        swap_int=swap,
+                        nu_bool=nu,
                     ):
                         write_handle.writerow(triple)

@@ -2,9 +2,9 @@ from SQL_Constructor.operation_constructor.bgp_constructor import (
     bgp_table_query,
     delta_bgp_queries,
 )
-from incremental_query_parser import (
+from build_data import get_query_object
+from build_data import (
     readQueryFile,
-    get_query_object,
 )
 from SQL_Constructor.base_constructor import (
     create_table_w_select,

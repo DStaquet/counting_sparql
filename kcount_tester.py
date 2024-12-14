@@ -2,6 +2,8 @@ from duckdb import DuckDBPyConnection
 
 from rdflib.plugins.sparql.parserutils import CompValue
 
+import build_data
+
 
 def run_queries(
     part: CompValue,
@@ -63,8 +65,8 @@ def run_bgps(
     import incremental_query_parser as iqp
     from setup_queries import get_query_output_dir
 
-    q_query_object: iqp.Query = iqp.get_query_object(
-        iqp.readQueryFile(query_str)
+    q_query_object: iqp.Query = build_data.get_query_object(
+        build_data.readQueryFile(query_str)
     )
     output: str = get_query_output_dir(
         output_dir, q_query_object
@@ -90,8 +92,8 @@ def run_filter(
     import incremental_query_parser as iqp
     from setup_queries import get_query_output_dir
 
-    q_query_object: iqp.Query = iqp.get_query_object(
-        iqp.readQueryFile(query_str)
+    q_query_object: iqp.Query = build_data.get_query_object(
+        build_data.readQueryFile(query_str)
     )
     output: str = get_query_output_dir(
         output_dir, q_query_object
@@ -120,8 +122,8 @@ def run_project(
     import incremental_query_parser as iqp
     from setup_queries import get_query_output_dir
 
-    q_query_object: iqp.Query = iqp.get_query_object(
-        iqp.readQueryFile(query_str)
+    q_query_object: iqp.Query = build_data.get_query_object(
+        build_data.readQueryFile(query_str)
     )
     output: str = get_query_output_dir(
         output_dir, q_query_object
@@ -150,8 +152,8 @@ def run_minus(
     import incremental_query_parser as iqp
     from setup_queries import get_query_output_dir
 
-    q_query_object: iqp.Query = iqp.get_query_object(
-        iqp.readQueryFile(query_str)
+    q_query_object: iqp.Query = build_data.get_query_object(
+        build_data.readQueryFile(query_str)
     )
     output: str = get_query_output_dir(
         output_dir, q_query_object
@@ -170,7 +172,7 @@ if __name__ == "__main__":
 
     from build_data import build_data
     from duckdb import connect
-    from experiments.delta_bgp_join import (
+    from experiments import (
         load_table_in_graph,
     )
 

@@ -7,7 +7,7 @@ if __name__ == "__main__":
     import argparse
     from duckdb import DuckDBPyConnection, connect
 
-    from build_data import setup_query_files
+    from build_data import setup_query_files, build_data
 
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
@@ -42,10 +42,17 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
+        "-nf",
+        "--nu_file",
+        help="The nu file to use",
+        required=True,
+    )
+    parser.add_argument(
         "-db",
         "--database",
         dest="db",
         help="The database to connect to",
+        default=":memory:",
     )
     parser.add_argument(
         "-s",
@@ -62,3 +69,14 @@ if __name__ == "__main__":
 
     # Connect to the database
     duckdb_conn = connect(args.db)
+
+    # Build up the data
+    build_data(
+        args.query_files,
+        args.query,
+        duckdb_conn,
+        args.data,
+        delta_file=args.delta,
+        nu_file=args.nu_file,
+        csv=True,
+    )

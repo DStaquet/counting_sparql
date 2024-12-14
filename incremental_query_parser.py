@@ -23,12 +23,17 @@ from os.path import join
 
 import sys, os
 
+from build_data import (
+    get_query_input,
+    get_query_object,
+    readQueryFile,
+)
 from eval_incremental import VALUES
 from eval_incremental.eval_incremental import (
     constructTablesRec,
     dropTablesRec,
 )
-from eval_incremental import delta_inserter, duckdb_conn
+from eval_incremental import delta_inserter
 from eval_incremental.eval_incremental import (
     evalIncrPart,
     evalPremIncrPart,
@@ -45,7 +50,6 @@ from eval_incremental import (
 
 from database import insert_data_graph
 
-from SQL_Constructor import base_constructor
 from setup_data import (
     insert_data,
     insert_delete_delta_data,
@@ -54,6 +58,8 @@ from setup_data import (
     drop_delta_table,
     create_delta_table,
 )
+
+from duckdb import DuckDBPyConnection
 
 
 def insertData(g: graph.Graph, query: Query) -> None:
@@ -238,17 +244,6 @@ def insertParseQuery(
             f.write("\n\n")"""
 
 
-def readQueryFile(filename: str) -> str:
-    """Read query file.
-
-    Args:
-        filename (str): filename to be read.
-    """
-
-    with open(filename, "r") as file:
-        return file.read()
-
-
 def check_relevancy(
     delta_size: str, data_size: int, sample: str
 ) -> bool:
@@ -267,6 +262,7 @@ def check_relevancy(
 
 def setup_tables(
     query_input_dir: str,
+    duckdb_conn: DuckDBPyConnection,
     increm: bool = False,
 ) -> None:
     """Sets up the tables in the database
@@ -290,26 +286,11 @@ def setup_tables(
                 duckdb_conn.execute(command)
 
 
-def get_query_input(
-    output_dir: str, q_query_object: Query
-) -> str:
-    query_input_dir: str = join(
-        output_dir,
-        "query_"
-        + base_constructor.get_table_name(
-            q_query_object.algebra
-        ),
-    )
-    return query_input_dir
-
-
-def get_query_object(query: str) -> Query:
-    query_tree = parser.parseQuery(str(query))
-    return algebra.translateQuery(query_tree)
-
-
 def run_query(
-    query_str: str, data_str: str, output_dir: str
+    query_str: str,
+    data_str: str,
+    output_dir: str,
+    duckdb_conn: DuckDBPyConnection,
 ) -> None:
     # g = graph.Graph()
     # g.parse(data_str)
@@ -321,7 +302,7 @@ def run_query(
         output_dir, q_query_object
     )
 
-    setup_tables(query_input_dir)
+    setup_tables(query_input_dir, duckdb_conn)
 
     df: DataFrame | None = evalPremIncrPart(
         q_query_object.algebra, query_input_dir
@@ -463,6 +444,8 @@ if __name__ == "__main__":
 
     f.close()"""
 
+    duckdb_conn = DuckDBPyConnection(":memory:")
+
     data: str = readQueryFile(data_str)
     insert_data(duckdb_conn, data)
     delete_data: str = readQueryFile(delete_data_str)
@@ -470,4 +453,4 @@ if __name__ == "__main__":
     insert_nu_data(duckdb_conn)
 
     query: str = readQueryFile(query_str)
-    run_query(query, data_str, output_dir)
+    run_query(query, data_str, output_dir, duckdb_conn)

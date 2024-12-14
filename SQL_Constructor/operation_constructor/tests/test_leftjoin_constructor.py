@@ -6,8 +6,8 @@ from SQL_Constructor.operation_constructor.tests.base_functions import (
     all_type_leaves,
     reset_seed,
 )
-from incremental_query_parser import (
-    get_query_object,
+from build_data import get_query_object
+from build_data import (
     readQueryFile,
 )
 

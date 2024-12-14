@@ -51,7 +51,8 @@ from os.path import join
 from SQL_Constructor import base_constructor
 
 import SQL_Constructor.operation_constructor.bgp_constructor
-from eval_incremental import duckdb_conn
+
+# from eval_incremental import duckdb_conn
 
 _Triple = tuple[Identifier, Identifier, Identifier]
 

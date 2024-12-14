@@ -1,11 +1,65 @@
+from duckdb import DuckDBPyConnection
+from rdflib.plugins.sparql import algebra, parser
+from rdflib.plugins.sparql.parser import parseQuery
+from rdflib.plugins.sparql.sparql import Query
+
+
+def get_query_object(query: str) -> Query:
+    query_tree = parseQuery(str(query))
+    return algebra.translateQuery(query_tree)
+
+
+def load_table_in_graph(
+    table: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
+    """Loads the table into the graph.
+
+    Args:
+        table (str): The given table.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+    """
+    # DROP THE TABLES BEFORE MAKING THEM ANEW
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS G;")
+
+    # CREATE THE TABLES
+    duckdb_conn.execute(
+        f"CREATE TABLE G AS FROM '{table}';"
+    )
+
+
+def load_delta_table_in_graph(
+    delta_table: str,
+    duckdb_conn: DuckDBPyConnection,
+    nu_table: str,
+) -> None:
+    """Loads the delta table into the graph.
+
+    Args:
+        delta_table (str): The given delta table.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+        nu_table (str): The given nu table.
+    """
+    # DROP THE TABLES BEFORE MAKING THEM ANEW
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_G;")
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS nu_G;")
+
+    # CREATE THE TABLES
+    duckdb_conn.execute(
+        f"CREATE TABLE nu_G AS FROM '{nu_table}';"
+    )
+    duckdb_conn.execute(
+        f"CREATE TABLE delta_G AS FROM '{delta_table}';"
+    )
+
+
 if __name__ == "__main__":
     import argparse
 
     # from experiments import duckdb_conn
     import duckdb
-    from incremental_query_parser import (
+    from build_data import (
         readQueryFile,
-        get_query_object,
     )
     from setup_queries import get_query_output_dir
     from experiments.delta_bgp_join import (

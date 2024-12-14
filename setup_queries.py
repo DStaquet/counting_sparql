@@ -1,5 +1,5 @@
 from SQL_Constructor.hash_writer import setup_hash_values
-from incremental_query_parser import readQueryFile
+from build_data import readQueryFile
 from eval_incremental.eval_incremental import (
     constructTablesRec,
     dropTablesRec,
