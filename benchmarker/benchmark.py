@@ -3,6 +3,8 @@ from duckdb import DuckDBPyConnection, connect
 from os.path import join
 from time import time
 
+import gc
+
 from build_data import (
     get_query_object,
     get_query_input,
@@ -116,6 +118,18 @@ def run_benchmark(
         total_time += (end_time - start_time) * 1000
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
+
+        gc.collect()
+
+    scratch_result = duckdb_conn.sql(
+        readQueryFile(
+            join(
+                query_input_dir,
+                get_table_name(q_query_object.algebra)
+                + ".sql",
+            )
+        )
+    ).fetchall()
     scratch_time = total_time / runs
 
     drop_delta_tables = readQueryFile(
@@ -125,10 +139,18 @@ def run_benchmark(
         q_query_object.algebra, query_input_dir, True
     )
 
+    print("Preparing the benchmark incrementally")
     # Prepare the G table
     load_table_in_graph(data_file, duckdb_conn)
     load_delta_table_in_graph(
         delta_file, duckdb_conn, nu_file
+    )
+    # Prepare the other tables
+    duckdb_conn.execute(drop_tables)
+    run_query(
+        q_query_object.algebra.p,
+        SQL_queries,
+        duckdb_conn,
     )
 
     print("Running the benchmark incrementally")
@@ -153,9 +175,34 @@ def run_benchmark(
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
 
+        gc.collect()
+
+    incremental_results = duckdb_conn.sql(
+        readQueryFile(
+            join(
+                query_input_dir,
+                "nu_"
+                + get_table_name(q_query_object.algebra)
+                + ".sql",
+            )
+        )
+    ).fetchall()
+
     incremental_time = total_time / runs
     print()
     print(f"Average time from scratch: {scratch_time}ms")
     print(
         f"Average time incrementally: {incremental_time}ms"
     )
+
+    if sorted(scratch_result) == sorted(
+        incremental_results
+    ):
+        print("Results are the same")
+    else:
+        print(
+            len(
+                set(scratch_result)
+                - set(incremental_results)
+            )
+        )

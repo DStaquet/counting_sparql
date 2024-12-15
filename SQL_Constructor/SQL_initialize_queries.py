@@ -222,11 +222,18 @@ def build_increm_queries(
                 base_constructor.get_table_name(part),
                 filename_prefix="delta_",
             )
+            part_schemas = schemas1
     if part_schemas == None:
         part_schemas = schemas1
-    nu_query, nu_query_sum = base_constructor.nu_queries(
-        part, part_schemas
-    )
+    if part.name == "SelectQuery":
+        nu_query = base_constructor.select_query(
+            part, part_schemas, True
+        )
+        nu_query_sum = ""
+    else:
+        nu_query, nu_query_sum = (
+            base_constructor.nu_queries(part, part_schemas)
+        )
     write_query_to_output_dir(
         output_dir,
         nu_query,

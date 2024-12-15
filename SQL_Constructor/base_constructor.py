@@ -1156,12 +1156,21 @@ def project_table_query(part: CompValue) -> str:
 
 
 def select_query(
-    part: CompValue, schemas: list[set[str]]
+    part: CompValue,
+    schemas: list[set[str]],
+    nu: bool = False,
 ) -> str:
-    table_name = __encode_table_name(part.p)
+    if nu:
+        table_name = "nu_" + __encode_table_name(part.p)
+    else:
+        table_name = __encode_table_name(part.p)
 
     if len(schemas) == 1:
-        return f"SELECT * FROM {table_name};"
+        return (
+            f"SELECT "
+            + ", ".join(var for var in sorted(schemas[0]))
+            + f" FROM {table_name};"
+        )
     else:
         select_dict: dict[str, list[str]] = dict()
         for schema in schemas:
