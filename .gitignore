@@ -189,3 +189,4 @@ data/mtg_csv/*
 *.db.wal
 
 data/*
+benchmarker/data/*
