@@ -10,6 +10,7 @@ from build_data import (
 )
 from experiments.experiments import (
     load_table_in_graph,
+    load_delta_table_in_graph,
 )
 from SQL_Constructor.base_constructor import get_table_name
 from benchmarker.dict_maker import constructDictFromTree
@@ -67,6 +68,7 @@ def run_benchmark(
     db_name: str,
     data_file: str,
     nu_file: str,
+    delta_file: str,
 ) -> None:
     """Runs the given query.
 
@@ -114,9 +116,7 @@ def run_benchmark(
         total_time += (end_time - start_time) * 1000
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
-    print(
-        f"Average time (from scratch): {total_time / runs}ms"
-    )
+    scratch_time = total_time / runs
 
     drop_delta_tables = readQueryFile(
         join(query_input_dir, "drop_delta_tables.sql")
@@ -127,6 +127,9 @@ def run_benchmark(
 
     # Prepare the G table
     load_table_in_graph(data_file, duckdb_conn)
+    load_delta_table_in_graph(
+        delta_file, duckdb_conn, nu_file
+    )
 
     print("Running the benchmark incrementally")
     total_time: float = 0.0
@@ -149,3 +152,10 @@ def run_benchmark(
         total_time += (end_time - start_time) * 1000
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
+
+    incremental_time = total_time / runs
+    print()
+    print(f"Average time from scratch: {scratch_time}ms")
+    print(
+        f"Average time incrementally: {incremental_time}ms"
+    )
