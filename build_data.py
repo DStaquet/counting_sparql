@@ -163,7 +163,7 @@ def setup_query_files(
 
 def drop_all_tables(
     part: CompValue, schemas: list[set[str]]
-) -> str:
+) -> tuple[str, str]:
     (
         drop_query,
         drop_delta_query,
@@ -173,17 +173,14 @@ def drop_all_tables(
         base_constructor.drop_delta_table(part)
     ) """
     return (
-        drop_query
-        + "\n"
-        + drop_delta_query
-        + "\n"
-        + drop_nu_query
+        drop_query,
+        drop_delta_query + "\n" + drop_nu_query,
     )
 
 
 def dropTablesRec(
     part: CompValue,
-) -> tuple[str, list[set[str]]]:
+) -> tuple[str, str, list[set[str]]]:
     """Recursively go through all tables to setup to drop them file.
 
     Args:
@@ -194,14 +191,24 @@ def dropTablesRec(
         from the child branch.
     """
     prev_query = ""
+    prev_delta_query = ""
     if part is None:
-        return prev_query, []
+        return prev_query, prev_delta_query, []
     if "p" in part or part.name == "BGP":
-        prev_query, schemas1 = dropTablesRec(part.p)
+        prev_query, prev_delta_query, schemas1 = (
+            dropTablesRec(part.p)
+        )
     elif "p1" in part and "p2" in part:
-        prev_query1, schemas1 = dropTablesRec(part.p1)
-        prev_query2, schemas2 = dropTablesRec(part.p2)
+        prev_query1, prev_delta_query1, schemas1 = (
+            dropTablesRec(part.p1)
+        )
+        prev_query2, prev_delta_query2, schemas2 = (
+            dropTablesRec(part.p2)
+        )
         prev_query = prev_query1 + "\n" + prev_query2
+        prev_delta_query = (
+            prev_delta_query1 + "\n" + prev_delta_query2
+        )
 
     # Return with right schemas
     match part.name:
@@ -237,13 +244,15 @@ def dropTablesRec(
             )
 
     # Construct the drop query for the current part
-    drop_query = (
-        prev_query
-        + "\n"
-        + drop_all_tables(part, curr_schemas)
+    curr_drop_query, curr_drop_delta_query = (
+        drop_all_tables(part, curr_schemas)
+    )
+    drop_query = prev_query + "\n" + curr_drop_query
+    drop_delta_query = (
+        prev_delta_query + "\n" + curr_drop_delta_query
     )
 
-    return drop_query, curr_schemas
+    return drop_query, drop_delta_query, curr_schemas
 
 
 if __name__ == "__main__":
