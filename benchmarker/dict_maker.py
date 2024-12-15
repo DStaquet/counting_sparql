@@ -1,10 +1,11 @@
 from rdflib.plugins.sparql.parserutils import CompValue
-from os.path import join, exists
+from os.path import join
 
 from SQL_Constructor.base_constructor import get_table_name
 from build_data import (
     readQueryFile,
 )
+from build_data import getJoinOrNormalFile
 
 
 def __addToDictList(
@@ -77,21 +78,6 @@ def __combineTwoDicts(
     return dict1 | dict2
 
 
-def __getJoinOrNormalFile(query_file_name: str) -> str:
-    """Get the join or normal file name.
-
-    Args:
-        query_file_name (str): The query file name.
-
-    Returns:
-        str: The join or normal file name.
-    """
-    if exists(query_file_name + "_join.sql"):
-        return query_file_name + "_join.sql"
-    else:
-        return query_file_name + ".sql"
-
-
 def constructDictFromTree(
     part: CompValue,
     query_input_dir: str,
@@ -111,10 +97,10 @@ def constructDictFromTree(
             join(query_input_dir, current_name) + ".sql"
         )
     else:
-        current_delta_file_name = __getJoinOrNormalFile(
+        current_delta_file_name = getJoinOrNormalFile(
             join(query_input_dir, "delta_" + current_name)
         )
-        current_nu_file_name = __getJoinOrNormalFile(
+        current_nu_file_name = getJoinOrNormalFile(
             join(query_input_dir, "nu_" + current_name)
         )
 

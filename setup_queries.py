@@ -61,7 +61,7 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
 
     # Drop all the tables before the setup
     drop_queries, drop_delta_queries, _ = dropTablesRec(
-        query
+        query, output_dir
     )
     # Delete all the tables before the setup
     delete_queries: str = deleteTablesRec(query)

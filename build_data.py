@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import exists, join
 from duckdb import DuckDBPyConnection
 from rdflib.plugins.sparql import algebra, parser
 from rdflib.plugins.sparql.parser import parseQuery
@@ -6,6 +6,10 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql.sparql import Query
 
 from SQL_Constructor import base_constructor
+from SQL_Constructor.base_constructor import (
+    __encode_schema_name,
+    __encode_table_name,
+)
 from SQL_Constructor.operation_constructor import (
     project_constructor as SQL_project,
     join_constructor as SQL_join,
@@ -146,11 +150,6 @@ def setup_query_files(
         output_dir, q_query_object
     )
 
-    setup_tables(
-        q_query_object.algebra,
-        query_output_dir,
-    )
-
     SQLiq.build_queries(
         q_query_object.algebra,
         query_output_dir,
@@ -160,15 +159,139 @@ def setup_query_files(
         query_output_dir,
     )
 
+    setup_tables(
+        q_query_object.algebra,
+        query_output_dir,
+    )
+
+
+def __findDropableTables(
+    part_name: str, query_output_dir: str
+) -> set[str]:
+    """Finds all the tables to drop from build files.
+
+    Args:
+        part_name (str): Current part of the query.
+        query_output_dir (str): Output directory where the SQL files are stored.
+
+    Returns:
+        list[str]: List of all tables to drop.
+    """
+    final_set: set[str] = set()
+
+    normal_file = join(query_output_dir, part_name + ".sql")
+    join_file = join(
+        query_output_dir, part_name + "_join.sql"
+    )
+
+    # Normal file tables to drop
+    def __splitTables(file_name: str) -> set[str]:
+        curr_query = readQueryFile(file_name)
+        rtn_set: set[str] = set()
+        for line in curr_query.split("\n"):
+            if "CREATE " in line:
+                split_line = line.split()
+                for i in range(len(split_line)):
+                    if split_line[i] == "TABLE":
+                        rtn_set.add(split_line[i + 1])
+        return rtn_set
+
+    final_set |= __splitTables(normal_file)
+
+    # Join file tables to drop
+    if exists(join_file):
+        final_set |= __splitTables(join_file)
+
+    return final_set
+
+
+def drop_all_tables_str(
+    part: CompValue,
+    schemas: list[set[str]],
+    query_input_dir: str,
+) -> tuple[str, str, str]:
+    """Generates the drop table queries.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas (list[set[str]]): Schemas of this part of the query
+
+    Returns:
+        tuple[str, str, str]: All drop table queries for this part.
+    """
+    drop_queries, drop_delta_queries, drop_nu_queries = (
+        "",
+        "",
+        "",
+    )
+    for sch in schemas:
+        if len(schemas) == 1:
+            schema_suffix = ""
+        else:
+            schema_suffix = "_" + __encode_schema_name(
+                str(sorted(sch))
+            )
+
+        drop_query: str = (
+            "DROP TABLE IF EXISTS "
+            + __encode_table_name(part)
+            + schema_suffix
+            + ";"
+        )
+
+        """ drop_delta_query: str = (
+            "DROP TABLE IF EXISTS delta_"
+            + __encode_table_name(part)
+            + schema_suffix
+            + ";"
+        ) """
+        delta_set: set[str] = __findDropableTables(
+            "delta_" + __encode_table_name(part),
+            query_input_dir,
+        )
+        drop_delta_query: str = ""
+        for table in delta_set:
+            drop_delta_query += (
+                "DROP TABLE IF EXISTS " + table + ";"
+            )
+
+        drop_nu_query: str = (
+            "DROP TABLE IF EXISTS nu_"
+            + __encode_table_name(part)
+            + schema_suffix
+            + ";"
+        )
+        for nu_i in range(2):
+            drop_nu_query += (
+                "DROP TABLE IF EXISTS nu_"
+                + __encode_table_name(part)
+                + schema_suffix
+                + "_"
+                + str(nu_i)
+                + ";"
+            )
+
+        drop_queries += drop_query + "\n"
+        drop_delta_queries += drop_delta_query + "\n"
+        drop_nu_queries += drop_nu_query + "\n"
+
+    return (
+        drop_queries,
+        drop_delta_queries,
+        drop_nu_queries,
+    )
+
 
 def drop_all_tables(
-    part: CompValue, schemas: list[set[str]]
+    part: CompValue,
+    schemas: list[set[str]],
+    query_input_dir: str,
 ) -> tuple[str, str]:
     (
         drop_query,
         drop_delta_query,
         drop_nu_query,
-    ) = base_constructor.drop_all_tables(part, schemas)
+    ) = drop_all_tables_str(part, schemas, query_input_dir)
     """delta_table_drop_query, delta_prep_table_drop_query = (
         base_constructor.drop_delta_table(part)
     ) """
@@ -179,7 +302,7 @@ def drop_all_tables(
 
 
 def dropTablesRec(
-    part: CompValue,
+    part: CompValue, query_input_dir: str
 ) -> tuple[str, str, list[set[str]]]:
     """Recursively go through all tables to setup to drop them file.
 
@@ -196,14 +319,14 @@ def dropTablesRec(
         return prev_query, prev_delta_query, []
     if "p" in part or part.name == "BGP":
         prev_query, prev_delta_query, schemas1 = (
-            dropTablesRec(part.p)
+            dropTablesRec(part.p, query_input_dir)
         )
     elif "p1" in part and "p2" in part:
         prev_query1, prev_delta_query1, schemas1 = (
-            dropTablesRec(part.p1)
+            dropTablesRec(part.p1, query_input_dir)
         )
         prev_query2, prev_delta_query2, schemas2 = (
-            dropTablesRec(part.p2)
+            dropTablesRec(part.p2, query_input_dir)
         )
         prev_query = prev_query1 + "\n" + prev_query2
         prev_delta_query = (
@@ -245,7 +368,7 @@ def dropTablesRec(
 
     # Construct the drop query for the current part
     curr_drop_query, curr_drop_delta_query = (
-        drop_all_tables(part, curr_schemas)
+        drop_all_tables(part, curr_schemas, query_input_dir)
     )
     drop_query = prev_query + "\n" + curr_drop_query
     drop_delta_query = (
@@ -253,6 +376,21 @@ def dropTablesRec(
     )
 
     return drop_query, drop_delta_query, curr_schemas
+
+
+def getJoinOrNormalFile(query_file_name: str) -> str:
+    """Get the join or normal file name.
+
+    Args:
+        query_file_name (str): The query file name.
+
+    Returns:
+        str: The join or normal file name.
+    """
+    if exists(query_file_name + "_join.sql"):
+        return query_file_name + "_join.sql"
+    else:
+        return query_file_name + ".sql"
 
 
 if __name__ == "__main__":

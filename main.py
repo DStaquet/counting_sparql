@@ -92,5 +92,7 @@ if __name__ == "__main__":
         args.query_files,
         args.runs,
         duckdb_conn,
+        args.db,
+        args.data,
         args.nu_file,
     )

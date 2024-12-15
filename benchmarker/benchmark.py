@@ -1,5 +1,5 @@
 from rdflib.plugins.sparql.parserutils import CompValue
-from duckdb import DuckDBPyConnection
+from duckdb import DuckDBPyConnection, connect
 from os.path import join
 from time import time
 
@@ -64,7 +64,9 @@ def run_benchmark(
     query_files_dir: str,
     runs: int,
     duckdb_conn: DuckDBPyConnection,
+    db_name: str,
     data_file: str,
+    nu_file: str,
 ) -> None:
     """Runs the given query.
 
@@ -96,7 +98,7 @@ def run_benchmark(
         # Drop the tables
         duckdb_conn.execute(drop_tables)
         # Prepare the G table
-        load_table_in_graph(data_file, duckdb_conn)
+        load_table_in_graph(nu_file, duckdb_conn)
 
         # Time counter
         start_time: float = time()
@@ -123,14 +125,15 @@ def run_benchmark(
         q_query_object.algebra, query_input_dir, True
     )
 
+    # Prepare the G table
+    load_table_in_graph(data_file, duckdb_conn)
+
     print("Running the benchmark incrementally")
     total_time: float = 0.0
     for run in range(runs):
         print(f"Run: {run + 1} of {runs}")
         # Drop the tables
         duckdb_conn.execute(drop_delta_tables)
-        # Prepare the G table
-        # load_table_in_graph(data_file, duckdb_conn)
 
         # Time counter
         start_time: float = time()
