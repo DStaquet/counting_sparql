@@ -190,3 +190,4 @@ data/mtg_csv/*
 
 data/*
 benchmarker/data/*
+example_constructor/bsbm_data/*
