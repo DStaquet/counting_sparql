@@ -115,34 +115,33 @@ class Graph:
 
         # Triples per vertex
         known_vertices = set()
-        for vertex in self.vertices:
-            for edge in self.edges:
-                if edge[0] == vertex:
-                    triples.append(
-                        (
-                            f"'{vertices_uri}{vertex}'",
-                            f"'{edges_uri}{edge[1]}'",
-                            f"'{vertices_uri}{edge[2]}'",
-                            str(swap_int * 1),
-                        )
+        for edge in self.edges:
+            vertex = edge[0]
+            triples.append(
+                (
+                    f"'{vertices_uri}{vertex}'",
+                    f"'{edges_uri}{edge[1]}'",
+                    f"'{vertices_uri}{edge[2]}'",
+                    str(swap_int * 1),
+                )
+            )
+            if (
+                vertex not in known_vertices
+                and swap_int > 0
+            ):
+                if nu_bool:
+                    write_vertex = edge[2]
+                else:
+                    write_vertex = vertex
+                triples.append(
+                    (
+                        f"'{vertices_uri}{write_vertex}'",
+                        "'https://www.w3.org/1999/02/22-rdf-syntax-ns#type'",
+                        f"'{vertices_uri}Node'",
+                        str(swap_int * 1),
                     )
-                    if (
-                        vertex not in known_vertices
-                        and swap_int > 0
-                    ):
-                        if nu_bool:
-                            write_vertex = edge[2]
-                        else:
-                            write_vertex = vertex
-                        triples.append(
-                            (
-                                f"'{vertices_uri}{write_vertex}'",
-                                "'https://www.w3.org/1999/02/22-rdf-syntax-ns#type'",
-                                f"'{vertices_uri}Node'",
-                                str(swap_int * 1),
-                            )
-                        )
-                        known_vertices.add(vertex)
+                )
+                known_vertices.add(vertex)
 
         return triples
 
@@ -573,7 +572,6 @@ def select_delta_edges_hop_graph(
 
 if __name__ == "__main__":
     import argparse
-    import sys
 
     from save_graph import (
         save_graph_to_file,

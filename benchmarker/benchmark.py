@@ -3,8 +3,6 @@ from duckdb import DuckDBPyConnection, connect
 from os.path import join
 from time import time
 
-import gc
-
 from build_data import (
     get_query_object,
     get_query_input,
@@ -119,8 +117,6 @@ def run_benchmark(
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
 
-        gc.collect()
-
     scratch_result = duckdb_conn.sql(
         readQueryFile(
             join(
@@ -175,8 +171,6 @@ def run_benchmark(
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
 
-        gc.collect()
-
     incremental_results = duckdb_conn.sql(
         readQueryFile(
             join(
@@ -201,8 +195,10 @@ def run_benchmark(
         print("Results are the same")
     else:
         print(
-            len(
+            len(scratch_result) - len(incremental_results),
+            "results are different",
+            print(
                 set(scratch_result)
                 - set(incremental_results)
-            )
+            ),
         )
