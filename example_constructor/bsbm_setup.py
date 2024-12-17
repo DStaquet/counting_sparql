@@ -1,5 +1,6 @@
 from rdflib.graph import Graph
-from random import sample
+from rdflib import URIRef, Literal
+from random import sample, choice
 from os.path import join
 
 
@@ -18,6 +19,46 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
                 all_dict[key] = [(s, p, o)]
             else:
                 all_dict[key].append((s, p, o))
+    # Add random Features to query on
+    for key in all_dict:
+        choices = sample(["FA", "FB", "FC", "FD", "FE"], 2)
+        new_tup1 = (
+            all_dict[key][0][0],
+            URIRef(
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature"
+            ),
+            URIRef(
+                f"http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature{choices[0]}"
+            ),
+        )
+        new_tup2 = (
+            all_dict[key][0][0],
+            URIRef(
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature"
+            ),
+            URIRef(
+                f"http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature{choices[1]}"
+            ),
+        )
+        all_dict[key].append(new_tup1)
+        all_dict[key].append(new_tup2)
+
+        # Add random productypes for query1
+        prodtype_choices = sample(
+            ["TA", "TB", "TC", "TD", "TE"], 1
+        )
+        print(prodtype_choices)
+        new_tup3 = (
+            all_dict[key][0][0],
+            URIRef(
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+            ),
+            URIRef(
+                f"http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType{prodtype_choices[0]}"
+            ),
+        )
+        print(new_tup3)
+        all_dict[key].append(new_tup3)
     return all_dict
 
 

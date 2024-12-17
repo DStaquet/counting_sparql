@@ -1,10 +1,67 @@
 from benchmarker.benchmark import run_benchmark
+from benchmarker.mult_benchmark import run_chain_benchmark
+
+from os.path import join
+
+
+def findAllDeltas(delta_dir: str) -> list[tuple[str, str]]:
+    """Finds all delta files in the given directory.
+
+    Args:
+        delta_dir (str): The directory to search for delta files.
+
+    Returns:
+        list[str]: List of delta files.
+    """
+    tup_list: list[tuple[str, str]] = list()
+    ins_list: list[str] = list()
+    del_list: list[str] = list()
+    for file in os.listdir(delta_dir):
+        if "insert" in file:
+            ins_list.append(join(delta_dir, file))
+        if "delete" in file:
+            del_list.append(join(delta_dir, file))
+    for ins in ins_list:
+        for del_i in del_list:
+            if (
+                ins.split("insert_")[1]
+                == del_i.split("delete_")[1]
+            ):
+                tup_list.append((ins, del_i))
+
+    return sorted(
+        tup_list,
+        key=lambda x: x[0]
+        .split("insert_")[1]
+        .split(".")[0],
+    )
+
+
+def findAllNus(delta_dir: str) -> list[str]:
+    """Finds all nu files in the given directory.
+
+    Args:
+        delta_dir (str): The directory to search for nu files.
+
+    Returns:
+        list[str]: List of nu files.
+    """
+    return sorted(
+        [
+            join(delta_dir, file)
+            for file in os.listdir(delta_dir)
+            if "nu" in file
+        ],
+        key=lambda x: x.split("nu_")[1].split(".")[0],
+    )
 
 
 if __name__ == "__main__":
     import os, sys
     import argparse
     from duckdb import DuckDBPyConnection, connect
+
+    from os.path import isdir, isfile
 
     from build_data import setup_query_files, build_data
 
@@ -67,6 +124,13 @@ if __name__ == "__main__":
         default=10,
         help="The number of runs to do",
     )
+    parser.add_argument(
+        "-m",
+        "--multiple",
+        action="store_true",
+        default=False,
+        help="Chain multiple deltas",
+    )
 
     args = parser.parse_args()
 
@@ -87,13 +151,42 @@ if __name__ == "__main__":
         csv=True,
     ) """
 
-    run_benchmark(
-        args.query,
-        args.query_files,
-        args.runs,
-        duckdb_conn,
-        args.db,
-        args.data,
-        args.nu_file,
-        args.delta,
-    )
+    if not args.multiple:
+        if not isfile(args.delta) or not isfile(
+            args.nu_file
+        ):
+            raise ValueError(
+                "Delta and nu files should be files."
+            )
+        run_benchmark(
+            args.query,
+            args.query_files,
+            args.runs,
+            duckdb_conn,
+            args.db,
+            args.data,
+            args.nu_file,
+            args.delta,
+        )
+
+    else:
+        if not isdir(args.delta) or not isdir(args.nu_file):
+            raise ValueError(
+                "Delta and nu files should be directories."
+            )
+        delta_list = findAllDeltas(args.delta)
+        nu_list = findAllNus(args.nu_file)
+        if len(delta_list) != len(nu_list):
+            raise ValueError(
+                "Delta files and nu files don't match."
+            )
+        delta_and_nu_files = list(zip(delta_list, nu_list))
+
+        run_chain_benchmark(
+            args.query,
+            args.query_files,
+            args.runs,
+            duckdb_conn,
+            args.data,
+            delta_and_nu_files,
+        )
