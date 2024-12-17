@@ -3,16 +3,20 @@ from rdflib import URIRef, Literal
 from random import sample, choice
 from os.path import join
 
+from tqdm import tqdm
+
 
 def readNTriples(file):
+    print(f"Reading ntriples from {file}.", end="")
     g = Graph()
     g.parse(file, format="nt")
+    print(f" Done.")
     return g
 
 
 def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
     all_dict: dict[str, list[tuple]] = dict()
-    for s, p, o in g:
+    for s, p, o in tqdm(g, desc="Getting all products"):
         if "Product" in str(s):
             key = str(s).split("/")[-1]
             if key not in all_dict:
@@ -20,7 +24,9 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
             else:
                 all_dict[key].append((s, p, o))
     # Add random Features to query on
-    for key in all_dict:
+    for key in tqdm(
+        all_dict, desc="Adding random features"
+    ):
         choices = sample(["FA", "FB", "FC", "FD", "FE"], 2)
         new_tup1 = (
             all_dict[key][0][0],
@@ -47,7 +53,6 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
         prodtype_choices = sample(
             ["TA", "TB", "TC", "TD", "TE"], 1
         )
-        print(prodtype_choices)
         new_tup3 = (
             all_dict[key][0][0],
             URIRef(
@@ -57,7 +62,6 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
                 f"http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType{prodtype_choices[0]}"
             ),
         )
-        print(new_tup3)
         all_dict[key].append(new_tup3)
     return all_dict
 
@@ -72,7 +76,10 @@ def getBaseProducts(
         len(all_product_dict.keys()) // 2,
     )
 
-    for key in sample_keys:
+    for key in tqdm(
+        sample_keys,
+        desc="Getting base case products",
+    ):
         for tup in all_product_dict[key]:
             base_g.add(tup)
 
@@ -82,8 +89,12 @@ def getBaseProducts(
 def getBaseGraph(
     input_file: str, format: str = "ttl"
 ) -> Graph:
+    print(
+        f"Constructing base graph in {input_file}.", end=""
+    )
     g = Graph()
     g.parse(input_file, format=format)
+    print(f" Done.")
     return g
 
 
@@ -97,8 +108,12 @@ def buildDeltaGs(
 ) -> tuple[list[tuple[Graph, Graph, Graph]], set[str]]:
     # List of tuples of graphs containing the respective insert and delete tuples
     delta_Gs: list[tuple[Graph, Graph, Graph]] = list()
+    nu_graph = g
 
-    for _ in range(delta_graphs_amount):
+    for _ in tqdm(
+        range(delta_graphs_amount),
+        desc="Building delta graphs",
+    ):
         insert_delta_G = Graph()
         delete_delta_G = Graph()
 
@@ -127,7 +142,7 @@ def buildDeltaGs(
         )
 
         # Nu graph
-        nu_graph = g + insert_delta_G
+        nu_graph += insert_delta_G
         nu_graph -= delete_delta_G
 
         delta_Gs.append(
@@ -142,9 +157,11 @@ def writeBaseG(
     output_file: str,
     format: str = "ttl",
 ) -> None:
+    print(f"Writing base graph to {output_file}.", end="")
     base_g.serialize(
         output_file, format=format, encoding="utf-8"
     )
+    print(f" Done.")
 
 
 def writeDeltaGs(
@@ -153,8 +170,9 @@ def writeDeltaGs(
     format: str = "nt",
     nu_format: str = "ttl",
 ) -> None:
-    for i, (insert_G, delete_G, nu_G) in enumerate(
-        delta_G_list
+    for i, (insert_G, delete_G, nu_G) in tqdm(
+        enumerate(delta_G_list),
+        desc=f"Writing delta graphs to {output_dir}",
     ):
         insert_G.serialize(
             f"{output_dir}/insert_{i}.{format}",
