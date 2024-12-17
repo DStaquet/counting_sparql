@@ -38,6 +38,14 @@ def getBaseProducts(
     return base_g, set(sample_keys)
 
 
+def getBaseGraph(
+    input_file: str, format: str = "ttl"
+) -> Graph:
+    g = Graph()
+    g.parse(input_file, format=format)
+    return g
+
+
 def buildDeltaGs(
     g: Graph,
     all_product_dict: dict[str, list[tuple]],
@@ -102,6 +110,7 @@ def writeDeltaGs(
     delta_G_list: list[tuple[Graph, Graph, Graph]],
     output_dir: str,
     format: str = "nt",
+    nu_format: str = "ttl",
 ) -> None:
     for i, (insert_G, delete_G, nu_G) in enumerate(
         delta_G_list
@@ -117,8 +126,8 @@ def writeDeltaGs(
             encoding="utf-8",
         )
         nu_G.serialize(
-            f"{output_dir}/nu_{i}.{format}",
-            format=format,
+            f"{output_dir}/nu_{i}.{nu_format}",
+            format=nu_format,
             encoding="utf-8",
         )
 
@@ -152,7 +161,11 @@ if __name__ == "__main__":
         readNTriples(args.update_file)
     )
 
-    base_g, S_in_graph = getBaseProducts(all_product_dict)
+    base_g_products, S_in_graph = getBaseProducts(
+        all_product_dict
+    )
+    base_g = getBaseGraph(args.input_file)
+    base_g += base_g_products
 
     writeBaseG(
         base_g,
@@ -165,5 +178,8 @@ if __name__ == "__main__":
     )
 
     writeDeltaGs(
-        delta_G_list, args.output_dir, format="ttl"
+        delta_G_list,
+        args.output_dir,
+        format="nt",
+        nu_format="ttl",
     )
