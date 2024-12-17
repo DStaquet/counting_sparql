@@ -1,5 +1,7 @@
 from duckdb import DuckDBPyConnection
 from rdflib import Graph
+from rdflib.compare import isomorphic, graph_diff
+from rdflib.term import URIRef, Node
 
 
 def run_chain_benchmark(
@@ -39,4 +41,18 @@ def run_chain_benchmark(
         base_g += delta_ins_g
         base_g -= delta_del_g
 
-        print(base_g == nu_g)
+        print("Isomorphic: ", isomorphic(base_g, nu_g))
+        nu_prod: list[Node] = list()
+        base_prod: list[Node] = list()
+        for s, _, _ in nu_g:
+            nu_prod.append(s)
+        for (
+            s,
+            _,
+            _,
+        ) in base_g:
+            base_prod.append(s)
+        print(
+            set(nu_prod) - set(base_prod),
+            len(set(nu_prod) - set(base_prod)),
+        )

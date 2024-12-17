@@ -1,7 +1,8 @@
 from rdflib.graph import Graph
 from rdflib import URIRef, Literal
-from random import sample, choice
+from random import sample, choice, seed
 from os.path import join
+from copy import deepcopy
 
 from tqdm import tqdm
 
@@ -71,6 +72,8 @@ def getBaseProducts(
 ) -> tuple[Graph, set[str]]:
     base_g = Graph()
 
+    seed(13)
+
     sample_keys = sample(
         list(all_product_dict.keys()),
         len(all_product_dict.keys()) // 2,
@@ -110,6 +113,8 @@ def buildDeltaGs(
     delta_Gs: list[tuple[Graph, Graph, Graph]] = list()
     nu_graph = g
 
+    seed(13)
+
     for _ in tqdm(
         range(delta_graphs_amount),
         desc="Building delta graphs",
@@ -137,16 +142,20 @@ def buildDeltaGs(
             for tup in all_product_dict[key]:
                 delete_delta_G.add(tup)
 
-        S_in_graph = (S_in_graph - set(delete_keys)) | set(
-            insert_keys
-        )
-
         # Nu graph
         nu_graph += insert_delta_G
         nu_graph -= delete_delta_G
 
         delta_Gs.append(
-            (insert_delta_G, delete_delta_G, nu_graph)
+            (
+                insert_delta_G,
+                delete_delta_G,
+                deepcopy(nu_graph),
+            )
+        )
+
+        S_in_graph = (S_in_graph - set(delete_keys)) | set(
+            insert_keys
         )
 
     return delta_Gs, S_in_graph
