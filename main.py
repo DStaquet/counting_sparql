@@ -209,7 +209,10 @@ if __name__ == "__main__":
     from os.path import dirname, exists, basename
     from os import makedirs
 
-    if not exists(dirname(args.output_csv)):
+    if (
+        not exists(dirname(args.output_csv))
+        and dirname(args.output_csv) != ""
+    ):
         makedirs(dirname(args.output_csv))
 
     if args.init_csv:

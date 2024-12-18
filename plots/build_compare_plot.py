@@ -21,7 +21,7 @@ def compare_times_plot(
         cmp_arr (np.ndarray): Array with the times to compare.
     """
     index = np.arange(len(bins))
-    bar_width = 0.2
+    bar_width = 0.4
     plt.bar(
         index,
         cmp_arr_one,
