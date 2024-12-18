@@ -235,7 +235,7 @@ def run_chain_benchmark(
     duckdb_conn: DuckDBPyConnection,
     data_file: str,
     delta_and_nu_files: list[tuple[tuple[str, str], str]],
-) -> None:
+) -> tuple[float, float]:
     """Runs a chain of benchmarks.
 
     Args:
@@ -310,4 +310,9 @@ def run_chain_benchmark(
     )
     print(
         f"Average incremental time: {total_increm_time / runs} ms"
+    )
+
+    return (
+        total_scratch_time / runs,
+        total_increm_time / runs,
     )

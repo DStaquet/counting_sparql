@@ -32,3 +32,9 @@ python3 main.py Queries/hops/tri_hop.sparql temp_tests -d data/exemplary_data/ho
 # Run the benchmark for the tri_hop query with 32 nodes 50 delta values
 echo 'Running with n=1000, p=35, k=50'
 python3 main.py Queries/hops/tri_hop.sparql temp_tests -d data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_35.csv -dl data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_delta_35_50.csv -nf data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_nu_35_50.csv -r 5 > measurements/tri_hop_35_50.txt
+
+echo 'Running with n=1000, p=30, k=50'
+python3 main.py Queries/hops/tri_hop.sparql temp_tests -d data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_30.csv -dl data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_delta_30_50.csv -nf data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_nu_30_50.csv -r 5 > measurements/tri_hop_30_50.txt
+
+echo 'Running with n=1000, p=25, k=50'
+python3 main.py Queries/hops/tri_hop.sparql temp_tests -d data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_25.csv -dl data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_delta_25_50.csv -nf data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_nu_25_50.csv -r 3 > measurements/tri_hop_25_50.txt

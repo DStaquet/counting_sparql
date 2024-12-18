@@ -1,0 +1,37 @@
+Running the benchmark from scratch
+Run: 1 of 5
+Time: 35700.32334327698ms
+Average time: 35700.32334327698ms
+Run: 2 of 5
+Time: 33002.40612030029ms
+Average time: 34351.364731788635ms
+Run: 3 of 5
+Time: 34644.550800323486ms
+Average time: 34449.093421300255ms
+Run: 4 of 5
+Time: 34782.00626373291ms
+Average time: 34532.32163190842ms
+Run: 5 of 5
+Time: 34728.52039337158ms
+Average time: 34571.56138420105ms
+Preparing the benchmark incrementally
+Running the benchmark incrementally
+Run: 1 of 5
+Time: 19366.172552108765ms
+Average time: 19366.172552108765ms
+Run: 2 of 5
+Time: 15770.978689193726ms
+Average time: 17568.575620651245ms
+Run: 3 of 5
+Time: 19422.462463378906ms
+Average time: 18186.537901560467ms
+Run: 4 of 5
+Time: 16452.197790145874ms
+Average time: 17752.952873706818ms
+Run: 5 of 5
+Time: 15567.789793014526ms
+Average time: 17315.92025756836ms
+
+Average time from scratch: 34571.56138420105ms
+Average time incrementally: 17315.92025756836ms
+Results are the same

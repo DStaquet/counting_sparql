@@ -131,6 +131,19 @@ if __name__ == "__main__":
         default=False,
         help="Chain multiple deltas",
     )
+    parser.add_argument(
+        "-ocsv",
+        "--output_csv",
+        help="The output csv file",
+        default="output.csv",
+    )
+    parser.add_argument(
+        "-icsv",
+        "--init_csv",
+        help="Overwrite the given output csv file",
+        action="store_true",
+        default=False,
+    )
 
     args = parser.parse_args()
 
@@ -158,7 +171,7 @@ if __name__ == "__main__":
             raise ValueError(
                 "Delta and nu files should be files."
             )
-        run_benchmark(
+        avg_scratch_time, avg_increm_time = run_benchmark(
             args.query,
             args.query_files,
             args.runs,
@@ -182,11 +195,27 @@ if __name__ == "__main__":
             )
         delta_and_nu_files = list(zip(delta_list, nu_list))
 
-        run_chain_benchmark(
-            args.query,
-            args.query_files,
-            args.runs,
-            duckdb_conn,
-            args.data,
-            delta_and_nu_files,
+        avg_scratch_time, avg_increm_time = (
+            run_chain_benchmark(
+                args.query,
+                args.query_files,
+                args.runs,
+                duckdb_conn,
+                args.data,
+                delta_and_nu_files,
+            )
+        )
+
+    from os.path import dirname, exists, basename
+    from os import makedirs
+
+    if not exists(dirname(args.output_csv)):
+        makedirs(dirname(args.output_csv))
+
+    if args.init_csv:
+        with open(args.output_csv, "w") as f:
+            f.write("File,Scratch,Incremental\n")
+    with open(args.output_csv, "a") as f:
+        f.write(
+            f"{basename(args.data)},{avg_scratch_time},{avg_increm_time}\n"
         )

@@ -69,7 +69,7 @@ def run_benchmark(
     data_file: str,
     nu_file: str,
     delta_file: str,
-) -> None:
+) -> tuple[float, float]:
     """Runs the given query.
 
     Args:
@@ -202,3 +202,5 @@ def run_benchmark(
                 - set(incremental_results)
             ),
         )
+
+    return scratch_time, incremental_time
