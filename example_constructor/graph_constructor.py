@@ -512,7 +512,10 @@ def build_hop_graph(
 
 
 def __create_last_vertices(
-    groups: int, many_vertices: int, amount: int
+    groups: int,
+    many_vertices: int,
+    amount: int,
+    edges: list[tuple[str, str, str]],
 ) -> tuple[
     list[tuple[str, str, str]], list[str], list[str]
 ]:
@@ -530,7 +533,8 @@ def __create_last_vertices(
     first_chosen_nodes: list[str] = list()
     last_chosen_nodes: list[str] = list()
     last_vertices: list[tuple[str, str, str]] = list()
-    for _ in range(amount):
+    found_amount = 0
+    while found_amount < amount:
         chosen_group = choice(range(groups - 1))
         first_node = (
             f"{chosen_group}_{choice(range(many_vertices))}"
@@ -538,9 +542,13 @@ def __create_last_vertices(
         first_chosen_nodes.append(first_node)
         second_node = f"{chosen_group + 1}_{choice(range(many_vertices))}"
         last_chosen_nodes.append(second_node)
-        last_vertices.append(
-            (first_node, "link", second_node)
-        )
+        if (first_node, "link", second_node) in edges:
+            continue
+        else:
+            last_vertices.append(
+                (first_node, "link", second_node)
+            )
+            found_amount += 1
 
     return (
         last_vertices,
@@ -561,7 +569,7 @@ def select_delta_edges_hop_graph(
     Returns:
         Graph: Graph containing the edges that need to be deleted.
     """
-    from random import sample, seed, choice
+    from random import sample, seed
 
     seed(13)
 
@@ -587,7 +595,7 @@ def select_delta_edges_hop_graph(
         first_chosen_nodes,
         last_chosen_nodes,
     ) = __create_last_vertices(
-        groups, many_vertices, k_value // 2
+        groups, many_vertices, k_value // 2, edges
     )
     """ for i in range(k_value // 2):
         selected_ins_edges.append(
@@ -611,6 +619,20 @@ def select_delta_edges_hop_graph(
     nu_graph = nu_graph.union(Graph([], selected_ins_edges))
 
     return delta_del_graph, delta_ins_graph, nu_graph
+
+
+def __replaceSingleQuote(filename: str) -> None:
+    """Replaces the single quote in the file with a double quote.
+
+    Args:
+        filename (str): Filename to replace the single quotes in.
+    """
+    with open(filename, "r+") as f:
+        text = f.read()
+        text = text.replace("'", '"')
+        f.seek(0)
+        f.write(text)
+        f.truncate()
 
 
 if __name__ == "__main__":
@@ -754,6 +776,7 @@ if __name__ == "__main__":
             swap=-1,
             append=True,
         )
+        __replaceSingleQuote(args.delta_csv)
     if args.nu_csv:
         save_graph_to_file(
             nu_graph,

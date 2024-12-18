@@ -1,4 +1,6 @@
 from graph_constructor import Graph
+from os.path import exists, dirname
+from os import makedirs
 
 
 def save_graph_to_file(
@@ -21,6 +23,8 @@ def save_graph_to_file(
         edges_uri (str, optional): URI of the edges. Defaults to "http://example.org/edges/".
         csv (bool, optional): If True, saves the graph in CSV format. Defaults to False.
     """
+    if not exists(dirname(filename)):
+        makedirs(dirname(filename))
     if not append:
         with open(filename, "w") as file:
             if not csv:
