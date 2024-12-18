@@ -511,6 +511,44 @@ def build_hop_graph(
     return Graph(nodes, edges)
 
 
+def __create_last_vertices(
+    groups: int, many_vertices: int, amount: int
+) -> tuple[
+    list[tuple[str, str, str]], list[str], list[str]
+]:
+    """Generates the insert vertices for the hop graph.
+
+    Args:
+        groups (int): Amount of node groups
+        many_vertices (int): How many nodes in one group
+
+    Returns:
+        list[str]: List of edges
+    """
+    from random import choice
+
+    first_chosen_nodes: list[str] = list()
+    last_chosen_nodes: list[str] = list()
+    last_vertices: list[tuple[str, str, str]] = list()
+    for _ in range(amount):
+        chosen_group = choice(range(groups - 1))
+        first_node = (
+            f"{chosen_group}_{choice(range(many_vertices))}"
+        )
+        first_chosen_nodes.append(first_node)
+        second_node = f"{chosen_group + 1}_{choice(range(many_vertices))}"
+        last_chosen_nodes.append(second_node)
+        last_vertices.append(
+            (first_node, "link", second_node)
+        )
+
+    return (
+        last_vertices,
+        first_chosen_nodes,
+        last_chosen_nodes,
+    )
+
+
 def select_delta_edges_hop_graph(
     g: Graph, k_value: int, groups: int, many_vertices: int
 ) -> tuple[Graph, Graph, Graph]:
@@ -523,7 +561,7 @@ def select_delta_edges_hop_graph(
     Returns:
         Graph: Graph containing the edges that need to be deleted.
     """
-    from random import sample, seed
+    from random import sample, seed, choice
 
     seed(13)
 
@@ -532,40 +570,45 @@ def select_delta_edges_hop_graph(
     selected_edges = sample(edges, k_value // 2)
     selected_vertices = [node[0] for node in selected_edges]
 
-    last_vertices = [
+    """ last_vertices = [
         f"{groups}_{i}" for i in range(k_value // 2)
-    ]
-    second_to_last_group = [
+    ]"""
+
+    """ second_to_last_group = [
         f"{groups - 1}_{i}" for i in range(many_vertices)
     ]
 
     chosen_second_to_last_vertices = sample(
         second_to_last_group, k_value // 2
-    )
+    ) """
 
-    selected_ins_edges = []
-    for i in range(k_value // 2):
+    (
+        selected_ins_edges,
+        first_chosen_nodes,
+        last_chosen_nodes,
+    ) = __create_last_vertices(
+        groups, many_vertices, k_value // 2
+    )
+    """ for i in range(k_value // 2):
         selected_ins_edges.append(
             (
                 chosen_second_to_last_vertices[i],
                 "link",
                 last_vertices[i],
             )
-        )
+        ) """
 
     delta_del_graph = Graph(
         selected_vertices, selected_edges
     )
     delta_ins_graph = Graph(
-        chosen_second_to_last_vertices + last_vertices,
+        first_chosen_nodes + last_chosen_nodes,
         selected_ins_edges,
     )
 
     # Construct the nu graphs
     nu_graph = g.diff(Graph([], selected_edges))
-    nu_graph = nu_graph.union(
-        Graph(last_vertices, selected_ins_edges)
-    )
+    nu_graph = nu_graph.union(Graph([], selected_ins_edges))
 
     return delta_del_graph, delta_ins_graph, nu_graph
 

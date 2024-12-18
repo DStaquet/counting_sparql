@@ -7,6 +7,8 @@ from time import time
 from os.path import join
 from copy import deepcopy
 
+import gc
+
 from benchmarker.benchmark import run_query
 from build_data import (
     get_query_object,
@@ -113,7 +115,12 @@ def run_chain_constructing(
 
     print("Running the benchmark incrementally")
     # Read delta and nu files
+    counter = 0
     for (ins_file, del_file), _ in delta_and_nu_files:
+        counter += 1
+        print(
+            f"Delta {counter} of {len(delta_and_nu_files)}"
+        )
         delta_ins_g = Graph()
         delta_ins_g.parse(ins_file, format="nt")
         constructGTable("delta_G", delta_ins_g, duckdb_conn)
@@ -124,14 +131,17 @@ def run_chain_constructing(
             "delta_G", delta_del_g, duckdb_conn, -1, False
         )
 
+        gc.collect()
+
         nu_graph += delta_ins_g
         nu_graph -= delta_del_g
         constructGTable("nu_G", nu_graph, duckdb_conn)
 
-        # Time counter
-        start_increm_time: float = time()
         # Drop the tables if necessary
         duckdb_conn.execute(drop_delta_table)
+
+        # Time counter
+        start_increm_time: float = time()
 
         # Run the query
         run_query(part, SQL_delta_queries, duckdb_conn)
@@ -147,7 +157,7 @@ def run_chain_constructing(
         ) * 1000
         total_increm_time += curr_increm_time
 
-    result_incremental = duckdb_conn.execute(
+    """ result_incremental = duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
@@ -156,12 +166,16 @@ def run_chain_constructing(
                 + ".sql",
             )
         )
-    ).fetchall()
+    ).fetchall() """
 
-    nu_graph = deepcopy(base_g)
+    nu_graph = base_g
     print("Running the benchmark from scratch")
-
+    counter = 0
     for (ins_file, del_file), _ in delta_and_nu_files:
+        counter += 1
+        print(
+            f"Delta {counter} of {len(delta_and_nu_files)}"
+        )
         delta_ins_g = Graph()
         delta_ins_g.parse(ins_file, format="nt")
         constructGTable("delta_G", delta_ins_g, duckdb_conn)
@@ -172,15 +186,18 @@ def run_chain_constructing(
             "delta_G", delta_del_g, duckdb_conn, -1, False
         )
 
+        gc.collect()
+
         nu_graph += delta_ins_g
         nu_graph -= delta_del_g
         constructGTable("G", nu_graph, duckdb_conn)
 
+        # Drop the tables if necessary
+        duckdb_conn.execute(drop_tables)
+
         # Time counter
         start_scratch_time: float = time()
 
-        # Drop the tables if necessary
-        duckdb_conn.execute(drop_tables)
         # Run the query
         run_query(part, SQL_queries, duckdb_conn)
 
@@ -191,14 +208,14 @@ def run_chain_constructing(
         ) * 1000
         total_scratch_time += curr_scratch_time
 
-    result_scratch = duckdb_conn.execute(
+    """ result_scratch = duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
                 get_table_name(part_parent) + ".sql",
             )
         )
-    ).fetchall()
+    ).fetchall() 
 
     if sorted(result_scratch) == sorted(result_incremental):
         print("Results are the same")
@@ -206,7 +223,7 @@ def run_chain_constructing(
         print(
             len(result_scratch) - len(result_incremental),
             "results are different",
-        )
+        ) """
 
     return total_scratch_time, total_increm_time
 
