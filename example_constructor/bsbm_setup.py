@@ -1,7 +1,8 @@
 from rdflib.graph import Graph
 from rdflib import URIRef, Literal
 from random import sample, choice, seed
-from os.path import join
+from os.path import join, exists
+from os import mkdir, makedirs
 from copy import deepcopy
 
 from tqdm import tqdm
@@ -224,7 +225,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    g = readNTriples(args.update_file)
+    # g = readNTriples(args.update_file)
     all_product_dict = getAllProducts(
         readNTriples(args.update_file)
     )
@@ -234,6 +235,9 @@ if __name__ == "__main__":
     )
     base_g = getBaseGraph(args.input_file)
     base_g += base_g_products
+
+    if not exists(args.output_dir):
+        makedirs(args.output_dir)
 
     writeBaseG(
         base_g,
