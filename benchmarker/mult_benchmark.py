@@ -79,8 +79,11 @@ def setupNuGToG(
     duckdb_conn.execute(
         f"DROP TABLE IF EXISTS {to_insert_to_table};"
     )
-    duckdb_conn.execute(
+    """ duckdb_conn.execute(
         f"CREATE TABLE IF NOT EXISTS {to_insert_to_table} AS SELECT * FROM {to_insert_from_table};"
+    ) """
+    duckdb_conn.execute(
+        f"ALTER TABLE {to_insert_from_table} RENAME TO {to_insert_to_table};"
     )
 
 
@@ -106,6 +109,7 @@ def run_chain_constructing(
     run_query(part, SQL_queries, duckdb_conn)
 
     nu_graph = deepcopy(base_g)
+    # constructGTable("nu_G", nu_graph, duckdb_conn)
 
     print("Running the benchmark incrementally")
     # Read delta and nu files
@@ -119,6 +123,10 @@ def run_chain_constructing(
         constructGTable(
             "delta_G", delta_del_g, duckdb_conn, -1, False
         )
+
+        nu_graph += delta_ins_g
+        nu_graph -= delta_del_g
+        constructGTable("nu_G", nu_graph, duckdb_conn)
 
         # Time counter
         start_increm_time: float = time()
@@ -248,6 +256,7 @@ def run_chain_benchmark(
     for run in range(runs):
         print(f"Run: {run + 1} of {runs}")
 
+        print("Loading base graph data")
         # Read initial data
         base_g = Graph()
         base_g.parse(data_file, format="ttl")

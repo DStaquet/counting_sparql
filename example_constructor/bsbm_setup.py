@@ -109,9 +109,9 @@ def buildDeltaGs(
     delta_graphs_amount: int,
     insert_amount: int,
     delete_amount: int,
-) -> tuple[list[tuple[Graph, Graph, Graph]], set[str]]:
+    query_output_dir: str,
+) -> set[str]:
     # List of tuples of graphs containing the respective insert and delete tuples
-    delta_Gs: list[tuple[Graph, Graph, Graph]] = list()
     nu_graph = g
 
     seed(13)
@@ -147,19 +147,24 @@ def buildDeltaGs(
         nu_graph += insert_delta_G
         nu_graph -= delete_delta_G
 
-        delta_Gs.append(
-            (
-                insert_delta_G,
-                delete_delta_G,
-                deepcopy(nu_graph),
-            )
-        )
-
         S_in_graph = (S_in_graph - set(delete_keys)) | set(
             insert_keys
         )
 
-    return delta_Gs, S_in_graph
+        writeDeltaGs(
+            [
+                (
+                    insert_delta_G,
+                    delete_delta_G,
+                    nu_graph,
+                )
+            ],
+            query_output_dir,
+            format="nt",
+            nu_format="ttl",
+        )
+
+    return S_in_graph
 
 
 def writeBaseG(
@@ -179,11 +184,14 @@ def writeDeltaGs(
     output_dir: str,
     format: str = "nt",
     nu_format: str = "ttl",
+    j: str | None = None,
 ) -> None:
     for i, (insert_G, delete_G, nu_G) in tqdm(
         enumerate(delta_G_list),
         desc=f"Writing delta graphs to {output_dir}",
     ):
+        if j is not None:
+            i = j
         insert_G.serialize(
             f"{output_dir}/insert_{i}.{format}",
             format=format,
@@ -226,6 +234,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # g = readNTriples(args.update_file)
+    print("Reading all products.")
     all_product_dict = getAllProducts(
         readNTriples(args.update_file)
     )
@@ -245,13 +254,19 @@ if __name__ == "__main__":
         format="ttl",
     )
 
-    delta_G_list, S_in_graph = buildDeltaGs(
-        base_g, all_product_dict, S_in_graph, 10, 1, 1
+    S_in_graph = buildDeltaGs(
+        base_g,
+        all_product_dict,
+        S_in_graph,
+        10,
+        1,
+        1,
+        args.output_dir,
     )
 
-    writeDeltaGs(
+    """ writeDeltaGs(
         delta_G_list,
         args.output_dir,
         format="nt",
         nu_format="ttl",
-    )
+    ) """
