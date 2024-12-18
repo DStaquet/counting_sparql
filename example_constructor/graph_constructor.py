@@ -105,6 +105,7 @@ class Graph:
         edges_uri: str,
         swap_int: int = 1,
         nu_bool: bool = False,
+        no_overlap: bool = False,
     ) -> list[tuple[str, str, str, str]]:
         """Converts the graph to a list of triples.
 
@@ -141,6 +142,15 @@ class Graph:
                         str(swap_int * 1),
                     )
                 )
+                if no_overlap:
+                    triples.append(
+                        (
+                            f"'{vertices_uri}{vertex}'",
+                            "'https://www.w3.org/1999/02/22-rdf-syntax-ns#type'",
+                            f"'{vertices_uri}Node'",
+                            str(swap_int * 1),
+                        )
+                    )
                 known_vertices.add(vertex)
 
         return triples
@@ -511,6 +521,33 @@ def build_hop_graph(
     return Graph(nodes, edges)
 
 
+def build_disjunct_insert_edges(
+    k_value: int, base_graph: Graph
+) -> tuple[Graph, Graph, Graph]:
+    """Builds the disjunct insert edges.
+
+    Args:
+        k_value (int): Amount of edges to insert.
+
+    Returns:
+        Graph: Graph object.
+    """
+
+    vertices: list[str] = []
+    edges: list[tuple[str, str, str]] = []
+
+    for i in range(0, k_value, 2):
+        vertices.append(f"k{i}")
+        vertices.append(f"k{i + 1}")
+        edges.append((f"k{i}", "link", f"k{i + 1}"))
+
+    g = Graph(vertices, edges)
+
+    nu_graph = base_graph.union(g)
+
+    return Graph([], []), g, nu_graph
+
+
 def __create_last_vertices(
     groups: int,
     many_vertices: int,
@@ -717,6 +754,14 @@ if __name__ == "__main__":
         default=None,
         help="CSV file to save the new graph",
     )
+    parser.add_argument(
+        "-no",
+        "--no-overlap",
+        dest="no_overlap",
+        action="store_true",
+        default=False,
+        help="No joining of the delta graphs",
+    )
 
     args = parser.parse_args()
 
@@ -739,14 +784,22 @@ if __name__ == "__main__":
             many_vertices,
             bottlenecks,
         )
-        delta_graph_del, delta_graph_ins, nu_graph = (
-            select_delta_edges_hop_graph(
-                graph,
-                args.k_value,
-                bottlenecks,
-                many_vertices,
+        if args.no_overlap:
+            delta_graph_del, delta_graph_ins, nu_graph = (
+                build_disjunct_insert_edges(
+                    args.k_value,
+                    graph,
+                )
             )
-        )
+        else:
+            delta_graph_del, delta_graph_ins, nu_graph = (
+                select_delta_edges_hop_graph(
+                    graph,
+                    args.k_value,
+                    bottlenecks,
+                    many_vertices,
+                )
+            )
 
     if args.file:
         save_graph_to_file(
@@ -767,6 +820,7 @@ if __name__ == "__main__":
             delta=True,
             nu=True,
             swap=1,
+            no_overlap=args.no_overlap,
         )
         save_graph_to_file(
             delta_graph_del,

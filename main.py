@@ -217,5 +217,5 @@ if __name__ == "__main__":
             f.write("File,Scratch,Incremental\n")
     with open(args.output_csv, "a") as f:
         f.write(
-            f"{basename(args.data)},{avg_scratch_time},{avg_increm_time}\n"
+            f"{basename(args.data).split('_')[-1].split('.')[0]},{avg_scratch_time},{avg_increm_time}\n"
         )

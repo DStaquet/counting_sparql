@@ -36,9 +36,7 @@ def compare_times_plot(
     )
     if name_three is None and name_four is None:
         if save_name is not None:
-            plt.title(
-                f"{name_one} vs {name_two} - {save_name}"
-            )
+            plt.title(f"{save_name}")
         else:
             plt.title(f"{name_one} vs {name_two}")
     elif name_three is not None and name_four is None:
@@ -99,6 +97,7 @@ def compare_times_plot(
 
 if __name__ == "__main__":
     import argparse
+    from csv import DictReader as reader
 
     parser = argparse.ArgumentParser(
         description="Compare two arrays of times."
@@ -108,5 +107,32 @@ if __name__ == "__main__":
         type=str,
         help="File with the times to compare.",
     )
+    parser.add_argument(
+        "-l",
+        "--log",
+        action="store_true",
+        default=False,
+        help="Use log scale on the y-axis.",
+    )
 
     args = parser.parse_args()
+
+    scratch_times = []
+    increm_times = []
+    compare_buckets = []
+    with open(args.file, "r") as f:
+        csv_reader = reader(f)
+        for row in csv_reader:
+            scratch_times.append(float(row["Scratch"]))
+            increm_times.append(float(row["Incremental"]))
+            compare_buckets.append("p=" + row["File"])
+
+    compare_times_plot(
+        np.array(increm_times),
+        np.array(scratch_times),
+        "Scratch",
+        "Incremental",
+        compare_buckets,
+        save_name="Tri hop",
+        log=args.log,
+    )

@@ -13,6 +13,7 @@ def save_graph_to_file(
     append: bool = False,
     nu: bool = False,
     swap: int = 1,
+    no_overlap: bool = False,
 ) -> None:
     """Saves the graph to a file.
 
@@ -59,6 +60,7 @@ def save_graph_to_file(
                         edges_uri,
                         swap_int=swap,
                         nu_bool=nu,
+                        no_overlap=no_overlap,
                     ):
                         write_handle.writerow(triple)
     else:
@@ -89,5 +91,6 @@ def save_graph_to_file(
                         edges_uri,
                         swap_int=swap,
                         nu_bool=nu,
+                        no_overlap=no_overlap,
                     ):
                         write_handle.writerow(triple)
