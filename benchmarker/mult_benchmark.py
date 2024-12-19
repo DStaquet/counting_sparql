@@ -106,7 +106,7 @@ def run_chain_constructing(
     query_input_dir: str,
     base_g: Graph | None = None,
     format: str = "csv",
-) -> tuple[float, float]:
+) -> tuple[float, float, int, int]:
     part_parent = part
     part = part.p
 
@@ -173,6 +173,9 @@ def run_chain_constructing(
         ) * 1000
         total_increm_time += curr_increm_time
 
+    load_delta_table_in_graph(
+        str(delta_file), duckdb_conn, nu_file
+    )
     duckdb_conn.execute(drop_delta_table)
     run_query(part, SQL_delta_queries, duckdb_conn)
     result_incremental = duckdb_conn.execute(
@@ -185,6 +188,10 @@ def run_chain_constructing(
             )
         )
     ).fetchall()
+
+    increm_size = duckdb_conn.sql(
+        "SELECT COUNT(*) FROM nu_G;"
+    ).fetchone()
 
     # nu_graph = base_g
     print("Running the benchmark from scratch")
@@ -255,7 +262,16 @@ def run_chain_constructing(
             "results are different",
         )
 
-    return total_scratch_time, total_increm_time
+    scratch_size = duckdb_conn.sql(
+        "SELECT COUNT(*) FROM G;"
+    ).fetchone()
+
+    return (
+        total_scratch_time,
+        total_increm_time,
+        int(scratch_size[0]),  # type: ignore
+        int(increm_size[0]),  # type: ignore
+    )
 
 
 def run_chain_benchmark(
@@ -315,7 +331,12 @@ def run_chain_benchmark(
         constructGTable("G", base_g, duckdb_conn) """
         load_table_in_graph(data_file, duckdb_conn)
 
-        scratch_time, increm_time = run_chain_constructing(
+        (
+            scratch_time,
+            increm_time,
+            scratch_size,
+            increm_size,
+        ) = run_chain_constructing(
             q_query_object.algebra,
             delta_and_nu_files,
             duckdb_conn,
@@ -344,6 +365,9 @@ def run_chain_benchmark(
     print(
         f"Average incremental time: {total_increm_time / runs} ms"
     )
+
+    print(f"Scratch size: {scratch_size} triples")
+    print(f"Incremental size: {increm_size} triples")
 
     return (
         total_scratch_time / runs,
