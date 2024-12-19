@@ -191,3 +191,6 @@ data/mtg_csv/*
 data/*
 benchmarker/data/*
 example_constructor/bsbm_data/*
+bsbm_generator/*.nt
+bsbm_generator/*.ttl
+bsbm_generator/td_data/*

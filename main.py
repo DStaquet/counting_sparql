@@ -203,7 +203,6 @@ if __name__ == "__main__":
             )
         delta_list = findAllDeltas(args.delta, format="csv")
         nu_list = findAllNus(args.nu_file, format="csv")
-        print(delta_list, nu_list)
         if len(delta_list) != len(nu_list):
             raise ValueError(
                 "Delta files and nu files don't match."
@@ -248,5 +247,5 @@ if __name__ == "__main__":
                 .split("_")[0]
             )
         f.write(
-            f"{basename(args.data).split('_')[-1].split('.')[0]},{avg_scratch_time},{avg_increm_time}\n"
+            f"{curr_run_name},{avg_scratch_time},{avg_increm_time}\n"
         )

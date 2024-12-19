@@ -9,6 +9,7 @@ from rdflib.plugins.sparql.parserutils import (
     CompValue,
     Expr,
 )
+from rdflib.term import Literal
 
 
 def filter_expr_part(
@@ -68,8 +69,19 @@ def __atLeastOneOverlap(
                 schema, expr_part.other[i]
             )
     else:
-        return (expr_part.expr in schema) and (
-            expr_part.other in schema
+        return (
+            (
+                (expr_part.expr in schema)
+                and (expr_part.other in schema)
+            )
+            or (
+                (expr_part.expr in schema)
+                and (type(expr_part.other) == Literal)
+            )
+            or (
+                (expr_part.other in schema)
+                and (type(expr_part.expr) == Literal)
+            )
         )
 
 

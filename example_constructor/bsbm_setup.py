@@ -197,9 +197,8 @@ def writeDeltaGs(
     nu_format: str = "ttl",
     j: int | None = None,
 ) -> None:
-    for i, (insert_G, delete_G, nu_G) in tqdm(
-        enumerate(delta_G_list),
-        desc=f"Writing delta graphs to {output_dir}",
+    for i, (insert_G, delete_G, nu_G) in enumerate(
+        delta_G_list
     ):
         if j is not None:
             i = j

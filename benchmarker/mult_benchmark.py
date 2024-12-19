@@ -173,7 +173,9 @@ def run_chain_constructing(
         ) * 1000
         total_increm_time += curr_increm_time
 
-    """ result_incremental = duckdb_conn.execute(
+    duckdb_conn.execute(drop_delta_table)
+    run_query(part, SQL_delta_queries, duckdb_conn)
+    result_incremental = duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
@@ -182,7 +184,7 @@ def run_chain_constructing(
                 + ".sql",
             )
         )
-    ).fetchall() """
+    ).fetchall()
 
     # nu_graph = base_g
     print("Running the benchmark from scratch")
@@ -236,14 +238,14 @@ def run_chain_constructing(
         ) * 1000
         total_scratch_time += curr_scratch_time
 
-    """ result_scratch = duckdb_conn.execute(
+    result_scratch = duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
                 get_table_name(part_parent) + ".sql",
             )
         )
-    ).fetchall() 
+    ).fetchall()
 
     if sorted(result_scratch) == sorted(result_incremental):
         print("Results are the same")
@@ -251,7 +253,7 @@ def run_chain_constructing(
         print(
             len(result_scratch) - len(result_incremental),
             "results are different",
-        ) """
+        )
 
     return total_scratch_time, total_increm_time
 
