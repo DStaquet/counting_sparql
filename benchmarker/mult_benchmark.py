@@ -106,7 +106,7 @@ def run_chain_constructing(
     query_input_dir: str,
     base_g: Graph | None = None,
     format: str = "csv",
-) -> tuple[float, float, int, int]:
+) -> tuple[float, float, int, int, int]:
     part_parent = part
     part = part.p
 
@@ -173,6 +173,9 @@ def run_chain_constructing(
         ) * 1000
         total_increm_time += curr_increm_time
 
+    load_table_in_graph(
+        delta_and_nu_files[-2][1], duckdb_conn
+    )
     load_delta_table_in_graph(
         str(delta_file), duckdb_conn, nu_file
     )
@@ -190,6 +193,9 @@ def run_chain_constructing(
     ).fetchall()
 
     increm_size = duckdb_conn.sql(
+        "SELECT COUNT(*) FROM G;"
+    ).fetchone()
+    increm_size_nu = duckdb_conn.sql(
         "SELECT COUNT(*) FROM nu_G;"
     ).fetchone()
 
@@ -271,6 +277,7 @@ def run_chain_constructing(
         total_increm_time,
         int(scratch_size[0]),  # type: ignore
         int(increm_size[0]),  # type: ignore
+        int(increm_size_nu[0]),  # type: ignore
     )
 
 
@@ -336,6 +343,7 @@ def run_chain_benchmark(
             increm_time,
             scratch_size,
             increm_size,
+            increm_size_nu,
         ) = run_chain_constructing(
             q_query_object.algebra,
             delta_and_nu_files,
@@ -367,7 +375,10 @@ def run_chain_benchmark(
     )
 
     print(f"Scratch size: {scratch_size} triples")
-    print(f"Incremental size: {increm_size} triples")
+    print(f"Incremental size (G): {increm_size} triples")
+    print(
+        f"Incremental size (nu_G): {increm_size_nu} triples"
+    )
 
     return (
         total_scratch_time / runs,
