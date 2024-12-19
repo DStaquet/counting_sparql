@@ -1,0 +1,19 @@
+Running the benchmark from scratch
+Run: 1 of 1
+Time: 57757.64751434326ms
+Average time: 57757.64751434326ms
+Preparing the benchmark incrementally
+Running the benchmark incrementally
+Run: 1 of 1
+Time: 55373.61240386963ms
+Average time: 55373.61240386963ms
+
+Average time from scratch: 57757.64751434326ms
+Average time incrementally: 55373.61240386963ms
+Results are the same
+Amount of tuples in BGP: 
+Scratch: 64000982 
+Incremental(Previous + Delta + Nu): 128081766 Previous: 64002831 Delta: 77953 Nu: 64000982
+Amount of tuples in end result: 
+Scratch: 1000000 
+Incremental (Previous + Delta + Nu): 2045891 Previous: 1000000 Delta: 45891 Nu: 1000000
