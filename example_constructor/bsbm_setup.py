@@ -31,7 +31,7 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
     for key in tqdm(
         all_dict, desc="Adding random features"
     ):
-        choices = sample(["FA", "FB", "FC", "FD", "FE"], 2)
+        choices = sample(["FA", "FB", "FC", "FD", "FE"], 3)
         new_tup1 = (
             all_dict[key][0][0],
             URIRef(
@@ -50,8 +50,18 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
                 f"http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature{choices[1]}"
             ),
         )
+        new_tup4 = (
+            all_dict[key][0][0],
+            URIRef(
+                "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature"
+            ),
+            URIRef(
+                f"http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature{choices[2]}"
+            ),
+        )
         all_dict[key].append(new_tup1)
         all_dict[key].append(new_tup2)
+        all_dict[key].append(new_tup4)
 
         # Add random productypes for query1
         prodtype_choices = sample(

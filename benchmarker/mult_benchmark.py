@@ -13,6 +13,7 @@ from benchmarker.benchmark import (
     run_query,
     load_delta_table_in_graph,
     load_table_in_graph,
+    entire_run_query,
 )
 from build_data import (
     get_query_object,
@@ -156,15 +157,14 @@ def run_chain_constructing(
         # Drop the tables if necessary
         duckdb_conn.execute(drop_delta_table)
 
+        entire_run_query_str = entire_run_query(
+            part, SQL_delta_queries
+        )
         # Time counter
         start_increm_time: float = time()
 
         # Run the query
-        run_query(part, SQL_delta_queries, duckdb_conn)
-
-        # Put the nu_G table into the G table
-        setupNus(part, duckdb_conn)
-        setupNuGToG(duckdb_conn)
+        duckdb_conn.execute(entire_run_query_str)
 
         # End time counter
         end_increm_time: float = time()
@@ -172,6 +172,10 @@ def run_chain_constructing(
             end_increm_time - start_increm_time
         ) * 1000
         total_increm_time += curr_increm_time
+
+        # Put the nu_G table into the G table
+        setupNus(part, duckdb_conn)
+        setupNuGToG(duckdb_conn)
 
     load_table_in_graph(
         delta_and_nu_files[-2][1], duckdb_conn
@@ -198,6 +202,32 @@ def run_chain_constructing(
     increm_size_nu = duckdb_conn.sql(
         "SELECT COUNT(*) FROM nu_G;"
     ).fetchone()
+    triple_sizes_increm_delta: list[int] = list()
+    triple_sizes_increm_nu: list[int] = list()
+    triple_sizes_increm_delta.append(
+        duckdb_conn.sql(
+            f"SELECT COUNT(*) FROM delta_G;"
+        ).fetchone()[  # type: ignore
+            0
+        ]
+    )
+    for key in SQL_delta_queries.keys():
+        if "SelectQuery" in key:
+            continue
+        triple_sizes_increm_delta.append(
+            duckdb_conn.sql(
+                f"SELECT COUNT(*) FROM delta_{key};"
+            ).fetchone()[  # type: ignore
+                0
+            ]
+        )
+        triple_sizes_increm_nu.append(
+            duckdb_conn.sql(
+                f"SELECT COUNT(*) FROM nu_{key};"
+            ).fetchone()[  # type: ignore
+                0
+            ]
+        )
 
     # nu_graph = base_g
     print("Running the benchmark from scratch")
@@ -238,11 +268,14 @@ def run_chain_constructing(
         # Drop the tables if necessary
         duckdb_conn.execute(drop_tables)
 
+        entire_run_query_str = entire_run_query(
+            part, SQL_queries
+        )
         # Time counter
         start_scratch_time: float = time()
 
         # Run the query
-        run_query(part, SQL_queries, duckdb_conn)
+        duckdb_conn.execute(entire_run_query_str)
 
         # End time counter
         end_scratch_time: float = time()
@@ -271,6 +304,17 @@ def run_chain_constructing(
     scratch_size = duckdb_conn.sql(
         "SELECT COUNT(*) FROM G;"
     ).fetchone()
+    scratch_sizes: list[int] = list()
+    for key in SQL_queries.keys():
+        if "SelectQuery" in key:
+            continue
+        scratch_sizes.append(
+            duckdb_conn.sql(
+                f"SELECT COUNT(*) FROM {key};"
+            ).fetchone()[  # type: ignore
+                0
+            ]
+        )
 
     return (
         total_scratch_time,
@@ -361,11 +405,11 @@ def run_chain_benchmark(
         print(
             f"Average: {total_scratch_time / (run + 1)} ms"
         )
-        print()
         print(f"Incremental time: {increm_time} ms")
         print(
             f"Average: {total_increm_time / (run + 1)} ms"
         )
+        print()
 
     print(
         f"Average scratch time: {total_scratch_time / runs} ms"
@@ -374,12 +418,13 @@ def run_chain_benchmark(
         f"Average incremental time: {total_increm_time / runs} ms"
     )
 
-    print(f"Scratch size: {scratch_size} triples")
+    """ print(f"Scratch size: {scratch_size} triples")
     print(f"Incremental size (G): {increm_size} triples")
     print(
         f"Incremental size (nu_G): {increm_size_nu} triples"
     )
-
+    print()
+ """
     return (
         total_scratch_time / runs,
         total_increm_time / runs,

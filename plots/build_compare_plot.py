@@ -14,12 +14,14 @@ def compare_times_plot(
     cmp_arr_four: np.ndarray | None = None,
     name_four: str | None = None,
     log: bool = False,
+    fontsize_curr: int = 14,
 ) -> None:
     """Builds up a plot to compare the times of the times given in the array.
 
     Args:
         cmp_arr (np.ndarray): Array with the times to compare.
     """
+    plt.figure(figsize=(8, 5))
     index = np.arange(len(bins))
     bar_width = 0.4
     plt.bar(
@@ -34,7 +36,7 @@ def compare_times_plot(
         width=bar_width,
         label=name_two,
     )
-    if name_three is None and name_four is None:
+    """ if name_three is None and name_four is None:
         if save_name is not None:
             plt.title(f"{save_name}")
         else:
@@ -52,10 +54,11 @@ def compare_times_plot(
                 f"{name_one} vs {name_two} vs {name_three} vs {name_four} - {save_name}"
             )
         else:
-            plt.title(f"{name_one} vs {name_two}")
+            plt.title(f"{name_one} vs {name_two}") """
     plt.xticks(
         index + bar_width,
         bins,
+        fontsize=fontsize_curr,
     )
     if cmp_arr_three is not None:
         if name_three is None:
@@ -81,9 +84,9 @@ def compare_times_plot(
         )
     if log:
         plt.yscale("log")
-    plt.xlabel("Data size")
-    plt.ylabel("Time (ms)")
-    plt.legend()
+    plt.ylabel("Time (ms)", fontsize=fontsize_curr)
+    plt.yticks(fontsize=fontsize_curr)
+    plt.legend(fontsize=fontsize_curr)
     if name_three is not None and name_four is not None:
         plt.savefig(
             f"./plots/{name_one}_vs_{name_two}_vs_{name_three}_vs_{name_four}.png"
@@ -91,7 +94,9 @@ def compare_times_plot(
     else:
         plt.savefig(f"./plots/{name_one}_vs_{name_two}.png")
     if save_name is not None:
-        plt.savefig(f"./plots/{save_name}.png")
+        plt.savefig(
+            f"./plots/{save_name}.png",
+        )
     plt.clf()
 
 
@@ -130,8 +135,8 @@ if __name__ == "__main__":
     compare_times_plot(
         np.array(increm_times),
         np.array(scratch_times),
-        "Scratch",
         "Incremental",
+        "Scratch",
         compare_buckets,
         save_name="Tri hop",
         log=args.log,

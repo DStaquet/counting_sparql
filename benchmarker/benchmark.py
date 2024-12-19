@@ -16,6 +16,43 @@ from SQL_Constructor.base_constructor import get_table_name
 from benchmarker.dict_maker import constructDictFromTree
 
 
+def entire_run_query(
+    part: CompValue,
+    queries_dict: dict[str, str] | dict[str, list[str]],
+) -> str:
+    """Runs the given query.
+
+    Args:
+        part (CompValue): The given query.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+    """
+    key = get_table_name(part)
+    curr_query = ""
+    if type(queries_dict[key]) == list:
+        curr_query = (
+            queries_dict[key][0] + queries_dict[key][1]
+        )
+    else:
+        query = queries_dict[key]
+        if type(query) == str:
+            curr_query = query
+        else:
+            raise ValueError("Query is not a string")
+
+    if "p" in part:
+        return (
+            entire_run_query(part.p, queries_dict)
+            + curr_query
+        )
+    elif "p1" in part and "p2" in part:
+        return (
+            entire_run_query(part.p1, queries_dict)
+            + entire_run_query(part.p2, queries_dict)
+            + curr_query
+        )
+    return curr_query
+
+
 def run_file_query(
     query_to_run: str,
     duckdb_conn: DuckDBPyConnection,
@@ -102,14 +139,13 @@ def run_benchmark(
         # Prepare the G table
         load_table_in_graph(nu_file, duckdb_conn)
 
+        run_query_str = entire_run_query(
+            q_query_object.algebra.p, SQL_queries
+        )
         # Time counter
         start_time: float = time()
         # Run the query
-        run_query(
-            q_query_object.algebra.p,
-            SQL_queries,
-            duckdb_conn,
-        )
+        duckdb_conn.execute(run_query_str)
         # End time
         end_time: float = time()
         # Calculate the time
@@ -127,6 +163,26 @@ def run_benchmark(
         )
     ).fetchall()
     scratch_time = total_time / runs
+
+    # Amount of tuples in BGP
+    tuple_amount_scratch: list[int] = list()
+    for key in SQL_queries:
+        if "BGP" in key:
+            tuple_amount_scratch.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM {key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
+        if "Project" in key:
+            tuple_amount_scratch.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM {key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
 
     drop_delta_tables = readQueryFile(
         join(query_input_dir, "drop_delta_tables.sql")
@@ -156,14 +212,13 @@ def run_benchmark(
         # Drop the tables
         duckdb_conn.execute(drop_delta_tables)
 
+        run_query_str = entire_run_query(
+            q_query_object.algebra.p, SQL_delta_queries
+        )
         # Time counter
         start_time: float = time()
         # Run the query
-        run_query(
-            q_query_object.algebra.p,
-            SQL_delta_queries,
-            duckdb_conn,
-        )
+        duckdb_conn.execute(run_query_str)
         # End time
         end_time: float = time()
         # Calculate the time
@@ -181,6 +236,56 @@ def run_benchmark(
             )
         )
     ).fetchall()
+
+    # Amount of tuples in BGP
+    tuple_amount_increm: list[int] = list()
+    tuple_amount_increm_before: list[int] = list()
+    tuple_amount_increm_delta: list[int] = list()
+    for key in SQL_delta_queries:
+        if "BGP" in key:
+            tuple_amount_increm.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM nu_{key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
+            tuple_amount_increm_before.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM {key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
+            tuple_amount_increm_delta.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM delta_{key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
+        if "Project" in key:
+            tuple_amount_increm.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM nu_{key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
+            tuple_amount_increm_before.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM {key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
+            tuple_amount_increm_delta.append(
+                duckdb_conn.sql(
+                    f"SELECT COUNT(*) FROM delta_{key};"
+                ).fetchone()[  # type: ignore
+                    0
+                ]
+            )
 
     incremental_time = total_time / runs
     print()
@@ -202,5 +307,36 @@ def run_benchmark(
                 - set(incremental_results)
             ),
         )
+
+    print(
+        "Amount of tuples in BGP:",
+        "\nScratch:",
+        tuple_amount_scratch[0],
+        "\nIncremental(Previous + Delta + Nu):",
+        tuple_amount_increm[0]
+        + tuple_amount_increm_before[0]
+        + tuple_amount_increm_delta[0],
+        "Previous:",
+        tuple_amount_increm_before[0],
+        "Delta:",
+        tuple_amount_increm_delta[0],
+        "Nu:",
+        tuple_amount_increm[0],
+    )
+    print(
+        "Amount of tuples in end result:",
+        "\nScratch:",
+        tuple_amount_scratch[1],
+        "\nIncremental (Previous + Delta + Nu):",
+        tuple_amount_increm[1]
+        + tuple_amount_increm_before[1]
+        + tuple_amount_increm_delta[1],
+        "Previous:",
+        tuple_amount_increm_before[1],
+        "Delta:",
+        tuple_amount_increm_delta[1],
+        "Nu:",
+        tuple_amount_increm[1],
+    )
 
     return scratch_time, incremental_time
