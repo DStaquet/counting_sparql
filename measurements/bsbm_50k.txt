@@ -1,0 +1,32 @@
+Run: 1 of 1
+Loading base graph data
+Constructing base G table
+Running the benchmark incrementally
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Running the benchmark from scratch
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Scratch time: 2324.4833946228027 ms
+Average: 2324.4833946228027 ms
+
+Incremental time: 2874.228000640869 ms
+Average: 2874.228000640869 ms
+Average scratch time: 2324.4833946228027 ms
+Average incremental time: 2874.228000640869 ms

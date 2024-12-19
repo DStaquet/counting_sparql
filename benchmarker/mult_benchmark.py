@@ -9,7 +9,11 @@ from copy import deepcopy
 
 import gc
 
-from benchmarker.benchmark import run_query
+from benchmarker.benchmark import (
+    run_query,
+    load_delta_table_in_graph,
+    load_table_in_graph,
+)
 from build_data import (
     get_query_object,
     readQueryFile,
@@ -91,14 +95,17 @@ def setupNuGToG(
 
 def run_chain_constructing(
     part: CompValue,
-    delta_and_nu_files: list[tuple[tuple[str, str], str]],
+    delta_and_nu_files: list[
+        tuple[str | tuple[str, str], str]
+    ],
     duckdb_conn: DuckDBPyConnection,
     drop_tables: str,
     drop_delta_table: str,
     SQL_queries: dict[str, str],
     SQL_delta_queries: dict[str, list[str]],
-    base_g: Graph,
     query_input_dir: str,
+    base_g: Graph | None = None,
+    format: str = "csv",
 ) -> tuple[float, float]:
     part_parent = part
     part = part.p
@@ -110,32 +117,41 @@ def run_chain_constructing(
     # Initialize base relations for incremental
     run_query(part, SQL_queries, duckdb_conn)
 
-    nu_graph = deepcopy(base_g)
+    # nu_graph = deepcopy(base_g)
     # constructGTable("nu_G", nu_graph, duckdb_conn)
 
     print("Running the benchmark incrementally")
     # Read delta and nu files
     counter = 0
-    for (ins_file, del_file), _ in delta_and_nu_files:
+    for delta_file, nu_file in delta_and_nu_files:
         counter += 1
         print(
             f"Delta {counter} of {len(delta_and_nu_files)}"
         )
-        delta_ins_g = Graph()
+        """ delta_ins_g = Graph()
         delta_ins_g.parse(ins_file, format="nt")
-        constructGTable("delta_G", delta_ins_g, duckdb_conn)
+        constructGTable("delta_G", delta_ins_g, duckdb_conn) """
 
-        delta_del_g = Graph()
+        """ delta_del_g = Graph()
         delta_del_g.parse(del_file, format="nt")
         constructGTable(
             "delta_G", delta_del_g, duckdb_conn, -1, False
-        )
+        ) """
 
-        gc.collect()
+        # gc.collect()
 
-        nu_graph += delta_ins_g
+        """ nu_graph += delta_ins_g
         nu_graph -= delta_del_g
-        constructGTable("nu_G", nu_graph, duckdb_conn)
+        constructGTable("nu_G", nu_graph, duckdb_conn) """
+
+        if type(delta_file) == tuple:
+            raise ValueError(
+                "Delta file should be a string, not a tuple."
+            )
+        elif type(delta_file) == str:
+            load_delta_table_in_graph(
+                delta_file, duckdb_conn, nu_file
+            )
 
         # Drop the tables if necessary
         duckdb_conn.execute(drop_delta_table)
@@ -168,15 +184,15 @@ def run_chain_constructing(
         )
     ).fetchall() """
 
-    nu_graph = base_g
+    # nu_graph = base_g
     print("Running the benchmark from scratch")
     counter = 0
-    for (ins_file, del_file), _ in delta_and_nu_files:
+    for delta_file, nu_file in delta_and_nu_files:
         counter += 1
         print(
             f"Delta {counter} of {len(delta_and_nu_files)}"
         )
-        delta_ins_g = Graph()
+        """ delta_ins_g = Graph()
         delta_ins_g.parse(ins_file, format="nt")
         constructGTable("delta_G", delta_ins_g, duckdb_conn)
 
@@ -190,7 +206,19 @@ def run_chain_constructing(
 
         nu_graph += delta_ins_g
         nu_graph -= delta_del_g
-        constructGTable("G", nu_graph, duckdb_conn)
+        constructGTable("G", nu_graph, duckdb_conn) """
+
+        if type(delta_file) == str:
+            load_delta_table_in_graph(
+                delta_file,
+                duckdb_conn,
+                nu_file,
+                nu_table_name="G",
+            )
+        else:
+            raise ValueError(
+                "Delta file should be a string in CSV format, not a tuple."
+            )
 
         # Drop the tables if necessary
         duckdb_conn.execute(drop_tables)
@@ -234,7 +262,10 @@ def run_chain_benchmark(
     runs: int,
     duckdb_conn: DuckDBPyConnection,
     data_file: str,
-    delta_and_nu_files: list[tuple[tuple[str, str], str]],
+    delta_and_nu_files: list[
+        tuple[str | tuple[str, str], str]
+    ],
+    format: str = "csv",
 ) -> tuple[float, float]:
     """Runs a chain of benchmarks.
 
@@ -274,12 +305,13 @@ def run_chain_benchmark(
         print(f"Run: {run + 1} of {runs}")
 
         print("Loading base graph data")
-        # Read initial data
+        """ # Read initial data
         base_g = Graph()
         base_g.parse(data_file, format="ttl")
 
         print("Constructing base G table")
-        constructGTable("G", base_g, duckdb_conn)
+        constructGTable("G", base_g, duckdb_conn) """
+        load_table_in_graph(data_file, duckdb_conn)
 
         scratch_time, increm_time = run_chain_constructing(
             q_query_object.algebra,
@@ -289,7 +321,6 @@ def run_chain_benchmark(
             drop_delta_tables,
             SQL_queries,  # type: ignore
             SQL_delta_queries,  # type: ignore
-            base_g,
             query_input_dir,
         )
 

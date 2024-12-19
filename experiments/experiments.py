@@ -32,6 +32,7 @@ def load_delta_table_in_graph(
     delta_table: str,
     duckdb_conn: DuckDBPyConnection,
     nu_table: str,
+    nu_table_name: str = "nu_G",
 ) -> None:
     """Loads the delta table into the graph.
 
@@ -42,11 +43,13 @@ def load_delta_table_in_graph(
     """
     # DROP THE TABLES BEFORE MAKING THEM ANEW
     duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_G;")
-    duckdb_conn.execute(f"DROP TABLE IF EXISTS nu_G;")
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS {nu_table_name};"
+    )
 
     # CREATE THE TABLES
     duckdb_conn.execute(
-        f"CREATE TABLE nu_G AS FROM '{nu_table}';"
+        f"CREATE TABLE {nu_table_name} AS FROM '{nu_table}';"
     )
     duckdb_conn.execute(
         f"CREATE TABLE delta_G AS FROM '{delta_table}';"

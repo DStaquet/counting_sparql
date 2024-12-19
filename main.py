@@ -4,7 +4,9 @@ from benchmarker.mult_benchmark import run_chain_benchmark
 from os.path import join
 
 
-def findAllDeltas(delta_dir: str) -> list[tuple[str, str]]:
+def findAllDeltas(
+    delta_dir: str, format: str = "csv"
+) -> list[tuple[str, str]] | list[str]:
     """Finds all delta files in the given directory.
 
     Args:
@@ -13,13 +15,25 @@ def findAllDeltas(delta_dir: str) -> list[tuple[str, str]]:
     Returns:
         list[str]: List of delta files.
     """
+    if format == "csv":
+        return sorted(
+            [
+                join(delta_dir, file)
+                for file in os.listdir(delta_dir)
+                if "delta" in file and format in file
+            ],
+            key=lambda x: x.split("delta_")[1].split(
+                ".csv"
+            )[0],
+        )
+
     tup_list: list[tuple[str, str]] = list()
     ins_list: list[str] = list()
     del_list: list[str] = list()
     for file in os.listdir(delta_dir):
-        if "insert" in file:
+        if "insert" in file and format in file:
             ins_list.append(join(delta_dir, file))
-        if "delete" in file:
+        if "delete" in file and format in file:
             del_list.append(join(delta_dir, file))
     for ins in ins_list:
         for del_i in del_list:
@@ -33,11 +47,11 @@ def findAllDeltas(delta_dir: str) -> list[tuple[str, str]]:
         tup_list,
         key=lambda x: x[0]
         .split("insert_")[1]
-        .split(".")[0],
+        .split(".csv")[0],
     )
 
 
-def findAllNus(delta_dir: str) -> list[str]:
+def findAllNus(delta_dir: str, format="csv") -> list[str]:
     """Finds all nu files in the given directory.
 
     Args:
@@ -50,9 +64,9 @@ def findAllNus(delta_dir: str) -> list[str]:
         [
             join(delta_dir, file)
             for file in os.listdir(delta_dir)
-            if "nu" in file
+            if "nu" in file and format in file
         ],
-        key=lambda x: x.split("nu_")[1].split(".")[0],
+        key=lambda x: x.split("nu_")[1].split(".csv")[0],
     )
 
 
@@ -187,8 +201,9 @@ if __name__ == "__main__":
             raise ValueError(
                 "Delta and nu files should be directories."
             )
-        delta_list = findAllDeltas(args.delta)
-        nu_list = findAllNus(args.nu_file)
+        delta_list = findAllDeltas(args.delta, format="csv")
+        nu_list = findAllNus(args.nu_file, format="csv")
+        print(delta_list, nu_list)
         if len(delta_list) != len(nu_list):
             raise ValueError(
                 "Delta files and nu files don't match."
@@ -202,7 +217,8 @@ if __name__ == "__main__":
                 args.runs,
                 duckdb_conn,
                 args.data,
-                delta_and_nu_files,
+                delta_and_nu_files,  # type: ignore
+                format="csv",
             )
         )
 
@@ -219,6 +235,18 @@ if __name__ == "__main__":
         with open(args.output_csv, "w") as f:
             f.write("File,Scratch,Incremental\n")
     with open(args.output_csv, "a") as f:
+        if not args.multiple:
+            curr_run_name = (
+                basename(args.data)
+                .split("_")[-1]
+                .split(".")[0]
+            )
+        else:
+            curr_run_name = (
+                dirname(args.data)
+                .split("/")[-1]
+                .split("_")[0]
+            )
         f.write(
             f"{basename(args.data).split('_')[-1].split('.')[0]},{avg_scratch_time},{avg_increm_time}\n"
         )

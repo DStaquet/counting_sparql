@@ -7,6 +7,8 @@ from copy import deepcopy
 
 from tqdm import tqdm
 
+seed(13)
+
 
 def readNTriples(file):
     print(f"Reading ntriples from {file}.", end="")
@@ -73,8 +75,6 @@ def getBaseProducts(
 ) -> tuple[Graph, set[str]]:
     base_g = Graph()
 
-    seed(13)
-
     sample_keys = sample(
         list(all_product_dict.keys()),
         len(all_product_dict.keys()) // 2,
@@ -114,9 +114,7 @@ def buildDeltaGs(
     # List of tuples of graphs containing the respective insert and delete tuples
     nu_graph = g
 
-    seed(13)
-
-    for _ in tqdm(
+    for j in tqdm(
         range(delta_graphs_amount),
         desc="Building delta graphs",
     ):
@@ -160,8 +158,9 @@ def buildDeltaGs(
                 )
             ],
             query_output_dir,
-            format="nt",
-            nu_format="ttl",
+            format="csv",
+            nu_format="csv",
+            j=j,
         )
 
     return S_in_graph
@@ -172,6 +171,18 @@ def writeBaseG(
     output_file: str,
     format: str = "ttl",
 ) -> None:
+    if format == "csv":
+        print(
+            f"Writing base graph to {output_file}.", end=""
+        )
+        with open(output_file, "w") as f:
+            f.write("s, p, o, k_count\n")
+            for s, p, o in base_g:
+                f.write(
+                    f'"{str(s)}", "{str(p)}", "{str(o)}", 1\n'
+                )
+        print(f" Done.")
+        return
     print(f"Writing base graph to {output_file}.", end="")
     base_g.serialize(
         output_file, format=format, encoding="utf-8"
@@ -184,7 +195,7 @@ def writeDeltaGs(
     output_dir: str,
     format: str = "nt",
     nu_format: str = "ttl",
-    j: str | None = None,
+    j: int | None = None,
 ) -> None:
     for i, (insert_G, delete_G, nu_G) in tqdm(
         enumerate(delta_G_list),
@@ -192,6 +203,31 @@ def writeDeltaGs(
     ):
         if j is not None:
             i = j
+        if format == "csv":
+            with open(
+                f"{output_dir}/delta_{i}.{format}", "w"
+            ) as f:
+                f.write("s, p, o, k_count\n")
+                for s, p, o in insert_G:
+                    f.write(
+                        f'"{str(s)}", "{str(p)}", "{str(o)}", 1\n'
+                    )
+            with open(
+                f"{output_dir}/delta_{i}.{format}", "a"
+            ) as f:
+                for s, p, o in delete_G:
+                    f.write(
+                        f'"{str(s)}", "{str(p)}", "{str(o)}", -1\n'
+                    )
+            with open(
+                f"{output_dir}/nu_{i}.{nu_format}", "w"
+            ) as f:
+                f.write("s, p, o, k_count\n")
+                for s, p, o in nu_G:
+                    f.write(
+                        f'"{str(s)}", "{str(p)}", "{str(o)}", 1\n'
+                    )
+            continue
         insert_G.serialize(
             f"{output_dir}/insert_{i}.{format}",
             format=format,
@@ -211,9 +247,6 @@ def writeDeltaGs(
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
-    from random import seed
-
-    seed(13)
 
     parser = ArgumentParser(
         description="Module to construct RDF scenario from Berlin SPARQL Benchmark (BSBM) data to use with incremental view maintenance"
@@ -250,8 +283,8 @@ if __name__ == "__main__":
 
     writeBaseG(
         base_g,
-        join(args.output_dir, "base.ttl"),
-        format="ttl",
+        join(args.output_dir, "base.csv"),
+        format="csv",
     )
 
     S_in_graph = buildDeltaGs(
