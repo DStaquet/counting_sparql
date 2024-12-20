@@ -29,7 +29,7 @@ For the BSBM experiment
         ```bash
         $ ./generate -pc 1000 -ud -tc 1000 -fn chain_1000 -ufn chain_update_1000 -s ttl  
         ```
-    2) Put these datasets in the `bsbm_data/input/` directory
+    2) Put the two datasets `chain_1000.ttl` and `chain_update_1000.nt` in the `bsbm_data/input_data/` directory
     3) After this run the following command to build up the data and run the queries:
         ```bash
         $ ./benchmark_bsbm.sh
