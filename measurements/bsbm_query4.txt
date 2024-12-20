@@ -1,0 +1,147 @@
+Run: 1 of 5
+Loading base graph data
+Running the benchmark incrementally
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Running the benchmark from scratch
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Scratch time: 998.2800483703613 ms
+Average: 998.2800483703613 ms
+Incremental time: 1874.291181564331 ms
+Average: 1874.291181564331 ms
+
+Run: 2 of 5
+Loading base graph data
+Running the benchmark incrementally
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Running the benchmark from scratch
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Scratch time: 1035.1641178131104 ms
+Average: 1016.7220830917358 ms
+Incremental time: 1956.1314582824707 ms
+Average: 1915.2113199234009 ms
+
+Run: 3 of 5
+Loading base graph data
+Running the benchmark incrementally
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Running the benchmark from scratch
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Scratch time: 1040.689468383789 ms
+Average: 1024.7112115224202 ms
+Incremental time: 1960.5817794799805 ms
+Average: 1930.3348064422607 ms
+
+Run: 4 of 5
+Loading base graph data
+Running the benchmark incrementally
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Running the benchmark from scratch
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Scratch time: 985.1105213165283 ms
+Average: 1014.8110389709473 ms
+Incremental time: 1975.572109222412 ms
+Average: 1941.6441321372986 ms
+
+Run: 5 of 5
+Loading base graph data
+Running the benchmark incrementally
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Running the benchmark from scratch
+Delta 1 of 10
+Delta 2 of 10
+Delta 3 of 10
+Delta 4 of 10
+Delta 5 of 10
+Delta 6 of 10
+Delta 7 of 10
+Delta 8 of 10
+Delta 9 of 10
+Delta 10 of 10
+Scratch time: 1004.0814876556396 ms
+Average: 1012.6651287078857 ms
+Incremental time: 1946.3176727294922 ms
+Average: 1942.5788402557373 ms
+
+Average scratch time: 1012.6651287078857 ms
+Average incremental time: 1942.5788402557373 ms
