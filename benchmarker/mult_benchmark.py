@@ -196,49 +196,6 @@ def run_chain_constructing(
     )
     duckdb_conn.execute(drop_delta_table)
     run_query(part, SQL_delta_queries, duckdb_conn)
-    """ result_incremental = duckdb_conn.execute(
-        readQueryFile(
-            join(
-                query_input_dir,
-                "nu_"
-                + get_table_name(part_parent)
-                + ".sql",
-            )
-        )
-    ).fetchall() """
-
-    """ increm_size = duckdb_conn.sql(
-        "SELECT COUNT(*) FROM G;"
-    ).fetchone()
-    increm_size_nu = duckdb_conn.sql(
-        "SELECT COUNT(*) FROM nu_G;"
-    ).fetchone()
-    triple_sizes_increm_delta: list[int] = list()
-    triple_sizes_increm_nu: list[int] = list()
-    triple_sizes_increm_delta.append(
-        duckdb_conn.sql(
-            f"SELECT COUNT(*) FROM delta_G;"
-        ).fetchone()[  # type: ignore
-            0
-        ]
-    )
-    for key in SQL_delta_queries.keys():
-        if "SelectQuery" in key:
-            continue
-        triple_sizes_increm_delta.append(
-            duckdb_conn.sql(
-                f"SELECT COUNT(*) FROM delta_{key};"
-            ).fetchone()[  # type: ignore
-                0
-            ]
-        )
-        triple_sizes_increm_nu.append(
-            duckdb_conn.sql(
-                f"SELECT COUNT(*) FROM nu_{key};"
-            ).fetchone()[  # type: ignore
-                0
-            ]
-        )"""
 
     # nu_graph = base_g
     print("Running the benchmark from scratch")
@@ -295,38 +252,6 @@ def run_chain_constructing(
             end_scratch_time - start_scratch_time
         ) * 1000
         total_scratch_time += curr_scratch_time
-
-    """result_scratch = duckdb_conn.execute(
-        readQueryFile(
-            join(
-                query_input_dir,
-                get_table_name(part_parent) + ".sql",
-            )
-        )
-    ).fetchall()
-
-    if sorted(result_scratch) == sorted(result_incremental):
-        print("Results are the same")
-    else:
-        print(
-            len(result_scratch) - len(result_incremental),
-            "results are different",
-        )
-
-    scratch_size = duckdb_conn.sql(
-        "SELECT COUNT(*) FROM G;"
-    ).fetchone()
-    scratch_sizes: list[int] = list()
-    for key in SQL_queries.keys():
-        if "SelectQuery" in key:
-            continue
-        scratch_sizes.append(
-            duckdb_conn.sql(
-                f"SELECT COUNT(*) FROM {key};"
-            ).fetchone()[  # type: ignore
-                0
-            ]
-        ) """
 
     return (
         total_scratch_time,
@@ -425,13 +350,6 @@ def run_chain_benchmark(
         f"Average incremental time: {total_increm_time / runs} ms"
     )
 
-    """ print(f"Scratch size: {scratch_size} triples")
-    print(f"Incremental size (G): {increm_size} triples")
-    print(
-        f"Incremental size (nu_G): {increm_size_nu} triples"
-    )
-    print()
- """
     return (
         total_scratch_time / runs,
         total_increm_time / runs,
