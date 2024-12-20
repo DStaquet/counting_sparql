@@ -63,8 +63,15 @@ def __delta_on_negate_part(
 
     if len(schemas1) == 0:
         raise ValueError("No schemas to join on.")
+    # None match
+    none_match: bool = True
     for sch1 in schemas1:
         for sch2 in schemas2:
+            if sch1.intersection(sch2) == set():
+                continue
+            else:
+                none_match = False
+
             schemas2_len = len(schemas2)
             if minus:
                 schemas2 = [
@@ -83,17 +90,34 @@ def __delta_on_negate_part(
             else:
                 sch2_suffix: str = ""
 
+            if len(schemas1) > 1:
+                sch1_suffix: str = (
+                    "_"
+                    + __encode_schema_name(
+                        str(sorted(sch1))
+                    )
+                )
+            else:
+                sch1_suffix: str = ""
+
             vars_to_join_on = __varsToJoinOn(sch1, sch2)
+            if vars_to_join_on == set():
+                join_temp = ","
+            else:
+                join_temp = "JOIN"
             curr_diff_query_select_left: str = (
                 "SELECT "
                 + ", ".join(
                     f"s1.{var} as {var}"
                     for var in sorted(sch1)
                 )
-                + ", s1.k_count as k_count"
+            )
+            curr_diff_query_select_left += (
+                ", s1.k_count as k_count"
                 + " FROM "
                 + nu_from_table
-                + " as s1 JOIN "
+                + sch1_suffix
+                + f" as s1 {join_temp} "
                 + delta_from_table
                 + sch2_suffix
                 + " as s2 "
@@ -115,7 +139,8 @@ def __delta_on_negate_part(
                 + ", -s1.k_count as k_count"
                 + " FROM "
                 + nu_from_table
-                + " as s1 JOIN "
+                + sch1_suffix
+                + f" as s1 {join_temp} "
                 + delta_from_table
                 + sch2_suffix
                 + " as s2 "
@@ -135,6 +160,8 @@ def __delta_on_negate_part(
                 curr_diff_query_select_right
             )
 
+        if none_match:
+            return diff_queries
         curr_diff_query_left: str = ""
         curr_diff_query_right: str = ""
         if len(schemas2) > 0:
@@ -288,14 +315,17 @@ def __diffSch2Subquery(
         + second_table_name
         + sch2_suffix
         + f" AS s{index}"
-        + " WHERE "
-        + " AND ".join(
+    )
+    if sch1.intersection(sch2) != set():
+        subquery_diff_str += " WHERE " + " AND ".join(
             f"s1.{var} = s{index}.{var}"
             for var in sorted(sch1.intersection(sch2))
         )
-    )
-    if is_delta and delta_swap != "":
-        subquery_diff_str += f" AND {delta_swap}s2.k_count = s{index}.k_count"
+        if is_delta and delta_swap != "":
+            subquery_diff_str += f" AND {delta_swap}s2.k_count = s{index}.k_count"
+    else:
+        if is_delta and delta_swap != "":
+            subquery_diff_str += f" WHERE {delta_swap}s2.k_count = s{index}.k_count"
 
     return subquery_diff_str
 

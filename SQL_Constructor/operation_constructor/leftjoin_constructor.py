@@ -89,6 +89,7 @@ def __delta_diff_part(
             part,
             schemas1,
             schemas2,
+            append_schemas=is_leftjoin_part,
         )
 
     diff_queries_str: str = make_group_by(

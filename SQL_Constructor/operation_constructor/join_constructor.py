@@ -135,15 +135,16 @@ def __join_query_one_schema(
             + table_name_one
             + " AS r1, "
             + table_name_two
-            + " AS r2 WHERE "
-            + " AND ".join(
+            + " AS r2 "
+        )
+        if schemas1[0].intersection(schemas2[0]) != set():
+            join_query += "WHERE " + " AND ".join(
                 f"r1.{var} = r2.{var}"
                 for var in sorted(
                     schemas1[0].intersection(schemas2[0])
                 )
             )
-            + ";\n"
-        )
+        join_query += ";\n"
 
     return join_query
 

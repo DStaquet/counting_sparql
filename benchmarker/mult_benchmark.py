@@ -107,7 +107,8 @@ def run_chain_constructing(
     query_input_dir: str,
     base_g: Graph | None = None,
     format: str = "csv",
-) -> tuple[float, float, int, int, int]:
+    data_file: str = "",
+) -> tuple[float, float]:
     part_parent = part
     part = part.p
 
@@ -124,6 +125,7 @@ def run_chain_constructing(
     print("Running the benchmark incrementally")
     # Read delta and nu files
     counter = 0
+    previous_delta_file = data_file
     for delta_file, nu_file in delta_and_nu_files:
         counter += 1
         print(
@@ -150,9 +152,15 @@ def run_chain_constructing(
                 "Delta file should be a string, not a tuple."
             )
         elif type(delta_file) == str:
+            load_table_in_graph(
+                previous_delta_file, duckdb_conn
+            )
+            duckdb_conn.execute(drop_tables)
+            run_query(part, SQL_queries, duckdb_conn)
             load_delta_table_in_graph(
                 delta_file, duckdb_conn, nu_file
             )
+            previous_delta_file = delta_file
 
         # Drop the tables if necessary
         duckdb_conn.execute(drop_delta_table)
@@ -164,7 +172,8 @@ def run_chain_constructing(
         start_increm_time: float = time()
 
         # Run the query
-        duckdb_conn.execute(entire_run_query_str)
+        # duckdb_conn.execute(entire_run_query_str)
+        run_query(part, SQL_delta_queries, duckdb_conn)
 
         # End time counter
         end_increm_time: float = time()
@@ -174,8 +183,8 @@ def run_chain_constructing(
         total_increm_time += curr_increm_time
 
         # Put the nu_G table into the G table
-        setupNus(part, duckdb_conn)
-        setupNuGToG(duckdb_conn)
+        """ setupNus(part, duckdb_conn)
+        setupNuGToG(duckdb_conn) """
 
     load_table_in_graph(
         delta_and_nu_files[-2][1], duckdb_conn
@@ -185,7 +194,7 @@ def run_chain_constructing(
     )
     duckdb_conn.execute(drop_delta_table)
     run_query(part, SQL_delta_queries, duckdb_conn)
-    result_incremental = duckdb_conn.execute(
+    """ result_incremental = duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
@@ -194,9 +203,9 @@ def run_chain_constructing(
                 + ".sql",
             )
         )
-    ).fetchall()
+    ).fetchall() """
 
-    increm_size = duckdb_conn.sql(
+    """ increm_size = duckdb_conn.sql(
         "SELECT COUNT(*) FROM G;"
     ).fetchone()
     increm_size_nu = duckdb_conn.sql(
@@ -227,7 +236,7 @@ def run_chain_constructing(
             ).fetchone()[  # type: ignore
                 0
             ]
-        )
+        )"""
 
     # nu_graph = base_g
     print("Running the benchmark from scratch")
@@ -275,7 +284,8 @@ def run_chain_constructing(
         start_scratch_time: float = time()
 
         # Run the query
-        duckdb_conn.execute(entire_run_query_str)
+        # duckdb_conn.execute(entire_run_query_str)
+        run_query(part, SQL_queries, duckdb_conn)
 
         # End time counter
         end_scratch_time: float = time()
@@ -284,7 +294,7 @@ def run_chain_constructing(
         ) * 1000
         total_scratch_time += curr_scratch_time
 
-    result_scratch = duckdb_conn.execute(
+    """result_scratch = duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
@@ -314,14 +324,11 @@ def run_chain_constructing(
             ).fetchone()[  # type: ignore
                 0
             ]
-        )
+        ) """
 
     return (
         total_scratch_time,
         total_increm_time,
-        int(scratch_size[0]),  # type: ignore
-        int(increm_size[0]),  # type: ignore
-        int(increm_size_nu[0]),  # type: ignore
     )
 
 
@@ -385,9 +392,6 @@ def run_chain_benchmark(
         (
             scratch_time,
             increm_time,
-            scratch_size,
-            increm_size,
-            increm_size_nu,
         ) = run_chain_constructing(
             q_query_object.algebra,
             delta_and_nu_files,
@@ -397,6 +401,7 @@ def run_chain_benchmark(
             SQL_queries,  # type: ignore
             SQL_delta_queries,  # type: ignore
             query_input_dir,
+            data_file=data_file,
         )
 
         total_scratch_time += scratch_time

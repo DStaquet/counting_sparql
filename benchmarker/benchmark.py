@@ -63,6 +63,7 @@ def run_file_query(
         query_file (str): The given query file.
         duckdb_conn (DuckDBPyConnection): Connection to the database.
     """
+    # print(query_to_run)
     duckdb_conn.execute(query_to_run)
 
 
@@ -86,7 +87,11 @@ def run_query(
     key = get_table_name(part)
     if type(queries_dict[key]) == list:
         run_file_query(
-            queries_dict[key][0] + queries_dict[key][1],
+            queries_dict[key][0],
+            duckdb_conn,
+        )
+        run_file_query(
+            queries_dict[key][1],
             duckdb_conn,
         )
     else:

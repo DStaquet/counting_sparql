@@ -183,6 +183,9 @@ def __findDropableTables(
     join_file = join(
         query_output_dir, part_name + "_join.sql"
     )
+    outer_join_file = join(
+        query_output_dir, part_name + "_outer_join.sql"
+    )
 
     # Normal file tables to drop
     def __splitTables(file_name: str) -> set[str]:
@@ -200,7 +203,12 @@ def __findDropableTables(
 
     # Join file tables to drop
     if exists(join_file):
+        print("here", join_file)
         final_set |= __splitTables(join_file)
+
+    # Outer join file tables to drop
+    if exists(outer_join_file):
+        final_set |= __splitTables(outer_join_file)
 
     return final_set
 
@@ -389,6 +397,9 @@ def getJoinOrNormalFile(query_file_name: str) -> str:
     """
     if exists(query_file_name + "_join.sql"):
         return query_file_name + "_join.sql"
+    elif exists(query_file_name + "_outer_join.sql"):
+        print(query_file_name + "_outer_join.sql")
+        return query_file_name + "_outer_join.sql"
     else:
         return query_file_name + ".sql"
 

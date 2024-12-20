@@ -115,6 +115,30 @@ def test_minus_query(
 
     assert minus_queries == sql_queries
 
+    """ (
+    "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas.sparql",
+    "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta.sql",
+    "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta_join.sql",
+    [
+        {
+            Variable("x"),
+        },
+        {
+            Variable("y"),
+        },
+    ],
+    [
+        {
+            Variable("x"),
+            Variable("y"),
+        },
+        {
+            Variable("x"),
+            Variable("z"),
+        },
+    ],
+    ), """
+
 
 @mark.parametrize(
     "query_file,expected_sql,expected_sql_join,schemas1,schemas2",
@@ -139,29 +163,6 @@ def test_minus_query(
                 {
                     Variable("x"),
                 }
-            ],
-            [
-                {
-                    Variable("x"),
-                    Variable("y"),
-                },
-                {
-                    Variable("x"),
-                    Variable("z"),
-                },
-            ],
-        ),
-        (
-            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas.sparql",
-            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta.sql",
-            "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta_join.sql",
-            [
-                {
-                    Variable("x"),
-                },
-                {
-                    Variable("y"),
-                },
             ],
             [
                 {

@@ -194,3 +194,4 @@ example_constructor/bsbm_data/*
 bsbm_generator/*.nt
 bsbm_generator/*.ttl
 bsbm_generator/td_data/*
+bsbm_data/*

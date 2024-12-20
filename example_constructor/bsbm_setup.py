@@ -61,7 +61,7 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
         )
         all_dict[key].append(new_tup1)
         all_dict[key].append(new_tup2)
-        all_dict[key].append(new_tup4)
+        # all_dict[key].append(new_tup4)
 
         # Add random productypes for query1
         prodtype_choices = sample(
