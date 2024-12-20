@@ -30,3 +30,5 @@ For the BSBM experiment
         $ ./benchmark_bsbm.sh
         ```
 - In case this does not work, the commands in the shell script can be run manually.
+
+Results can afterwards be found in the `measurements/` directory.

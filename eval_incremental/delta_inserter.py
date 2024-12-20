@@ -4,7 +4,7 @@ from rdflib.graph import Graph
 import rdflib.plugins.sparql.evaluate as evaluate
 from rdflib.term import Variable
 
-from eval_incremental import duckdb_conn
+# from eval_incremental import duckdb_conn
 
 from SQL_Constructor.base_constructor import (
     construct_bgp_insert,
@@ -51,7 +51,7 @@ def parseFirstDelta(part: CompValue, g: Graph) -> None:
         insert_bgp_str: str = construct_bgp_insert(
             part, filled_in_triples
         )
-        duckdb_conn.sql(insert_bgp_str)
+        # duckdb_conn.sql(insert_bgp_str)
 
     elif "p" in part:
         parseFirstDelta(part.p, g)

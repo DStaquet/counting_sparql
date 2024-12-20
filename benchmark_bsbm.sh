@@ -1,6 +1,6 @@
 
 echo 'Constructing 1000 products for the BSBM queries'
-python3 example_constructor/bsbm_setup.py bsbm_data/input_data/chain_1000.ttl bsbm_data/input_data/short_1000.nt bsbm_data/output_data/1000_product
+python3 example_constructor/bsbm_setup.py bsbm_data/input_data/chain_1000.ttl bsbm_data/input_data/chain_update_1000.nt bsbm_data/output_data/1000_product
 
 
 echo 'Running the benchmark for Query1 with 1000 products'
