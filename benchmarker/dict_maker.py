@@ -103,7 +103,6 @@ def constructDictFromTree(
         current_nu_file_name = getJoinOrNormalFile(
             join(query_input_dir, "nu_" + current_name)
         )
-        print(current_nu_file_name)
 
     if part.name == "BGP":
         prev_dict: dict[str, str] | dict[str, list[str]] = (

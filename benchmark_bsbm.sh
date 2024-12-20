@@ -6,4 +6,7 @@ python3 example_constructor/bsbm_setup.py example_constructor/bsbm_data/input_da
 
 
 echo 'Running the benchmark for Query1 with 1000 products'
-python3 main.py benchmarker/Queries/BSBM/Query1/query1.sparql temp_tests/chain_benchmark -d example_constructor/bsbm_data/output_data/1000_product/base.csv -dl example_constructor/bsbm_data/output_data/1000_product -nf example_constructor/bsbm_data/output_data/1000_product -m -r 5 -s    
+python3 main.py benchmarker/Queries/BSBM/Query1/query1.sparql temp_tests/chain_benchmark -d example_constructor/bsbm_data/output_data/1000_product/base.csv -dl example_constructor/bsbm_data/output_data/1000_product -nf example_constructor/bsbm_data/output_data/1000_product -m -r 5 -s 
+
+echo 'Running the benchmark for Query2 with 1000 products'
+python3 main.py benchmarker/Queries/BSBM/Query2/query2.sparql temp_tests/chain_benchmark_temp -d bsbm_data/output_data/1000_product/base.csv -dl bsbm_data/output_data/1000_product -nf bsbm_data/output_data/1000_product -m -r 5 -s

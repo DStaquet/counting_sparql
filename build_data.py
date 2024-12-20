@@ -132,6 +132,8 @@ def setup_query_files(
     from SQL_Constructor import (
         SQL_initialize_queries as SQLiq,
     )
+    from os import makedirs
+    from os.path import exists, join
 
     # import incremental_query_parser as iqp
     from setup_queries import (
@@ -146,6 +148,8 @@ def setup_query_files(
     # algebra.pprintAlgebra(q_query_object)
 
     # Output directory
+    if not exists(output_dir):
+        makedirs(output_dir)
     query_output_dir: str = get_query_output_dir(
         output_dir, q_query_object
     )
