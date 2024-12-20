@@ -14,7 +14,7 @@ For the Tri hop experiment
     ```bash
     $ ./benchmark.sh
     ```
-- In case this does not work, the commands in said script can be run manually.
+- In case this does not work, the commands in the shell script can be run manually.
 
 For the BSBM experiment
 -----------------------
@@ -28,9 +28,5 @@ For the BSBM experiment
     3) After this run the following command to build up the data and run the queries:
         ```bash
         $ ./benchmark_bsbm.sh
-    ```
-    python build_parameters.py
-    ```
-    4) The user is now able to run the experiment
-
-The relevant queries are contained in the Queries/berlin_benchmark/ directory. When running the script with the above command, the given queries will execute, firstly with their incremental view maintenance approach and afterwards with the naive approach. The results will be written to the given output file.
+        ```
+- In case this does not work, the commands in the shell script can be run manually.
