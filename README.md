@@ -16,6 +16,11 @@ For the Tri hop experiment
     ```
 - In case this does not work, the commands in the shell script can be run manually.
 
+Note: Make sure you are allowed to run the shell script. If not, run the following command:
+    ```
+    $ chmod +x benchmark.sh
+    ```
+
 For the BSBM experiment
 -----------------------
 - Set up the data
@@ -30,5 +35,10 @@ For the BSBM experiment
         $ ./benchmark_bsbm.sh
         ```
 - In case this does not work, the commands in the shell script can be run manually.
+
+Note: Make sure you are allowed to run the shell script. If not, run the following command:
+    ```
+    $ chmod +x benchmark.sh
+    ```
 
 Results can afterwards be found in the `measurements/` directory.
