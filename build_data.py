@@ -249,6 +249,13 @@ def drop_all_tables_str(
             + schema_suffix
             + ";"
         )
+        if part.name == "Project":
+            drop_query += (
+                "DROP TABLE IF EXISTS prep_"
+                + __encode_table_name(part)
+                + schema_suffix
+                + ";"
+            )
 
         """ drop_delta_query: str = (
             "DROP TABLE IF EXISTS delta_"

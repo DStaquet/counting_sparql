@@ -156,6 +156,8 @@ def run_chain_constructing(
                 previous_delta_file, duckdb_conn
             )
             duckdb_conn.execute(drop_tables)
+            duckdb_conn.execute(drop_delta_table)
+
             run_query(part, SQL_queries, duckdb_conn)
             load_delta_table_in_graph(
                 delta_file, duckdb_conn, nu_file
