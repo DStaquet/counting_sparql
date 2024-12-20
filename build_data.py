@@ -203,7 +203,6 @@ def __findDropableTables(
 
     # Join file tables to drop
     if exists(join_file):
-        print("here", join_file)
         final_set |= __splitTables(join_file)
 
     # Outer join file tables to drop
