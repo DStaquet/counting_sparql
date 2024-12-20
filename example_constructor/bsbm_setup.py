@@ -300,7 +300,7 @@ if __name__ == "__main__":
         base_g,
         all_product_dict,
         S_in_graph,
-        5,
+        10,
         1,
         1,
         args.output_dir,
