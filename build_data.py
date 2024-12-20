@@ -408,7 +408,6 @@ def getJoinOrNormalFile(query_file_name: str) -> str:
     if exists(query_file_name + "_join.sql"):
         return query_file_name + "_join.sql"
     elif exists(query_file_name + "_outer_join.sql"):
-        print(query_file_name + "_outer_join.sql")
         return query_file_name + "_outer_join.sql"
     else:
         return query_file_name + ".sql"

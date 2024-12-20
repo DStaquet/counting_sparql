@@ -67,10 +67,6 @@ def __delta_on_negate_part(
     none_match: bool = True
     for sch1 in schemas1:
         for sch2 in schemas2:
-            if sch1.intersection(sch2) == set():
-                continue
-            else:
-                none_match = False
 
             schemas2_len = len(schemas2)
             if minus:
@@ -79,6 +75,11 @@ def __delta_on_negate_part(
                     for sch2 in schemas2
                     if sch1.intersection(sch2) != set()
                 ]
+
+            if sch1.intersection(sch2) == set():
+                continue
+            else:
+                none_match = False
 
             if len(schemas2) > 1:
                 sch2_suffix: str = (
