@@ -145,7 +145,7 @@ def setup_query_files(
     q_query_object: Query = get_query_object(
         readQueryFile(query_str)
     )
-    # algebra.pprintAlgebra(q_query_object)
+    algebra.pprintAlgebra(q_query_object)
 
     # Output directory
     if not exists(output_dir):

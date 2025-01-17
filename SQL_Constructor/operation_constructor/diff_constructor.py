@@ -232,6 +232,8 @@ def __delta_on_negate_part(
                 diff_queries,
             )
 
+    print(diff_queries)
+
     return diff_queries
 
 

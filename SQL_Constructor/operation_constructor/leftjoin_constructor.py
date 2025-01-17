@@ -77,13 +77,6 @@ def __delta_diff_part(
     """
     if len(schemas1) == 0:
         raise ValueError("No schemas to diff on.")
-    elif len(schemas1) == 1:
-        diff_queries: dict[str, list[str]] = delta_diff_sub(
-            part,
-            schemas1,
-            schemas2,
-            append_schemas=is_leftjoin_part,
-        )
     else:
         diff_queries: dict[str, list[str]] = delta_diff_sub(
             part,
