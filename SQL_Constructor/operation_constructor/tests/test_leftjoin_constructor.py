@@ -90,6 +90,13 @@ def test_left_join_query(
                 {Variable("x"), Variable("w")},
             ],
         ),
+        (
+            "SQL_Constructor/operation_constructor/tests/queries/leftjoin/leftjoin_1_schema_no_overlap.sparql",
+            "SQL_Constructor/operation_constructor/tests/queries/leftjoin/leftjoin_1_schema_no_overlap_delta.sql",
+            "SQL_Constructor/operation_constructor/tests/queries/leftjoin/leftjoin_1_schema_no_overlap_join.sql",
+            [{Variable("x")}],
+            [{Variable("y")}],
+        ),
     ],
 )
 def test_delta_left_join_query(
