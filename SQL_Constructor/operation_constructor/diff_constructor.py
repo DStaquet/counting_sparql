@@ -165,7 +165,9 @@ def __delta_on_negate_part(
             return diff_queries
         curr_diff_query_left: str = ""
         curr_diff_query_right: str = ""
-        if len(schemas2) > 0:
+        if len(schemas2) > 0 and __checkIfOverlap(
+            sch1, schemas2
+        ):
             curr_diff_query_left = " WHERE " + " AND ".join(
                 f" NOT EXISTS ("
                 + __diffSch2Subquery(
@@ -179,6 +181,7 @@ def __delta_on_negate_part(
                 )
                 + ")"
                 for index, sch2 in enumerate(schemas2)
+                if sch1.intersection(sch2) != set()
             )
             curr_diff_query_right = (
                 " WHERE "
@@ -195,6 +198,7 @@ def __delta_on_negate_part(
                     )
                     + ")"
                     for index, sch2 in enumerate(schemas2)
+                    if sch1.intersection(sch2) != set()
                 )
             )
 
