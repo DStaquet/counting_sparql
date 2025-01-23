@@ -459,7 +459,7 @@ def test_leftjoin_query_output_delta(
             [{Variable("y")}],
             "BGP_5969360655464534899",
             "BGP_740711529997989213",
-            "LeftJoin_1471124881643212234_schema_5536938746033674259",
+            "LeftJoin_1471124881643212234",
             "LeftJoin_1471124881643212234_schema_5974201903695169563",
             "database/leftjoin_test_output_no_overlap.db",
         ),
@@ -533,10 +533,10 @@ def test_leftjoin_query_output_delta_no_overlap(
             expected_output_joined
         )
 
-        """ # Check if the not joined output is correct
+        # Check if the not joined output is correct
         result = duckdb_conn.execute(
-            f"SELECT x, y, k_count FROM delta_{leftjoin_name_not_joined};"
+            f"SELECT x, k_count FROM delta_{leftjoin_name_not_joined};"
         ).fetchall()
         assert sorted(result) == sorted(
             expected_output_not_joined
-        ) """
+        )

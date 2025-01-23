@@ -390,6 +390,12 @@ def diff_query_sub(
 
     if len(schemas1) == 0 or len(schemas2) == 0:
         raise ValueError("No schemas to join on.")
+    elif (
+        len(schemas1) == 1
+        and len(schemas2) == 1
+        and schemas1[0].intersection(schemas2[0]) == set()
+    ):
+        return dict()
     else:
         for sch1 in schemas1:
             if len(schemas1) <= 1:

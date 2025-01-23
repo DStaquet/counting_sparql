@@ -120,6 +120,10 @@ def delta_left_join_query(
     """
     # First delta rules of the left join
     # Join deltas
+    is_leftjoin: bool = True
+    if len(schemas1) == 1 and len(schemas2) == 1:
+        if schemas1[0].intersection(schemas2[0]) == set():
+            is_leftjoin = False
     (
         leftjoin_delta_join_part,
         leftjoin_delta_join_part_outer_join,
@@ -128,7 +132,7 @@ def delta_left_join_query(
         schemas1,
         schemas2,
         new_table_name="delta_" + __encode_table_name(part),
-        is_leftjoin_part=True,
+        is_leftjoin_part=is_leftjoin,
     )
 
     # Second part of the leftjoin delta
@@ -140,7 +144,7 @@ def delta_left_join_query(
         part,
         schemas1,
         schemas2,
-        is_leftjoin_part=True,
+        is_leftjoin_part=is_leftjoin,
     )
 
     return (
@@ -168,7 +172,8 @@ def leftjoin_schemas(
     for schema in schemas1:
         new_schema.append(schema)
         for schema2 in schemas2:
-            new_schema.append(schema.union(schema2))
+            if schema.intersection(schema2) != set():
+                new_schema.append(schema.union(schema2))
     return new_schema
 
 
@@ -188,17 +193,21 @@ def __join_part(
     if len(schemas1) == 0 or len(schemas2) == 0:
         raise ValueError("No schemas to join on.")
     elif len(schemas1) == 1 and len(schemas2) == 1:
+        if schemas1[0].intersection(schemas2[0]) != set():
+            suffix = "_" + __encode_schema_name(
+                str(
+                    sorted(schemas1[0].union(schemas2[0])),
+                )
+            )
+        else:
+            suffix = ""
         return join_query(
             part,
             __encode_table_name(part.p1),
             __encode_table_name(part.p2),
             schemas1,
             schemas2,
-            __encode_table_name(part)
-            + "_"
-            + __encode_schema_name(
-                str(sorted(schemas1[0].union(schemas2[0]))),
-            ),
+            __encode_table_name(part) + suffix,
         )
     else:
         return join_query(
