@@ -358,6 +358,24 @@ def __check_if_same_diff_schema(
     return len(join_schemas) == 1
 
 
+def __checkIfOverlap(
+    sch1: set[str], schemas2: list[set[str]]
+) -> bool:
+    """Gives True if there is an overlap between the schemas, False otherwise.
+
+    Args:
+        schemas1 (list[set[str]]): Schemas of the first child of the part
+        schemas2 (list[set[str]]): Schemas of the second child of the part
+
+    Returns:
+        bool: True if there is an overlap, False otherwise
+    """
+    for sch2 in schemas2:
+        if sch1.intersection(sch2) != set():
+            return True
+    return False
+
+
 def diff_query_sub(
     part: CompValue,
     schemas1: list[set[str]] = [],
@@ -391,7 +409,7 @@ def diff_query_sub(
     elif (
         len(schemas1) == 1
         and len(schemas2) == 1
-        and schemas1[0].intersection(schemas2[0]) == set()
+        and schemas1[0].intersection(schemas2[0]) == set()  # type: ignore
     ):
         return dict()
     else:
@@ -442,7 +460,9 @@ def diff_query_sub(
                 + schemas1_suffix
                 + " AS s1"
             )
-            if len(schemas2) > 0:
+            if len(schemas2) > 0 and __checkIfOverlap(
+                sch1, schemas2
+            ):
                 curr_diff_query += " WHERE " + " AND ".join(
                     f"NOT EXISTS ("
                     + __diffSch2Subquery(
@@ -455,6 +475,7 @@ def diff_query_sub(
                     )
                     + ")"
                     for index, sch2 in enumerate(schemas2)
+                    if sch1.intersection(sch2) != set()
                 )
             curr_diff_query += ";\n"
 
