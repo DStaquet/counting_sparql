@@ -216,6 +216,7 @@ def __join_part(
             schemas1,
             schemas2,
             __encode_table_name(part),
+            is_leftjoin_part=True,
         )
 
 
