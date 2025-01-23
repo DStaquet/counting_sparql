@@ -198,7 +198,7 @@ def __delta_on_negate_part(
                 )
             )
 
-        for schema_index in range(len(schemas2)):
+        for schema_index in range(len(curr_left_selects)):
             curr_diff_query = (
                 curr_left_selects[schema_index]
                 + curr_diff_query_left
@@ -231,8 +231,6 @@ def __delta_on_negate_part(
                 curr_diff_query,
                 diff_queries,
             )
-
-    print(diff_queries)
 
     return diff_queries
 

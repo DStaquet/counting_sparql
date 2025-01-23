@@ -237,10 +237,10 @@ def __leftJoinWithCreate(
     # Join queries
     leftjoin_join: str = ""
     for key in leftjoin_join_dict:
-        if len(leftjoin_join_dict[key]) > 1:
-            raise ValueError(
-                "Left join should not have multiple queries."
-            )
+        """if len(leftjoin_join_dict[key]) > 1:
+        raise ValueError(
+            "Left join should not have multiple queries."
+        )"""
         leftjoin_join += create_table_w_select(
             key, leftjoin_join_dict[key][0]
         )
@@ -248,10 +248,10 @@ def __leftJoinWithCreate(
     # Diff queries
     leftjoin_diff: str = ""
     for key in leftjoin_diff_dict:
-        if len(leftjoin_diff_dict[key]) > 1:
-            raise ValueError(
-                "Left join diff should not have multiple queries."
-            )
+        """if len(leftjoin_diff_dict[key]) > 1:
+        raise ValueError(
+            "Left join diff should not have multiple queries."
+        )"""
         leftjoin_diff += create_table_w_select(
             key, leftjoin_diff_dict[key][0]
         )
