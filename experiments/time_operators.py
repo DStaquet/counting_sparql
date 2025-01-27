@@ -37,10 +37,32 @@ def timing_dict_combiner(
     return combined_dict
 
 
+def timer(
+    query_dir: str,
+    part: CompValue,
+    increm_prefix: str,
+    duckdb_conn: DuckDBPyConnection,
+) -> float:
+    # Read query file
+    query_str: str = readQueryFile(
+        join(
+            query_dir, increm_prefix + get_table_name(part)
+        )
+        + ".sql"
+    )
+
+    start_timer: float = time()
+    duckdb_conn.execute(query_str)
+    end_timer: float = time()
+
+    return (end_timer - start_timer) * 1000
+
+
 def timing_per_operator(
     part: CompValue,
     query_dir: str,
     duckdb_conn: DuckDBPyConnection,
+    increm: bool = False,
 ) -> dict[str, dict[str, float]]:
     """Times the operations per operator
 
@@ -55,47 +77,63 @@ def timing_per_operator(
     ):
         if part.p != None:
             timings = timing_per_operator(
-                part.p, query_dir, duckdb_conn
+                part.p, query_dir, duckdb_conn, increm
             )
         else:
             timings = timing_per_operator(
-                part.p1, query_dir, duckdb_conn
+                part.p1, query_dir, duckdb_conn, increm
             )
             timings.update(
                 timing_per_operator(
-                    part.p2, query_dir, duckdb_conn
+                    part.p2, query_dir, duckdb_conn, increm
                 )
             )
     else:
         timings: dict[str, dict[str, float]] = dict()
 
-    # Read query file
-    query_str: str = readQueryFile(
-        join(query_dir, get_table_name(part)) + ".sql"
-    )
-
-    # Scratch time
-    start_timer: float = time()
-    duckdb_conn.execute(query_str)
-    end_timer: float = time()
-    timings_scratch: float = (
-        end_timer - start_timer
-    ) * 1000
-
-    # Incremental time
-    delta_query_str = readQueryFile(
-        join(query_dir, "delta_" + get_table_name(part))
-        + ".sql"
-    )
-
-    start_timer = time()
-    duckdb_conn.execute(delta_query_str)
-    end_timer = time()
-    timings_delta: float = (end_timer - start_timer) * 1000
-
-    timings[get_table_name(part)] = {
-        "scratch": timings_scratch,
-        "incremental": timings_delta,
-    }
+    if not increm:
+        timing_scratch: float = timer(
+            query_dir, part, "", duckdb_conn
+        )
+        timings[get_table_name(part)] = {
+            "scratch": timing_scratch,
+        }
+    else:
+        timing_increm: float = timer(
+            query_dir, part, "delta_", duckdb_conn
+        )
+        _ = timer(query_dir, part, "nu_", duckdb_conn)
+        timings[get_table_name(part)] = {
+            "incremental": timing_increm,
+        }
 
     return timings
+
+
+def time_operators_both(
+    scratch: dict[str, dict[str, float]],
+    increm: dict[str, dict[str, float]],
+) -> dict[str, dict[str, float]]:
+    """Combines both operators into one dictionary.
+
+    Args:
+        scratch (dict[str, dict[str, float]]): Scratch dictionary
+        increm (dict[str, dict[str, float]]): Incremental dictionary
+
+    Returns:
+        dict[str, dict[str, float]]: Timing dictionary of both operators
+    """
+    if sorted(scratch.keys()) != sorted(increm.keys()):
+        raise ValueError(
+            "The keys of the dictionaries do not match"
+        )
+
+    combined_dict: dict[str, dict[str, float]] = dict()
+
+    for key in scratch.keys():
+        combined_dict[key] = {
+            "scratch": scratch[key]["scratch"],
+            "incremental": increm[key]["incremental"],
+        }
+
+    return combined_dict

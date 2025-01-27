@@ -1,0 +1,73 @@
+SelectQuery(
+    p = Project(
+        p = Minus(
+            p1 = Filter(
+                expr = ConditionalAndExpression(
+                    expr = RelationalExpression(
+                        expr = p1
+                        op = >
+                        other = 200
+                        _vars = set()
+                        )
+                    other = [RelationalExpression_{'expr': rdflib.term.Variable('p3'), 'op': '<', 'other': rdflib.term.Literal('500', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#integer')), '_vars': set()}]
+                    _vars = set()
+                    )
+                p = BGP(
+                    triples = [(rdflib.term.Variable('product'), rdflib.term.URIRef('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), rdflib.term.URIRef('http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductTypeTA')), (rdflib.term.Variable('product'), rdflib.term.URIRef('http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature'), rdflib.term.URIRef('http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeatureFA')), (rdflib.term.Variable('product'), rdflib.term.URIRef('http://www.w3.org/2000/01/rdf-schema#label'), rdflib.term.Variable('label')), (rdflib.term.Variable('product'), rdflib.term.URIRef('http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric1'), rdflib.term.Variable('p1')), (rdflib.term.Variable('product'), rdflib.term.URIRef('http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyNumeric3'), rdflib.term.Variable('p3'))]
+                    _vars = {rdflib.term.Variable('p3'), rdflib.term.Variable('product'), rdflib.term.Variable('label'), rdflib.term.Variable('p1')}
+                    )
+                _vars = {rdflib.term.Variable('p3'), rdflib.term.Variable('product'), rdflib.term.Variable('label'), rdflib.term.Variable('p1')}
+                )
+            p2 = BGP(
+                triples = [(rdflib.term.Variable('product'), rdflib.term.URIRef('http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productFeature'), rdflib.term.URIRef('http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeatureFB'))]
+                _vars = {rdflib.term.Variable('product')}
+                )
+            _vars = {rdflib.term.Variable('p3'), rdflib.term.Variable('product'), rdflib.term.Variable('label'), rdflib.term.Variable('p1')}
+            )
+        PV = [rdflib.term.Variable('product'), rdflib.term.Variable('label')]
+        _vars = {rdflib.term.Variable('p3'), rdflib.term.Variable('product'), rdflib.term.Variable('label'), rdflib.term.Variable('p1')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('product'), rdflib.term.Variable('label')]
+    _vars = {rdflib.term.Variable('p3'), rdflib.term.Variable('product'), rdflib.term.Variable('label'), rdflib.term.Variable('p1')}
+    )
+Executing:  BGP_7362561898412879865 BGP
+Executed
+Executing:  Filter_4218856828893633042 Filter
+Executed
+Executing:  BGP_3476018755640751521 BGP
+Executed
+Executing:  Minus_908728029570809489 Minus
+Executed
+Executing:  Project_8184241328338396309 Project
+Executed
+Executing:  delta_BGP_7362561898412879865 BGP
+Executed
+Executing:  nu_BGP_7362561898412879865 BGP
+Executed
+Executing:  delta_Filter_4218856828893633042 Filter
+Executed
+Executing:  nu_Filter_4218856828893633042 Filter
+Executed
+Executing:  delta_BGP_3476018755640751521 BGP
+Executed
+Executing:  nu_BGP_3476018755640751521 BGP
+Executed
+Executing:  delta_Minus_908728029570809489 Minus
+Executed
+Executing:  nu_Minus_908728029570809489 Minus
+Executed
+Executing:  delta_Project_8184241328338396309 Project
+Executed
+Executing:  nu_Project_8184241328338396309 Project
+Executed
+{'BGP_3476018755640751521': {'incremental': 1.5492439270019531,
+                             'scratch': 6.824016571044922},
+ 'BGP_7362561898412879865': {'incremental': 57.205915451049805,
+                             'scratch': 34.559011459350586},
+ 'Filter_4218856828893633042': {'incremental': 1.1191368103027344,
+                                'scratch': 2.2919178009033203},
+ 'Minus_908728029570809489': {'incremental': 6.18743896484375,
+                              'scratch': 2.9354095458984375},
+ 'Project_8184241328338396309': {'incremental': 1.2440681457519531,
+                                 'scratch': 3.1549930572509766}}

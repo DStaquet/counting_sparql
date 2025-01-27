@@ -1,6 +1,7 @@
 from experiments.time_operators import (
     timing_per_operator,
     timing_dict_combiner,
+    time_operators_both,
 )
 
 if __name__ == "__main__":
@@ -114,11 +115,22 @@ if __name__ == "__main__":
             )
         )
 
-        timings = timing_per_operator(
+        timings_scratch = timing_per_operator(
             q_query_object.algebra.p,
             query_output_dir,
             duckdb_conn,
         )
+        timings_increm = timing_per_operator(
+            q_query_object.algebra.p,
+            query_output_dir,
+            duckdb_conn,
+            increm=True,
+        )
+
+        timings = time_operators_both(
+            timings_scratch, timings_increm
+        )
+
         if final_timings is None:
             final_timings = timings
         else:
