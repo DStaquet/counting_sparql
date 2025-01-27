@@ -15,6 +15,8 @@ from SQL_Constructor.operation_constructor import (
     union_constructor as SQL_union,
 )
 
+from pprint import pprint
+
 
 def write_query_to_output_dir(
     output_dir: str,
@@ -338,6 +340,11 @@ def build_queries(
                 )
             )
         case "LeftJoin":
+            print(base_constructor.get_table_name(part))
+            print("Schemas1:", end=" ")
+            pprint(schemas1)
+            print("Schemas2:", end=" ")
+            pprint(schemas2)
             left_join_query: str = (
                 SQL_leftjoin.left_join_query(
                     part, schemas1, schemas2
