@@ -340,11 +340,6 @@ def build_queries(
                 )
             )
         case "LeftJoin":
-            print(base_constructor.get_table_name(part))
-            print("Schemas1:", end=" ")
-            pprint(schemas1)
-            print("Schemas2:", end=" ")
-            pprint(schemas2)
             left_join_query: str = (
                 SQL_leftjoin.left_join_query(
                     part, schemas1, schemas2
