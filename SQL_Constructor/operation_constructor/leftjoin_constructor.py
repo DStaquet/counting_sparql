@@ -170,7 +170,8 @@ def leftjoin_schemas(
     """
     new_schema = []
     for schema in schemas1:
-        new_schema.append(schema)
+        if schema.intersection(schemas2[0]) != set():
+            new_schema.append(schema)
         for schema2 in schemas2:
             new_schema.append(schema.union(schema2))
     return new_schema
