@@ -7,11 +7,41 @@ from build_data import readQueryFile
 from SQL_Constructor.base_constructor import get_table_name
 
 
+def timing_dict_combiner(
+    dict1: dict[str, dict[str, float]],
+    dict2: dict[str, dict[str, float]],
+) -> dict[str, dict[str, float]]:
+    """Combines two timing dictionaries
+
+    Args:
+        dict1 (dict[str, dict[str, float]]): First dictionary
+        dict2 (dict[str, dict[str, float]]): Second dictionary
+
+    Returns:
+        dict[str, dict[str, float]]: Returns the combined dictionary
+    """
+    if sorted(dict1.keys()) != sorted(dict2.keys()):
+        raise ValueError(
+            "The keys of the dictionaries do not match"
+        )
+
+    combined_dict: dict[str, dict[str, float]] = dict()
+
+    for key in dict1.keys():
+        combined_dict[key] = dict()
+        for sub_key in dict1[key].keys():
+            combined_dict[key][sub_key] = (
+                dict1[key][sub_key] + dict2[key][sub_key]
+            )
+
+    return combined_dict
+
+
 def timing_per_operator(
     part: CompValue,
     query_dir: str,
     duckdb_conn: DuckDBPyConnection,
-) -> dict[str, float]:
+) -> dict[str, dict[str, float]]:
     """Times the operations per operator
 
     Args:
@@ -37,7 +67,7 @@ def timing_per_operator(
                 )
             )
     else:
-        timings: dict[str, float] = dict()
+        timings: dict[str, dict[str, float]] = dict()
 
     # Read query file
     query_str: str = readQueryFile(
@@ -48,7 +78,7 @@ def timing_per_operator(
     start_timer: float = time()
     duckdb_conn.execute(query_str)
     end_timer: float = time()
-    timings[get_table_name(part)] = (
+    timings_scratch: float = (
         end_timer - start_timer
     ) * 1000
 
@@ -61,8 +91,11 @@ def timing_per_operator(
     start_timer = time()
     duckdb_conn.execute(delta_query_str)
     end_timer = time()
-    timings["delta_" + get_table_name(part)] = (
-        end_timer - start_timer
-    ) * 1000
+    timings_delta: float = (end_timer - start_timer) * 1000
+
+    timings[get_table_name(part)] = {
+        "scratch": timings_scratch,
+        "incremental": timings_delta,
+    }
 
     return timings

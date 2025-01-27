@@ -1,4 +1,7 @@
-from experiments.time_operators import timing_per_operator
+from experiments.time_operators import (
+    timing_per_operator,
+    timing_dict_combiner,
+)
 
 if __name__ == "__main__":
     import argparse
@@ -56,6 +59,13 @@ if __name__ == "__main__":
         help="The database to connect to.",
         default=":memory:",
     )
+    parser.add_argument(
+        "-r",
+        "--runs",
+        type=int,
+        help="The number of runs to do.",
+        default=1,
+    )
 
     args = parser.parse_args()
 
@@ -84,10 +94,44 @@ if __name__ == "__main__":
         args.nu_file,
     )
 
-    timings = timing_per_operator(
-        q_query_object.algebra.p,
-        query_output_dir,
-        duckdb_conn,
-    )
+    final_timings: dict[str, dict[str, float]] | None = None
 
-    pprint.pprint(timings)
+    for run in range(args.runs):
+
+        duckdb_conn.execute(
+            readQueryFile(
+                os.path.join(
+                    query_output_dir, "drop_tables.sql"
+                )
+            )
+        )
+        duckdb_conn.execute(
+            readQueryFile(
+                os.path.join(
+                    query_output_dir,
+                    "drop_delta_tables.sql",
+                )
+            )
+        )
+
+        timings = timing_per_operator(
+            q_query_object.algebra.p,
+            query_output_dir,
+            duckdb_conn,
+        )
+        if final_timings is None:
+            final_timings = timings
+        else:
+            final_timings = timing_dict_combiner(
+                final_timings, timings
+            )
+
+    if final_timings is None:
+        raise ValueError("No timings found.")
+    for op in final_timings:
+        for method in final_timings[op]:
+            final_timings[op][method] = (
+                final_timings[op][method] / args.runs
+            )
+
+    pprint.pprint(final_timings)
