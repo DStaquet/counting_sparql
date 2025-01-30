@@ -1,6 +1,3 @@
-temp_tests/chain_benchmark_temp/query_SelectQuery_1262418146292270595/delta_LeftJoin_5377859531018897555_outer_join.sql
-temp_tests/chain_benchmark_temp/query_SelectQuery_1262418146292270595/delta_LeftJoin_3257383624192560239_outer_join.sql
-temp_tests/chain_benchmark_temp/query_SelectQuery_1262418146292270595/delta_LeftJoin_2010945705008388318_outer_join.sql
 Run: 1 of 5
 Loading base graph data
 Running the benchmark incrementally
@@ -25,10 +22,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 2128.4842491149902 ms
-Average: 2128.4842491149902 ms
-Incremental time: 17590.68012237549 ms
-Average: 17590.68012237549 ms
+Scratch time: 1608.2684993743896 ms
+Average: 1608.2684993743896 ms
+Incremental time: 17044.54493522644 ms
+Average: 17044.54493522644 ms
 
 Run: 2 of 5
 Loading base graph data
@@ -54,10 +51,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 2149.9204635620117 ms
-Average: 2139.202356338501 ms
-Incremental time: 20864.782094955444 ms
-Average: 19227.731108665466 ms
+Scratch time: 1605.165958404541 ms
+Average: 1606.7172288894653 ms
+Incremental time: 15979.90083694458 ms
+Average: 16512.22288608551 ms
 
 Run: 3 of 5
 Loading base graph data
@@ -83,10 +80,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 2337.9483222961426 ms
-Average: 2205.451011657715 ms
-Incremental time: 18940.726280212402 ms
-Average: 19132.062832514446 ms
+Scratch time: 1618.6888217926025 ms
+Average: 1610.7077598571777 ms
+Incremental time: 16110.189437866211 ms
+Average: 16378.211736679077 ms
 
 Run: 4 of 5
 Loading base graph data
@@ -112,10 +109,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 2294.8968410491943 ms
-Average: 2227.8124690055847 ms
-Incremental time: 19612.53309249878 ms
-Average: 19252.18039751053 ms
+Scratch time: 1609.8966598510742 ms
+Average: 1610.5049848556519 ms
+Incremental time: 15992.61498451233 ms
+Average: 16281.81254863739 ms
 
 Run: 5 of 5
 Loading base graph data
@@ -141,10 +138,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 1918.175220489502 ms
-Average: 2165.885019302368 ms
-Incremental time: 19130.60712814331 ms
-Average: 19227.865743637085 ms
+Scratch time: 1609.3196868896484 ms
+Average: 1610.2679252624512 ms
+Incremental time: 16574.435710906982 ms
+Average: 16340.337181091309 ms
 
-Average scratch time: 2165.885019302368 ms
-Average incremental time: 19227.865743637085 ms
+Average scratch time: 1610.2679252624512 ms
+Average incremental time: 16340.337181091309 ms

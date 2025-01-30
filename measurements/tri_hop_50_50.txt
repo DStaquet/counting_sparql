@@ -1,39 +1,39 @@
 Running the benchmark from scratch
 Run: 1 of 5
-Time: 7794.671535491943ms
-Average time: 7794.671535491943ms
+Time: 7447.477102279663ms
+Average time: 7447.477102279663ms
 Run: 2 of 5
-Time: 7632.030248641968ms
-Average time: 7713.350892066956ms
+Time: 7423.923969268799ms
+Average time: 7435.700535774231ms
 Run: 3 of 5
-Time: 7649.889707565308ms
-Average time: 7692.197163899739ms
+Time: 7449.694633483887ms
+Average time: 7440.365235010783ms
 Run: 4 of 5
-Time: 7598.478317260742ms
-Average time: 7668.76745223999ms
+Time: 7116.37544631958ms
+Average time: 7359.367787837982ms
 Run: 5 of 5
-Time: 8198.812246322632ms
-Average time: 7774.776411056519ms
+Time: 7103.612184524536ms
+Average time: 7308.216667175293ms
 Preparing the benchmark incrementally
 Running the benchmark incrementally
 Run: 1 of 5
-Time: 3049.5829582214355ms
-Average time: 3049.5829582214355ms
+Time: 3080.0931453704834ms
+Average time: 3080.0931453704834ms
 Run: 2 of 5
-Time: 3052.8483390808105ms
-Average time: 3051.215648651123ms
+Time: 2997.955799102783ms
+Average time: 3039.0244722366333ms
 Run: 3 of 5
-Time: 3090.1615619659424ms
-Average time: 3064.197619756063ms
+Time: 3066.6394233703613ms
+Average time: 3048.229455947876ms
 Run: 4 of 5
-Time: 3019.681692123413ms
-Average time: 3053.0686378479004ms
+Time: 3017.183542251587ms
+Average time: 3040.4679775238037ms
 Run: 5 of 5
-Time: 3083.6000442504883ms
-Average time: 3059.174919128418ms
+Time: 3113.2161617279053ms
+Average time: 3055.017614364624ms
 
-Average time from scratch: 7774.776411056519ms
-Average time incrementally: 3059.174919128418ms
+Average time from scratch: 7308.216667175293ms
+Average time incrementally: 3055.017614364624ms
 Results are the same
 Amount of tuples in BGP: 
 Scratch: 7997853 
