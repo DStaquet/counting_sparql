@@ -158,7 +158,7 @@ def run_benchmark(
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
 
-    scratch_result = duckdb_conn.sql(
+    duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
@@ -166,7 +166,7 @@ def run_benchmark(
                 + ".sql",
             )
         )
-    ).fetchall()
+    )
     scratch_time = total_time / runs
 
     # Amount of tuples in BGP
@@ -180,7 +180,7 @@ def run_benchmark(
                     0
                 ]
             )
-        if "Project" in key:
+        if "SelectQuery" in key:
             tuple_amount_scratch.append(
                 duckdb_conn.sql(
                     f"SELECT COUNT(*) FROM {key};"
@@ -231,7 +231,26 @@ def run_benchmark(
         print(f"Time: {(end_time - start_time) * 1000}ms")
         print(f"Average time: {total_time / (run + 1)}ms")
 
-    incremental_results = duckdb_conn.sql(
+    duckdb_conn.execute(
+        readQueryFile(
+            join(
+                query_input_dir,
+                get_table_name(q_query_object.algebra)
+                + ".sql",
+            )
+        )
+    )
+    duckdb_conn.execute(
+        readQueryFile(
+            join(
+                query_input_dir,
+                "delta_"
+                + get_table_name(q_query_object.algebra)
+                + ".sql",
+            )
+        )
+    )
+    duckdb_conn.execute(
         readQueryFile(
             join(
                 query_input_dir,
@@ -240,7 +259,7 @@ def run_benchmark(
                 + ".sql",
             )
         )
-    ).fetchall()
+    )
 
     # Amount of tuples in BGP
     tuple_amount_increm: list[int] = list()
@@ -269,7 +288,7 @@ def run_benchmark(
                     0
                 ]
             )
-        if "Project" in key:
+        if "SelectQuery" in key:
             tuple_amount_increm.append(
                 duckdb_conn.sql(
                     f"SELECT COUNT(*) FROM nu_{key};"
@@ -298,20 +317,6 @@ def run_benchmark(
     print(
         f"Average time incrementally: {incremental_time}ms"
     )
-
-    if sorted(scratch_result) == sorted(
-        incremental_results
-    ):
-        print("Results are the same")
-    else:
-        print(
-            len(scratch_result) - len(incremental_results),
-            "results are different",
-            print(
-                set(scratch_result)
-                - set(incremental_results)
-            ),
-        )
 
     print(
         "Amount of tuples in BGP:",

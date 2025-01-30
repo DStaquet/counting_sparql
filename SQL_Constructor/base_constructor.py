@@ -148,6 +148,7 @@ def make_join(
     schemas: list[set[str]],
     is_delta: bool = False,
     is_select: bool = False,
+    select_schema: set[str] = set(),
 ) -> str:
     """Generates the join query string.
 
@@ -157,7 +158,7 @@ def make_join(
         to be unioned in the table.
 
     Returns:
-        str: Minus query string with outer join union.
+        str: query string with outer join union.
     """
     all_queries: str = ""
     for key in tables_to_make:
@@ -215,6 +216,8 @@ def make_join(
                     key + "_temp_" + str(q_index)
                 )
             elif q_index == len(tables_to_make[key]) - 1:
+                if select_schema:
+                    curr_schema = select_schema
                 all_queries += final_outer_join_query(
                     last_made_temp_query,
                     key + "_" + str(q_index),
@@ -1155,23 +1158,65 @@ def project_table_query(part: CompValue) -> str:
     return project_str
 
 
+def __final_schema(schemas1: list[set[str]]) -> set[str]:
+    """Generates the final schema for the select query part.
+
+    Args:
+        schemas1 (list[set[str]]): Given schemas of endresult.
+
+    Returns:
+        str: One return schema.
+    """
+    final_schema: set[str] = set()
+    for schema in schemas1:
+        final_schema = final_schema.union(schema)
+    return final_schema
+
+
+def __construct_select_query_mult_schemas(
+    schema: set[str],
+    final_schema: set[str],
+    table_name: str,
+) -> str:
+    """Construct the select query if multiple schemas are present
+
+    Args:
+        schema (set[str]): Schema of the current table
+        final_schema (set[str]): Final schema of the table
+        table_name (str): Name of the table to select from
+
+    Returns:
+        str: Query to construct the select query.
+    """
+    select_str: str = "SELECT "
+    for var in sorted(final_schema):
+        if var in schema:
+            select_str += var + ", "
+        else:
+            select_str += (
+                "CAST(NULL AS VARCHAR) AS " + var + ", "
+            )
+    select_str += "k_count FROM "
+    select_str += table_name + ";"
+    return select_str
+
+
 def select_query(
     part: CompValue,
     schemas: list[set[str]],
-    nu: bool = False,
+    prefix: str = "",
 ) -> str:
-    if nu:
-        table_name = "nu_" + __encode_table_name(part.p)
-    else:
-        table_name = __encode_table_name(part.p)
+    table_name = prefix + __encode_table_name(part.p)
+    select_table_name = prefix + __encode_table_name(part)
 
     if len(schemas) == 1:
         return (
-            f"SELECT "
+            f"CREATE TABLE {select_table_name} AS SELECT "
             + ", ".join(var for var in sorted(schemas[0]))
             + f" FROM {table_name};"
         )
     else:
+        final_schema = __final_schema(schemas)
         select_dict: dict[str, list[str]] = dict()
         for schema in schemas:
             new_table_name: str = (
@@ -1179,28 +1224,39 @@ def select_query(
                 + "_"
                 + __encode_schema_name(str(sorted(schema)))
             )
-            if table_name not in select_dict:
-                select_dict[table_name] = [
-                    f"SELECT * FROM {new_table_name};"
+            if select_table_name not in select_dict:
+                select_dict[select_table_name] = [
+                    __construct_select_query_mult_schemas(
+                        schema, final_schema, new_table_name
+                    )
                 ]
             else:
-                select_dict[table_name].append(
-                    f"SELECT * FROM {new_table_name};"
+                select_dict[select_table_name].append(
+                    __construct_select_query_mult_schemas(
+                        schema, final_schema, new_table_name
+                    )
                 )
 
         select_str: str = make_join(
-            select_dict, schemas, is_select=True
+            select_dict,
+            schemas,
+            is_select=False,
+            select_schema=final_schema,
         )
         return select_str
 
 
-def delta_select_query(part: CompValue) -> str:
-    table_name: str = __encode_table_name(part.p)
+def delta_select_query(
+    part: CompValue,
+    schemas: list[set[str]],
+) -> str:
+    """table_name: str = __encode_table_name(part.p)
     delta_table_name: str = "delta_" + table_name
     select_str: str = (
         "SELECT " + "* FROM " + delta_table_name + ";"
     )
-    return select_str
+    return select_str"""
+    return select_query(part, schemas, "delta_")
 
 
 def union_table_query(

@@ -216,7 +216,9 @@ def build_increm_queries(
             )
         case "SelectQuery":
             select_query: str = (
-                base_constructor.delta_select_query(part)
+                base_constructor.delta_select_query(
+                    part, schemas1
+                )
             )
             write_query_to_output_dir(
                 output_dir,
@@ -229,7 +231,7 @@ def build_increm_queries(
         part_schemas = schemas1
     if part.name == "SelectQuery":
         nu_query = base_constructor.select_query(
-            part, part_schemas, True
+            part, part_schemas, "nu_"
         )
         nu_query_sum = ""
     else:

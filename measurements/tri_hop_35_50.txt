@@ -1,43 +1,11 @@
 Running the benchmark from scratch
 Run: 1 of 5
-Time: 21015.742778778076ms
-Average time: 21015.742778778076ms
+Time: 22989.4700050354ms
+Average time: 22989.4700050354ms
 Run: 2 of 5
-Time: 20925.779342651367ms
-Average time: 20970.76106071472ms
+Time: 24546.4768409729ms
+Average time: 23767.97342300415ms
 Run: 3 of 5
-Time: 21234.246730804443ms
-Average time: 21058.589617411297ms
+Time: 24357.906818389893ms
+Average time: 23964.617888132732ms
 Run: 4 of 5
-Time: 21162.352085113525ms
-Average time: 21084.530234336853ms
-Run: 5 of 5
-Time: 21198.20737838745ms
-Average time: 21107.265663146973ms
-Preparing the benchmark incrementally
-Running the benchmark incrementally
-Run: 1 of 5
-Time: 8282.869815826416ms
-Average time: 8282.869815826416ms
-Run: 2 of 5
-Time: 8029.595136642456ms
-Average time: 8156.232476234436ms
-Run: 3 of 5
-Time: 8108.683109283447ms
-Average time: 8140.382687250773ms
-Run: 4 of 5
-Time: 8017.3022747039795ms
-Average time: 8109.612584114075ms
-Run: 5 of 5
-Time: 8145.888090133667ms
-Average time: 8116.867685317993ms
-
-Average time from scratch: 21107.265663146973ms
-Average time incrementally: 8116.867685317993ms
-Results are the same
-Amount of tuples in BGP: 
-Scratch: 23327730 
-Incremental(Previous + Delta + Nu): 46696720 Previous: 23328290 Delta: 40700 Nu: 23327730
-Amount of tuples in end result: 
-Scratch: 999999 
-Incremental (Previous + Delta + Nu): 2030716 Previous: 999999 Delta: 30718 Nu: 999999

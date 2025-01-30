@@ -9,6 +9,7 @@ from SQL_Constructor import base_constructor
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
     __encode_table_name,
+    __final_schema,
 )
 from SQL_Constructor.operation_constructor import (
     project_constructor as SQL_project,
@@ -235,6 +236,10 @@ def drop_all_tables_str(
         "",
         "",
     )
+    if part.name == "SelectQuery":
+        select_schemas = schemas
+        schemas = [__final_schema(schemas)]
+
     for sch in schemas:
         if len(schemas) == 1:
             schema_suffix = ""
@@ -256,6 +261,20 @@ def drop_all_tables_str(
                 + schema_suffix
                 + ";"
             )
+        if part.name == "SelectQuery":
+            drop_query = (
+                "DROP TABLE IF EXISTS "
+                + __encode_table_name(part)
+                + ";"
+            )
+            for i, _ in enumerate(select_schemas):
+                drop_query += (
+                    "DROP TABLE IF EXISTS "
+                    + __encode_table_name(part)
+                    + "_"
+                    + str(i)
+                    + ";"
+                )
 
         """ drop_delta_query: str = (
             "DROP TABLE IF EXISTS delta_"
