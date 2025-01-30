@@ -3,11 +3,15 @@ Incremental view maintenance for SPARQL through the counting algorithm
 
 Prerequisites
 -------------
-- The requirements needed are written in the `requirements.txt` file. To install the requirements, the user can run the following command:
+- The requirements needed are written in the `requirements.txt` file. To install the requirements, the user can run one of the following commands:
     ```bash
     $ pip install -r requirements.txt
     ```
-- Note: This is also done in the `benchmark.sh` and `benchmark_bsbm.sh` scripts.
+    or
+    ```bash
+    $ python3 -m pip install -r requirements.txt
+    ```
+- Note: This is also done in the `benchmark.sh` and `benchmark_bsbm.sh` scripts, so it is not required to run this yourself.
 
 If desired, create a virtual environment to install the requirements.
 
