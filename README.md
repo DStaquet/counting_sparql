@@ -3,10 +3,13 @@ Incremental view maintenance for SPARQL through the counting algorithm
 
 Prerequisites
 -------------
-- Following python packages are required to run the code:
-    - rdflib
-    - DuckDB
-    - pandas
+- The requirements needed are written in the `requirements.txt` file. To install the requirements, the user can run the following command:
+    ```bash
+    $ pip install -r requirements.txt
+    ```
+- Note: This is also done in the `benchmark.sh` and `benchmark_bsbm.sh` scripts.
+
+If desired, create a virtual environment to install the requirements.
 
 For the Tri hop experiment
 --------------------------

@@ -2,6 +2,9 @@
 
 # Tri_hop query
 
+echo "Installing pip requirements."
+python3 -m pip install -r requirements.txt
+
 # Generate the exemplary data for the tri_hop query with 1000 nodes and 1000^2/1000 edges
 echo 'Constructing 1000 nodes/group and 1000^2/1000 edges graph for the tri_hop query.'
 python3 example_constructor/graph_constructor.py -m 1000 -t hop -fr 1000 -b 4 -k 50 -nc data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_nu_1000_50.csv -csv data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_1000.csv -dc data/exemplary_data/hop_graphs_n_1000/graph_chain_tri_hop_delta_1000_50.csv
