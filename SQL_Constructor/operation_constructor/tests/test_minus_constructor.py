@@ -577,10 +577,10 @@ def test_minus_delta_output(
     # Execute the query
     duckdb_conn.execute(minus_queries)
 
-    output_df = duckdb_conn.sql(
+    output = duckdb_conn.execute(
         "SELECT * FROM " + "delta_" + minus_table + ";"
-    ).df()
+    ).fetchall()
 
-    values = output_df.values.tolist()
+    values = [list(elem) for elem in output]
 
     assert values == expected_output
