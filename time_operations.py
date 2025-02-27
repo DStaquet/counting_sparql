@@ -3,6 +3,9 @@ from experiments.time_operators import (
     timing_dict_combiner,
     time_operators_both,
 )
+from plots.build_compare_plot import (
+    compare_plot_from_dict,
+)
 
 if __name__ == "__main__":
     import argparse
@@ -66,6 +69,13 @@ if __name__ == "__main__":
         type=int,
         help="The number of runs to do.",
         default=1,
+    )
+    parser.add_argument(
+        "-sn",
+        "--save_name",
+        type=str,
+        help="The name to save the plot as.",
+        default=None,
     )
 
     args = parser.parse_args()
@@ -147,3 +157,9 @@ if __name__ == "__main__":
             )
 
     pprint.pprint(final_timings)
+
+    compare_plot_from_dict(
+        final_timings, save_name=args.save_name
+    )
+
+    duckdb_conn.close()

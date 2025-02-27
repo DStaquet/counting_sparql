@@ -100,6 +100,41 @@ def compare_times_plot(
     plt.clf()
 
 
+def compare_plot_from_dict(
+    inp_dict: dict[str, dict[str, float]],
+    save_name: str | None = None,
+) -> None:
+    """Builds up a plot to compare the times of the times given in the dictionary.
+
+    Args:
+        inp_dict (dict[str, dict[str, float]]): Dictionary with the times to compare.
+    """
+    cmp_arr_one = []
+    cmp_arr_two = []
+    bins = []
+    already_seen_keys = []
+    for key in inp_dict:
+        curr_key: str = key.split("_")[0]
+        if curr_key in already_seen_keys:
+            curr_key = (
+                curr_key
+                + "_"
+                + str(already_seen_keys.count(curr_key))
+            )
+        already_seen_keys.append(curr_key)
+        bins.append(curr_key)
+        cmp_arr_one.append(inp_dict[key]["incremental"])
+        cmp_arr_two.append(inp_dict[key]["scratch"])
+    compare_times_plot(
+        np.array(cmp_arr_one),
+        np.array(cmp_arr_two),
+        "Incremental",
+        "Scratch",
+        bins,
+        save_name=save_name,
+    )
+
+
 if __name__ == "__main__":
     import argparse
     from csv import DictReader as reader

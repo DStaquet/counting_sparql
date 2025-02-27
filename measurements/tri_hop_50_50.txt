@@ -1,8 +1,2 @@
 Running the benchmark from scratch
 Run: 1 of 5
-Time: 7939.9755001068115ms
-Average time: 7939.9755001068115ms
-Run: 2 of 5
-Time: 8225.067615509033ms
-Average time: 8082.521557807922ms
-Run: 3 of 5
