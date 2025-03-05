@@ -115,13 +115,15 @@ def compare_plot_from_dict(
     already_seen_keys = []
     for key in inp_dict:
         curr_key: str = key.split("_")[0]
+        to_add_key = curr_key
         if curr_key in already_seen_keys:
             curr_key = (
                 curr_key
                 + "_"
                 + str(already_seen_keys.count(curr_key))
             )
-        already_seen_keys.append(curr_key)
+        print(f"Key: {key}, curr_key: {curr_key}")
+        already_seen_keys.append(to_add_key)
         bins.append(curr_key)
         cmp_arr_one.append(inp_dict[key]["incremental"])
         cmp_arr_two.append(inp_dict[key]["scratch"])
