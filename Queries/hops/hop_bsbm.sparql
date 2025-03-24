@@ -1,0 +1,13 @@
+PREFIX bsbm-inst-prod: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/>
+PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/>
+PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+
+SELECT ?feat
+WHERE {
+    ?product1 bsbm:producer ?producer .
+    ?product2 bsbm:producer ?producer .
+    ?product2 bsbm:productFeature ?feat .
+    FILTER (?product1 != ?product2)
+}

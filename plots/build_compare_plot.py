@@ -103,6 +103,7 @@ def compare_times_plot(
 def compare_plot_from_dict(
     inp_dict: dict[str, dict[str, float]],
     save_name: str | None = None,
+    log: bool = False,
 ) -> None:
     """Builds up a plot to compare the times of the times given in the dictionary.
 
@@ -134,6 +135,7 @@ def compare_plot_from_dict(
         "Scratch",
         bins,
         save_name=save_name,
+        log=log,
     )
 
 

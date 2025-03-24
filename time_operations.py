@@ -77,6 +77,13 @@ if __name__ == "__main__":
         help="The name to save the plot as.",
         default=None,
     )
+    parser.add_argument(
+        "-l",
+        "--log",
+        action="store_true",
+        default=False,
+        help="Use log scale on the y-axis.",
+    )
 
     args = parser.parse_args()
 
@@ -159,7 +166,9 @@ if __name__ == "__main__":
     pprint.pprint(final_timings)
 
     compare_plot_from_dict(
-        final_timings, save_name=args.save_name
+        final_timings,
+        save_name=args.save_name,
+        log=args.log,
     )
 
     duckdb_conn.close()
