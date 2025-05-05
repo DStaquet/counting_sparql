@@ -93,11 +93,18 @@ def __construct_project_str_one_schema(
     if projected_schema:
         project_str: str = (
             "SELECT "
-            + __projected_variables(set(part.PV))
+            + __projected_variables(
+                set(part.PV).intersection(schema)
+            )
             + " SUM(k_count) AS k_count\nFROM "
             + from_table_name
             + "\nGROUP BY "
-            + ", ".join(var for var in sorted(part.PV))
+            + ", ".join(
+                var
+                for var in sorted(
+                    set(part.PV).intersection(schema)
+                )
+            )
             + ";"
         )
     else:

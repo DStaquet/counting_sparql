@@ -369,7 +369,7 @@ def build_up_data(
         ins_graph (Graph, optional): Graph with the inserted data. Defaults to None.
         del_graph (Graph, optional): Graph with the deleted data. Defaults to None.
     """
-    import incremental_query_parser as iqp
+    # import incremental_query_parser as iqp
 
     # Read the data file and put original data into the database
     build_table("R1", duckdb_conn)

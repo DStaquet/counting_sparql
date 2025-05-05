@@ -324,6 +324,7 @@ def build_queries(
             else:
                 project_query = project_query_tuple
                 project_query_join = None
+            print(project_query)
             write_query_to_output_dir(
                 output_dir,
                 project_query,
