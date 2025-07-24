@@ -1,13 +1,11 @@
-from duckdb import DuckDBPyConnection
-from rdflib import Graph
-from rdflib.compare import isomorphic, graph_diff
-from rdflib.term import URIRef, Node
-from rdflib.plugins.sparql.parserutils import CompValue
+"""Module providing timers for running benchmarks"""
+
 from time import time
 from os.path import join
-from copy import deepcopy
 
-import gc
+from duckdb import DuckDBPyConnection
+from rdflib import Graph
+from rdflib.plugins.sparql.parserutils import CompValue
 
 from benchmarker.benchmark import (
     run_query,
@@ -15,25 +13,35 @@ from benchmarker.benchmark import (
     load_table_in_graph,
     entire_run_query,
 )
+from benchmarker.dict_maker import constructDictFromTree
 from build_data import (
     get_query_object,
     readQueryFile,
     get_query_input,
 )
-from benchmarker.dict_maker import constructDictFromTree
 from SQL_Constructor.base_constructor import get_table_name
 
 
-def constructGTable(
+def construct_g_table(
     table_name: str,
     g: Graph,
     duckdb_conn: DuckDBPyConnection,
     swap: int = 1,
     drop: bool = True,
 ) -> None:
+    """Constructs a DuckDB table from an RDF graph.
+
+    Args:
+        table_name (str): Name of the table to create.
+        g (Graph): The RDF graph to convert into a table.
+        duckdb_conn (DuckDBPyConnection): Connection to the DuckDB database.
+        swap (int, optional): Indicator for swapping an integer. Defaults to 1.
+        drop (bool, optional): Bool to indicate a drop is necessary. Defaults to True.
+    """
     if drop:
         duckdb_conn.execute(
-            f"DROP TABLE IF EXISTS {table_name}; CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
+            f"DROP TABLE IF EXISTS {table_name};"
+            + f"CREATE TABLE IF NOT EXISTS {table_name} (s TEXT, p TEXT, o TEXT, k_count INT);"
         )
     else:
         duckdb_conn.execute(
@@ -57,23 +65,29 @@ def constructGTable(
     duckdb_conn.execute(insert_str)
 
 
-def setupNus(
+def setup_nus(
     part: CompValue, duckdb_conn: DuckDBPyConnection
 ) -> None:
-    if "p" in part:
-        setupNus(part.p, duckdb_conn)
-    elif "p1" in part and "p2" in part:
-        setupNus(part.p1, duckdb_conn)
-        setupNus(part.p2, duckdb_conn)
+    """Sets up the nu_G table.
 
-    setupNuGToG(
+    Args:
+        part (CompValue): Part of the query algebra to process.
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+    """
+    if "p" in part:
+        setup_nus(part.p, duckdb_conn)
+    elif "p1" in part and "p2" in part:
+        setup_nus(part.p1, duckdb_conn)
+        setup_nus(part.p2, duckdb_conn)
+
+    setup_nu_g_to_g(
         duckdb_conn,
         "nu_" + get_table_name(part),
         get_table_name(part),
     )
 
 
-def setupNuGToG(
+def setup_nu_g_to_g(
     duckdb_conn: DuckDBPyConnection,
     to_insert_from_table: str = "nu_G",
     to_insert_to_table: str = "G",
@@ -86,9 +100,6 @@ def setupNuGToG(
     duckdb_conn.execute(
         f"DROP TABLE IF EXISTS {to_insert_to_table};"
     )
-    """ duckdb_conn.execute(
-        f"CREATE TABLE IF NOT EXISTS {to_insert_to_table} AS SELECT * FROM {to_insert_from_table};"
-    ) """
     duckdb_conn.execute(
         f"ALTER TABLE {to_insert_from_table} RENAME TO {to_insert_to_table};"
     )
@@ -102,14 +113,34 @@ def run_chain_constructing(
     duckdb_conn: DuckDBPyConnection,
     drop_tables: str,
     drop_delta_table: str,
-    SQL_queries: dict[str, str],
-    SQL_delta_queries: dict[str, list[str]],
-    query_input_dir: str,
-    base_g: Graph | None = None,
-    format: str = "csv",
+    sql_queries: dict[str, str] | dict[str, list[str]],
+    sql_delta_queries: (
+        dict[str, str] | dict[str, list[str]]
+    ),
     data_file: str = "",
 ) -> tuple[float, float]:
-    part_parent = part
+    """Runs the chain of benchmarks by constructing the G table and running the queries.
+
+    Args:
+        part (CompValue): CompValue part of the query algebra to process.
+        delta_and_nu_files (list[ tuple[str  |  tuple[str, str], str] ]):
+            Delta and nu files to process.
+        duckdb_conn (DuckDBPyConnection): Connection to the DuckDB database.
+        drop_tables (str): SQL command to drop tables.
+        drop_delta_table (str): SQL command to drop delta tables.
+        sql_queries (dict[str, str] | dict[str, list[str]]): Dictionary of SQL queries.
+        sql_delta_queries (dict[str, list[str]] | dict[str, list[str]]):
+            Dictionary of SQL delta queries.
+        data_file (str, optional): File with data. Defaults to "".
+
+    Raises:
+        ValueError: If delta_file is not a string or tuple.
+        ValueError: If delta_file should be in CSV format and is not.
+
+    Returns:
+        tuple[float, float]: Average scratch and incremental times in milliseconds.
+    """
+
     part = part.p
 
     total_scratch_time: float = 0.0
@@ -117,7 +148,7 @@ def run_chain_constructing(
 
     duckdb_conn.execute(drop_tables)
     # Initialize base relations for incremental
-    run_query(part, SQL_queries, duckdb_conn)
+    run_query(part, sql_queries, duckdb_conn)
 
     # nu_graph = deepcopy(base_g)
     # constructGTable("nu_G", nu_graph, duckdb_conn)
@@ -126,39 +157,28 @@ def run_chain_constructing(
     # Read delta and nu files
     counter = 0
     previous_delta_file = data_file
+
+    entire_run_query_str_delta = entire_run_query(
+        part, sql_delta_queries
+    )
     for delta_file, nu_file in delta_and_nu_files:
         counter += 1
         print(
             f"Delta {counter} of {len(delta_and_nu_files)}"
         )
-        """ delta_ins_g = Graph()
-        delta_ins_g.parse(ins_file, format="nt")
-        constructGTable("delta_G", delta_ins_g, duckdb_conn) """
 
-        """ delta_del_g = Graph()
-        delta_del_g.parse(del_file, format="nt")
-        constructGTable(
-            "delta_G", delta_del_g, duckdb_conn, -1, False
-        ) """
-
-        # gc.collect()
-
-        """ nu_graph += delta_ins_g
-        nu_graph -= delta_del_g
-        constructGTable("nu_G", nu_graph, duckdb_conn) """
-
-        if type(delta_file) == tuple:
+        if isinstance(delta_file, tuple):
             raise ValueError(
                 "Delta file should be a string, not a tuple."
             )
-        elif type(delta_file) == str:
+        elif isinstance(delta_file, str):
             load_table_in_graph(
                 previous_delta_file, duckdb_conn
             )
             duckdb_conn.execute(drop_tables)
             duckdb_conn.execute(drop_delta_table)
 
-            run_query(part, SQL_queries, duckdb_conn)
+            run_query(part, sql_queries, duckdb_conn)
             load_delta_table_in_graph(
                 delta_file, duckdb_conn, nu_file
             )
@@ -167,15 +187,12 @@ def run_chain_constructing(
         # Drop the tables if necessary
         duckdb_conn.execute(drop_delta_table)
 
-        entire_run_query_str = entire_run_query(
-            part, SQL_delta_queries
-        )
         # Time counter
         start_increm_time: float = time()
 
         # Run the query
-        # duckdb_conn.execute(entire_run_query_str)
-        run_query(part, SQL_delta_queries, duckdb_conn)
+        duckdb_conn.execute(entire_run_query_str_delta)
+        # run_query(part, SQL_delta_queries, duckdb_conn)
 
         # End time counter
         end_increm_time: float = time()
@@ -184,20 +201,20 @@ def run_chain_constructing(
         ) * 1000
         total_increm_time += curr_increm_time
 
-        # Put the nu_G table into the G table
-        """ setupNus(part, duckdb_conn)
-        setupNuGToG(duckdb_conn) """
-
     load_table_in_graph(
         delta_and_nu_files[-2][1], duckdb_conn
     )
-    load_delta_table_in_graph(
-        str(delta_file), duckdb_conn, nu_file
-    )
+    last_delta_file, last_nu_file = delta_and_nu_files[-1]
+    if (
+        last_delta_file is not None
+        and last_nu_file is not None
+    ):
+        load_delta_table_in_graph(
+            str(last_delta_file), duckdb_conn, last_nu_file
+        )
     duckdb_conn.execute(drop_delta_table)
-    run_query(part, SQL_delta_queries, duckdb_conn)
+    run_query(part, sql_delta_queries, duckdb_conn)
 
-    # nu_graph = base_g
     print("Running the benchmark from scratch")
     counter = 0
     for delta_file, nu_file in delta_and_nu_files:
@@ -205,23 +222,8 @@ def run_chain_constructing(
         print(
             f"Delta {counter} of {len(delta_and_nu_files)}"
         )
-        """ delta_ins_g = Graph()
-        delta_ins_g.parse(ins_file, format="nt")
-        constructGTable("delta_G", delta_ins_g, duckdb_conn)
 
-        delta_del_g = Graph()
-        delta_del_g.parse(del_file, format="nt")
-        constructGTable(
-            "delta_G", delta_del_g, duckdb_conn, -1, False
-        )
-
-        gc.collect()
-
-        nu_graph += delta_ins_g
-        nu_graph -= delta_del_g
-        constructGTable("G", nu_graph, duckdb_conn) """
-
-        if type(delta_file) == str:
+        if isinstance(delta_file, str):
             load_delta_table_in_graph(
                 delta_file,
                 duckdb_conn,
@@ -236,15 +238,12 @@ def run_chain_constructing(
         # Drop the tables if necessary
         duckdb_conn.execute(drop_tables)
 
-        entire_run_query_str = entire_run_query(
-            part, SQL_queries
-        )
         # Time counter
         start_scratch_time: float = time()
 
         # Run the query
         # duckdb_conn.execute(entire_run_query_str)
-        run_query(part, SQL_queries, duckdb_conn)
+        run_query(part, sql_queries, duckdb_conn)
 
         # End time counter
         end_scratch_time: float = time()
@@ -268,18 +267,20 @@ def run_chain_benchmark(
     delta_and_nu_files: list[
         tuple[str | tuple[str, str], str]
     ],
-    format: str = "csv",
 ) -> tuple[float, float]:
-    """Runs a chain of benchmarks.
+    """Runs the chain benchmark by constructing the G table and running the queries.
 
     Args:
-        query (str): Query to run on the database.
-        query_files_dir (str): Output directory where the query files are stored.
-        runs (int): Amount of runs to do for testing.
-        duckdb_conn (DuckDBPyConnection): Connection to the database.
-        data_file (str): Initial base data file. (In turtle format)
-        delta_and_nu_files (list[tuple[str, str]]): List of tuples containing delta and nu files.
-        (In NTriples and Turtle format respectively)
+        query (str): The query to run.
+        query_files_dir (str): The directory containing query files.
+        runs (int): The number of runs to perform.
+        duckdb_conn (DuckDBPyConnection): Connection to the DuckDB database.
+        data_file (str): File with data to load into the graph.
+        delta_and_nu_files (list[ tuple[str  |  tuple[str, str], str] ]):
+            Files with delta and nu data.
+
+    Returns:
+        tuple[float, float]: Average scratch and incremental times in milliseconds.
     """
     # Get the query object
     q_query_object = get_query_object(readQueryFile(query))
@@ -291,13 +292,13 @@ def run_chain_benchmark(
         join(query_input_dir, "drop_tables.sql")
     )
     # Build dictionary with SQL queries
-    SQL_queries = constructDictFromTree(
+    sql_queries = constructDictFromTree(
         q_query_object.algebra, query_input_dir
     )
     drop_delta_tables = readQueryFile(
         join(query_input_dir, "drop_delta_tables.sql")
     )
-    SQL_delta_queries = constructDictFromTree(
+    sql_delta_queries = constructDictFromTree(
         q_query_object.algebra, query_input_dir, True
     )
 
@@ -308,12 +309,6 @@ def run_chain_benchmark(
         print(f"Run: {run + 1} of {runs}")
 
         print("Loading base graph data")
-        """ # Read initial data
-        base_g = Graph()
-        base_g.parse(data_file, format="ttl")
-
-        print("Constructing base G table")
-        constructGTable("G", base_g, duckdb_conn) """
         load_table_in_graph(data_file, duckdb_conn)
 
         (
@@ -325,9 +320,8 @@ def run_chain_benchmark(
             duckdb_conn,
             drop_tables,
             drop_delta_tables,
-            SQL_queries,  # type: ignore
-            SQL_delta_queries,  # type: ignore
-            query_input_dir,
+            sql_queries,
+            sql_delta_queries,
             data_file=data_file,
         )
 
