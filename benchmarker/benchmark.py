@@ -1,7 +1,10 @@
-from rdflib.plugins.sparql.parserutils import CompValue
-from duckdb import DuckDBPyConnection, connect
+"""Modules to run SPARQL queries for benchmark with incremental view maintenance on SQL queries."""
+
 from os.path import join
 from time import time
+from rdflib.plugins.sparql.parserutils import CompValue
+from duckdb import DuckDBPyConnection
+
 
 from build_data import (
     get_query_object,
@@ -28,13 +31,13 @@ def entire_run_query(
     """
     key = get_table_name(part)
     curr_query = ""
-    if type(queries_dict[key]) == list:
+    if isinstance(queries_dict[key], list):
         curr_query = (
             queries_dict[key][0] + queries_dict[key][1]
         )
     else:
         query = queries_dict[key]
-        if type(query) == str:
+        if isinstance(query, str):
             curr_query = query
         else:
             raise ValueError("Query is not a string")
@@ -63,7 +66,6 @@ def run_file_query(
         query_file (str): The given query file.
         duckdb_conn (DuckDBPyConnection): Connection to the database.
     """
-    # print(query_to_run)
     duckdb_conn.execute(query_to_run)
 
 
@@ -85,7 +87,7 @@ def run_query(
         run_query(part.p2, queries_dict, duckdb_conn)
 
     key = get_table_name(part)
-    if type(queries_dict[key]) == list:
+    if isinstance(queries_dict[key], list):
         run_file_query(
             queries_dict[key][0],
             duckdb_conn,
@@ -96,7 +98,7 @@ def run_query(
         )
     else:
         query = queries_dict[key]
-        if type(query) == str:
+        if isinstance(query, str):
             run_file_query(query, duckdb_conn)
         else:
             raise ValueError("Query is not a string")
@@ -107,7 +109,6 @@ def run_benchmark(
     query_files_dir: str,
     runs: int,
     duckdb_conn: DuckDBPyConnection,
-    db_name: str,
     data_file: str,
     nu_file: str,
     delta_file: str,
@@ -131,7 +132,7 @@ def run_benchmark(
     )
 
     # Build dictionary with SQL queries
-    SQL_queries = constructDictFromTree(
+    sql_queries = constructDictFromTree(
         q_query_object.algebra, query_input_dir
     )
 
@@ -145,7 +146,7 @@ def run_benchmark(
         load_table_in_graph(nu_file, duckdb_conn)
 
         run_query_str = entire_run_query(
-            q_query_object.algebra.p, SQL_queries
+            q_query_object.algebra.p, sql_queries
         )
         # Time counter
         start_time: float = time()
@@ -171,7 +172,7 @@ def run_benchmark(
 
     # Amount of tuples in BGP
     tuple_amount_scratch: list[int] = list()
-    for key in SQL_queries:
+    for key in sql_queries:
         if "BGP" in key:
             tuple_amount_scratch.append(
                 duckdb_conn.sql(
@@ -192,7 +193,7 @@ def run_benchmark(
     drop_delta_tables = readQueryFile(
         join(query_input_dir, "drop_delta_tables.sql")
     )
-    SQL_delta_queries = constructDictFromTree(
+    sql_delta_queries = constructDictFromTree(
         q_query_object.algebra, query_input_dir, True
     )
 
@@ -206,7 +207,7 @@ def run_benchmark(
     duckdb_conn.execute(drop_tables)
     run_query(
         q_query_object.algebra.p,
-        SQL_queries,
+        sql_queries,
         duckdb_conn,
     )
 
@@ -218,7 +219,7 @@ def run_benchmark(
         duckdb_conn.execute(drop_delta_tables)
 
         run_query_str = entire_run_query(
-            q_query_object.algebra.p, SQL_delta_queries
+            q_query_object.algebra.p, sql_delta_queries
         )
         # Time counter
         start_time: float = time()
@@ -265,7 +266,7 @@ def run_benchmark(
     tuple_amount_increm: list[int] = list()
     tuple_amount_increm_before: list[int] = list()
     tuple_amount_increm_delta: list[int] = list()
-    for key in SQL_delta_queries:
+    for key in sql_delta_queries:
         if "BGP" in key:
             tuple_amount_increm.append(
                 duckdb_conn.sql(
