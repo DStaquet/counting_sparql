@@ -1,7 +1,5 @@
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
-    __encode_table_name,
-    create_table_w_select,
     add_table_to_dict,
     make_group_by,
     make_join,
@@ -9,6 +7,11 @@ from SQL_Constructor.base_constructor import (
 
 
 from rdflib.plugins.sparql.parserutils import CompValue
+
+from SQL_Constructor.table_constructor import (
+    create_table_w_select,
+    __encode_table_name,
+)
 
 
 def project_schemas(

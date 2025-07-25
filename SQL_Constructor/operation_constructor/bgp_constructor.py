@@ -1,5 +1,5 @@
-from SQL_Constructor import base_constructor
-from SQL_Constructor.base_constructor import (
+from SQL_Constructor import table_constructor
+from SQL_Constructor.table_constructor import (
     __encode_table_name,
 )
 
@@ -398,7 +398,7 @@ def delta_bgp_queries(
     delta_join_tables: str = ""
 
     bgp_name: str = (
-        "delta_" + base_constructor.get_table_name(part)
+        "delta_" + table_constructor.get_table_name(part)
     )
 
     dict_with_bgps: dict[str, list[str]] = dict()

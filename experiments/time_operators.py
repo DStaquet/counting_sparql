@@ -4,7 +4,7 @@ from duckdb import DuckDBPyConnection
 from os.path import join
 
 from build_data import readQueryFile
-from SQL_Constructor.base_constructor import get_table_name
+from SQL_Constructor.table_constructor import get_table_name
 
 
 def timing_dict_combiner(

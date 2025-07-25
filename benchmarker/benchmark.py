@@ -15,7 +15,7 @@ from experiments.experiments import (
     load_table_in_graph,
     load_delta_table_in_graph,
 )
-from SQL_Constructor.base_constructor import get_table_name
+from SQL_Constructor.table_constructor import get_table_name
 from benchmarker.dict_maker import constructDictFromTree
 
 

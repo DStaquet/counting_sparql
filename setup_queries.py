@@ -5,7 +5,7 @@ from eval_incremental.eval_incremental import (
     deleteTablesRec,
 )
 from SQL_Constructor import SQL_initialize_queries
-from SQL_Constructor.base_constructor import (
+from SQL_Constructor.table_constructor import (
     get_table_name,
 )
 from rdflib.plugins.sparql.parserutils import CompValue

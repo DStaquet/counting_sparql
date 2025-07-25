@@ -1,7 +1,5 @@
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
-    __encode_table_name,
-    create_table_w_select,
 )
 
 
@@ -10,6 +8,11 @@ from rdflib.plugins.sparql.parserutils import (
     Expr,
 )
 from rdflib.term import Literal
+
+from SQL_Constructor.table_constructor import (
+    create_table_w_select,
+    __encode_table_name,
+)
 
 
 def filter_expr_part(

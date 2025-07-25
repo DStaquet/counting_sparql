@@ -1,6 +1,5 @@
-from SQL_Constructor.base_constructor import (
+from SQL_Constructor.table_constructor import (
     __encode_table_name,
-    create_table_w_select,
 )
 from SQL_Constructor.base_constructor import make_join
 from SQL_Constructor.base_constructor import make_group_by
@@ -12,6 +11,10 @@ from SQL_Constructor.operation_constructor.diff_constructor import (
 
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Variable
+
+from SQL_Constructor.table_constructor import (
+    create_table_w_select,
+)
 
 
 def minus_query(

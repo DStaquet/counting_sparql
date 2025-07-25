@@ -19,7 +19,7 @@ from build_data import (
     readQueryFile,
     get_query_input,
 )
-from SQL_Constructor.base_constructor import get_table_name
+from SQL_Constructor.table_constructor import get_table_name
 
 
 def construct_g_table(

@@ -1,11 +1,14 @@
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
-    __encode_table_name,
-    create_table_w_select,
 )
 
 
 from rdflib.plugins.sparql.parserutils import CompValue
+
+from SQL_Constructor.table_constructor import (
+    create_table_w_select,
+    __encode_table_name,
+)
 
 
 def __union_query_sub_same_schema(

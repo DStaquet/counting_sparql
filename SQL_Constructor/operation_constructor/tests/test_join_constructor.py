@@ -2,7 +2,7 @@ from SQL_Constructor.operation_constructor.join_constructor import (
     join_query_str_constr,
     delta_join_queries_part_func,
 )
-from SQL_Constructor.base_constructor import get_table_name
+from SQL_Constructor.table_constructor import get_table_name
 from SQL_Constructor.operation_constructor.tests.base_functions import (
     all_type_leaves,
     reset_seed,

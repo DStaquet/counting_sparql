@@ -1,16 +1,19 @@
-from SQL_Constructor import base_constructor
+from SQL_Constructor import table_constructor
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
-    __encode_table_name,
     combine_dict_queries,
     make_group_by,
     make_join,
-    create_table_w_select,
     add_table_to_dict,
 )
 
 
 from rdflib.plugins.sparql.parserutils import CompValue
+
+from SQL_Constructor.table_constructor import (
+    create_table_w_select,
+    __encode_table_name,
+)
 
 
 def join_schemas(
@@ -337,7 +340,8 @@ def join_query(
     """
     if is_delta_and_first[0] and new_table_name is None:
         new_table_name = (
-            "delta_" + base_constructor.get_table_name(part)
+            "delta_"
+            + table_constructor.get_table_name(part)
         )
     else:
         if new_table_name is None:
@@ -392,7 +396,8 @@ def delta_join_queries_part_func(
     """
     first_delta_query: dict[str, list[str]] = join_query(
         part,
-        "delta_" + base_constructor.get_table_name(part.p1),
+        "delta_"
+        + table_constructor.get_table_name(part.p1),
         __encode_table_name(part.p2),
         schemas1,
         schemas2,
@@ -403,8 +408,9 @@ def delta_join_queries_part_func(
 
     second_delta_query: dict[str, list[str]] = join_query(
         part,
-        "nu_" + base_constructor.get_table_name(part.p1),
-        "delta_" + base_constructor.get_table_name(part.p2),
+        "nu_" + table_constructor.get_table_name(part.p1),
+        "delta_"
+        + table_constructor.get_table_name(part.p2),
         schemas1,
         schemas2,
         is_delta_and_first=(True, False),

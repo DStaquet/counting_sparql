@@ -5,10 +5,9 @@ from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql.sparql import Query
 
-from SQL_Constructor import base_constructor
+from SQL_Constructor import table_constructor
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
-    __encode_table_name,
     __final_schema,
 )
 from SQL_Constructor.operation_constructor import (
@@ -18,6 +17,9 @@ from SQL_Constructor.operation_constructor import (
     union_constructor as SQL_union,
 )
 
+from SQL_Constructor.table_constructor import (
+    __encode_table_name,
+)
 from experiments.experiments import (
     load_table_in_graph,
     load_delta_table_in_graph,
@@ -35,7 +37,7 @@ def get_query_input(
     query_input_dir: str = join(
         query_file_dir,
         "query_"
-        + base_constructor.get_table_name(
+        + table_constructor.get_table_name(
             q_query_object.algebra
         ),
     )

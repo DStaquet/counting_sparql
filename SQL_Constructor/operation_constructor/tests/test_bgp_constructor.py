@@ -2,13 +2,13 @@ from SQL_Constructor.operation_constructor.bgp_constructor import (
     bgp_table_query,
     delta_bgp_queries,
 )
+from SQL_Constructor.table_constructor import get_table_name
 from build_data import get_query_object
 from build_data import (
     readQueryFile,
 )
-from SQL_Constructor.base_constructor import (
+from SQL_Constructor.table_constructor import (
     create_table_w_select,
-    get_table_name,
 )
 from SQL_Constructor.operation_constructor.tests.base_functions import (
     all_type_leaves,

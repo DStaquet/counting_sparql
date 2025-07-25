@@ -1,14 +1,17 @@
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
-    __encode_table_name,
-    create_table_w_select,
-    insert_into_w_select,
     combine_dict_queries,
     add_table_to_dict,
 )
 
 
 from rdflib.plugins.sparql.parserutils import CompValue
+
+from SQL_Constructor.table_constructor import (
+    create_table_w_select,
+    __encode_table_name,
+    insert_into_w_select,
+)
 
 
 def __varsToJoinOn(

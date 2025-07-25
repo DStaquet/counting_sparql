@@ -1,7 +1,7 @@
 from rdflib.plugins.sparql.parserutils import CompValue
 from os.path import join
 
-from SQL_Constructor.base_constructor import get_table_name
+from SQL_Constructor.table_constructor import get_table_name
 from build_data import (
     readQueryFile,
 )

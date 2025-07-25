@@ -1,8 +1,3 @@
-from SQL_Constructor.base_constructor import (
-    __encode_table_name,
-    __serialize_to_json,
-)
-
 from SQL_Constructor.operation_constructor.join_constructor import (
     join_schemas,
 )
@@ -21,6 +16,33 @@ from os.path import join
 from SQL_Constructor.operation_constructor.union_constructor import (
     union_schemas,
 )
+from SQL_Constructor.table_constructor import (
+    __encode_table_name,
+)
+
+import json
+
+
+def serialize_to_json(part: CompValue | list[set]) -> str:
+    """Serialize to JSON
+
+    Args:
+        part (CompValue): Part to serialize
+
+    Returns:
+        str: Serialized part
+    """
+
+    def set_default(obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return obj
+
+    return json.dumps(
+        part,
+        default=set_default,
+        indent=4,
+    )
 
 
 def write_hash_schemas(
@@ -50,9 +72,7 @@ def write_hash_schemas(
                     + __encode_table_name(part)
                     + '": '
                 )
-                hash_file.write(
-                    __serialize_to_json(schemas1)
-                )
+                hash_file.write(serialize_to_json(schemas1))
                 hash_file.write(",\n")
                 return schemas1
         case "Project":
@@ -68,7 +88,7 @@ def write_hash_schemas(
                     + '": '
                 )
                 hash_file.write(
-                    __serialize_to_json(project_schema)
+                    serialize_to_json(project_schema)
                 )
                 hash_file.write(",\n")
                 return schemas1
@@ -89,7 +109,7 @@ def write_hash_schemas(
                     + '": '
                 )
                 hash_file.write(
-                    __serialize_to_json(leftjoin_schema)
+                    serialize_to_json(leftjoin_schema)
                 )
                 hash_file.write(",\n")
                 return leftjoin_schema
@@ -110,7 +130,7 @@ def write_hash_schemas(
                     + '": '
                 )
                 hash_file.write(
-                    __serialize_to_json(join_schema)
+                    serialize_to_json(join_schema)
                 )
                 hash_file.write(",\n")
                 return join_schema
@@ -123,9 +143,7 @@ def write_hash_schemas(
                     + __encode_table_name(part)
                     + '": '
                 )
-                hash_file.write(
-                    __serialize_to_json(schemas1)
-                )
+                hash_file.write(serialize_to_json(schemas1))
                 hash_file.write(",\n")
                 return schemas1
         case "Union":
@@ -145,7 +163,7 @@ def write_hash_schemas(
                     + '": '
                 )
                 hash_file.write(
-                    __serialize_to_json(union_schema)
+                    serialize_to_json(union_schema)
                 )
                 hash_file.write(",\n")
                 return union_schema
@@ -158,9 +176,7 @@ def write_hash_schemas(
                     + __encode_table_name(part)
                     + '": '
                 )
-                hash_file.write(
-                    __serialize_to_json(schemas1)
-                )
+                hash_file.write(serialize_to_json(schemas1))
                 hash_file.write(",\n")
                 return schemas1
 
@@ -181,7 +197,7 @@ def setup_hash_values(
     with open(
         join(output_dir, "hash_values.json"), "a"
     ) as hash_file:
-        json_part: str = __serialize_to_json(part)
+        json_part: str = serialize_to_json(part)
         hash_file.write(
             '"' + hash_value + '": ' + json_part
         )
@@ -195,7 +211,7 @@ def setup_hash_values(
             hash_file.write(
                 ',\n"schema_' + schema_name + '": '
             )
-            hash_file.write(__serialize_to_json(part._vars))
+            hash_file.write(serialize_to_json(part._vars))
             hash_file.write("\n")
             hash_file.write(",\n")
 

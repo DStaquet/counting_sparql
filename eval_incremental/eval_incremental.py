@@ -59,6 +59,7 @@ _Triple = tuple[Identifier, Identifier, Identifier]
 if TYPE_CHECKING:
     from rdflib.paths import Path
 
+import SQL_Constructor.table_constructor
 from eval_incremental import VALUES
 
 
@@ -76,11 +77,15 @@ def delete_all_tables(part: CompValue) -> str:
         delete_delta_query,
         delete_nu_query,
         delete_nu_prep_query,
-    ) = base_constructor.delete_all_tables(part)
+    ) = SQL_Constructor.table_constructor.delete_all_tables(
+        part
+    )
     (
         delta_table_delete_query,
         delta_prep_table_delete_query,
-    ) = base_constructor.delete_delta_table(part)
+    ) = SQL_Constructor.table_constructor.delete_delta_table(
+        part
+    )
     return (
         delete_query
         + "\n"
@@ -103,7 +108,9 @@ def construct_tables(part) -> str:
         table_delta_prep,
         table_nu,
         table_nu_prep,
-    ) = base_constructor.make_tables(part, part._vars)
+    ) = SQL_Constructor.table_constructor.make_tables(
+        part, part._vars
+    )
     return (
         table_query
         + "\n"
@@ -177,7 +184,7 @@ def evalIncrUnion(
     evalIncrPart(ctx, union.p1, increm)
     evalIncrPart(ctx, union.p2, increm)
     union_table_query: str = (
-        base_constructor.union_table_query(
+        SQL_Constructor.table_constructor.union_table_query(
             union, union.p1._vars, union.p2._vars
         )
     )
@@ -349,7 +356,9 @@ def get_query_string(
     query_file_path: str = join(
         input_dir,
         prefix
-        + base_constructor.get_table_name(part)
+        + SQL_Constructor.table_constructor.get_table_name(
+            part
+        )
         + ".sql",
     )
     with open(query_file_path, "r") as query_file:

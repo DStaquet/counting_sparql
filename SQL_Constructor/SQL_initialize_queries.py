@@ -17,6 +17,8 @@ from SQL_Constructor.operation_constructor import (
 
 from pprint import pprint
 
+import SQL_Constructor.table_constructor
+
 
 def write_query_to_output_dir(
     output_dir: str,
@@ -83,14 +85,18 @@ def build_increm_queries(
             write_query_to_output_dir(
                 output_dir,
                 delta_queries,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
                 False,
                 "delta_",
             )
             write_query_to_output_dir(
                 output_dir,
                 delta_join_queries,
-                base_constructor.get_table_name(part)
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                )
                 + "_join",
                 False,
                 "delta_",
@@ -103,7 +109,9 @@ def build_increm_queries(
             write_query_to_output_dir(
                 output_dir,
                 filter_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
                 filename_prefix="delta_",
             )
             part_schemas = schemas1
@@ -117,13 +125,17 @@ def build_increm_queries(
                 output_dir,
                 join_query,
                 "delta_"
-                + base_constructor.get_table_name(part),
+                + SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             write_query_to_output_dir(
                 output_dir,
                 join_query_outer_join,
                 "delta_"
-                + base_constructor.get_table_name(part)
+                + SQL_Constructor.table_constructor.get_table_name(
+                    part
+                )
                 + "_outer_join",
             )
             part_schemas = SQL_join.join_schemas(
@@ -145,14 +157,18 @@ def build_increm_queries(
             write_query_to_output_dir(
                 output_dir,
                 project_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
                 filename_prefix="delta_",
             )
             if project_query_join != None:
                 write_query_to_output_dir(
                     output_dir,
                     project_query_join,
-                    base_constructor.get_table_name(part)
+                    SQL_Constructor.table_constructor.get_table_name(
+                        part
+                    )
                     + "_join",
                     filename_prefix="delta_",
                 )
@@ -168,13 +184,17 @@ def build_increm_queries(
             write_query_to_output_dir(
                 output_dir,
                 left_join_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
                 filename_prefix="delta_",
             )
             write_query_to_output_dir(
                 output_dir,
                 left_join_query_outer_join,
-                base_constructor.get_table_name(part)
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                )
                 + "_outer_join",
                 filename_prefix="delta_",
             )
@@ -190,13 +210,17 @@ def build_increm_queries(
             write_query_to_output_dir(
                 output_dir,
                 minus_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
                 filename_prefix="delta_",
             )
             write_query_to_output_dir(
                 output_dir,
                 minus_query_join,
-                base_constructor.get_table_name(part)
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                )
                 + "_join",
                 filename_prefix="delta_",
             )
@@ -208,7 +232,9 @@ def build_increm_queries(
             write_query_to_output_dir(
                 output_dir,
                 union_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
                 filename_prefix="delta_",
             )
             part_schemas = SQL_union.union_schemas(
@@ -223,7 +249,9 @@ def build_increm_queries(
             write_query_to_output_dir(
                 output_dir,
                 select_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
                 filename_prefix="delta_",
             )
             part_schemas = schemas1
@@ -241,13 +269,18 @@ def build_increm_queries(
     write_query_to_output_dir(
         output_dir,
         nu_query,
-        base_constructor.get_table_name(part),
+        SQL_Constructor.table_constructor.get_table_name(
+            part
+        ),
         filename_prefix="nu_",
     )
     write_query_to_output_dir(
         output_dir,
         nu_query_sum,
-        base_constructor.get_table_name(part) + "_sum",
+        SQL_Constructor.table_constructor.get_table_name(
+            part
+        )
+        + "_sum",
         filename_prefix="nu_",
     )
 
@@ -292,15 +325,19 @@ def build_queries(
                 part
             )
             bgp_query: str = (
-                base_constructor.create_table_w_select(
-                    base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.create_table_w_select(
+                    SQL_Constructor.table_constructor.get_table_name(
+                        part
+                    ),
                     bgp_query,
                 )
             )
             write_query_to_output_dir(
                 output_dir,
                 bgp_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             return [part._vars]
         case "Filter":
@@ -310,7 +347,9 @@ def build_queries(
             write_query_to_output_dir(
                 output_dir,
                 filter_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             return schemas1
         case "Project":
@@ -327,13 +366,17 @@ def build_queries(
             write_query_to_output_dir(
                 output_dir,
                 project_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             if project_query_join != None:
                 write_query_to_output_dir(
                     output_dir,
                     project_query_join,
-                    base_constructor.get_table_name(part)
+                    SQL_Constructor.table_constructor.get_table_name(
+                        part
+                    )
                     + "_join",
                 )
             return (
@@ -350,24 +393,24 @@ def build_queries(
             write_query_to_output_dir(
                 output_dir,
                 left_join_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             return SQL_leftjoin.leftjoin_schemas(
                 schemas1, schemas2
             )
         case "Join":
-            join_query_tuple = (
-                SQL_join.join_query_str_constr(
-                    part,
-                    base_constructor.get_table_name(
-                        part.p1
-                    ),
-                    base_constructor.get_table_name(
-                        part.p2
-                    ),
-                    schemas1,
-                    schemas2,
-                )
+            join_query_tuple = SQL_join.join_query_str_constr(
+                part,
+                SQL_Constructor.table_constructor.get_table_name(
+                    part.p1
+                ),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part.p2
+                ),
+                schemas1,
+                schemas2,
             )
             if isinstance(join_query_tuple, tuple):
                 join_query, join_query_outer_join = (
@@ -376,7 +419,9 @@ def build_queries(
                 write_query_to_output_dir(
                     output_dir,
                     join_query_outer_join,
-                    base_constructor.get_table_name(part)
+                    SQL_Constructor.table_constructor.get_table_name(
+                        part
+                    )
                     + "_outer_join",
                 )
             else:
@@ -384,7 +429,9 @@ def build_queries(
             write_query_to_output_dir(
                 output_dir,
                 join_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             return SQL_join.join_schemas(schemas1, schemas2)
         case "Minus":
@@ -394,7 +441,9 @@ def build_queries(
             write_query_to_output_dir(
                 output_dir,
                 minus_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             return schemas1
         case "Union":
@@ -404,7 +453,9 @@ def build_queries(
             write_query_to_output_dir(
                 output_dir,
                 union_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             return SQL_union.union_schemas(
                 schemas1, schemas2
@@ -418,7 +469,9 @@ def build_queries(
             write_query_to_output_dir(
                 output_dir,
                 select_query,
-                base_constructor.get_table_name(part),
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
             )
             return schemas1
     return schemas1
