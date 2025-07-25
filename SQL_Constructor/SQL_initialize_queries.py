@@ -1,9 +1,12 @@
-from rdflib.plugins.sparql.parserutils import CompValue
-from SQL_Constructor import base_constructor
+"""Modules to import"""
+
 from typing import Union
 
+from rdflib.plugins.sparql.parserutils import CompValue
 import sqlparse
 
+from SQL_Constructor import base_constructor
+import SQL_Constructor.table_constructor
 import SQL_Constructor.hash_writer
 from SQL_Constructor.operation_constructor import (
     bgp_constructor as SQL_bgp,
@@ -14,10 +17,6 @@ from SQL_Constructor.operation_constructor import (
     minus_constructor as SQL_minus,
     union_constructor as SQL_union,
 )
-
-from pprint import pprint
-
-import SQL_Constructor.table_constructor
 
 
 def write_query_to_output_dir(
@@ -43,12 +42,14 @@ def write_query_to_output_dir(
         with open(
             f"{output_dir}/{filename_prefix}{filename}.sql",
             "w",
+            encoding="utf-8",
         ) as f:
             f.write(query)
     else:
         with open(
             f"{output_dir}/{filename_prefix}{filename}.sql",
             "a",
+            encoding="utf-8",
         ) as f:
             f.write(query)
 
@@ -56,15 +57,25 @@ def write_query_to_output_dir(
 def build_increm_queries(
     part: CompValue,
     output_dir: str,
-    schemas1: list[set[str]] = [],
-    schemas2: list[set[str]] = [],
+    schemas1: list[set[str]] | None = None,
+    schemas2: list[set[str]] | None = None,
 ) -> list[set[str]]:
-    """Constructs the incremental queries
+    """Builds the incremental queries
 
     Args:
         part (CompValue): Current part of the query
-        output_dir (str): Where to write the SQL queries.
+        output_dir (str): Directory to write the SQL queries
+        schemas1 (list[set[str]] | None, optional): Schemas of the first part. Defaults to None.
+        schemas2 (list[set[str]] | None, optional): Schemas of the second part. Defaults to None.
+
+    Returns:
+        list[set[str]]: The schemas of the part
     """
+    if schemas1 is None:
+        schemas1 = []
+    if schemas2 is None:
+        schemas2 = []
+
     if "p" in part:
         schemas1 = build_increm_queries(
             part.p, output_dir, schemas1, schemas2
@@ -101,7 +112,7 @@ def build_increm_queries(
                 False,
                 "delta_",
             )
-            part_schemas = [part._vars]
+            part_schemas = [part.get("_vars")]
         case "Filter":
             filter_query: str = SQL_filter.filter_query(
                 part, schemas1, True
@@ -162,7 +173,7 @@ def build_increm_queries(
                 ),
                 filename_prefix="delta_",
             )
-            if project_query_join != None:
+            if project_query_join is not None:
                 write_query_to_output_dir(
                     output_dir,
                     project_query_join,
@@ -255,7 +266,7 @@ def build_increm_queries(
                 filename_prefix="delta_",
             )
             part_schemas = schemas1
-    if part_schemas == None:
+    if part_schemas is None:
         part_schemas = schemas1
     if part.name == "SelectQuery":
         nu_query = base_constructor.select_query(
@@ -297,9 +308,11 @@ def construct_minus_columns(part: CompValue) -> list[str]:
         list[str]: All values related to the minus operation
     """
     minus_columns: list[str] = []
-    for var in part.p1._vars:
+    for var in part.p1.get("_vars"):
         minus_columns.append(var)
-    for var in part.p2._vars.difference(part.p1._vars):
+    for var in part.p2.get("_vars").difference(
+        part.p1.get("_vars")
+    ):
         minus_columns.append(var)
     return minus_columns
 
@@ -321,9 +334,7 @@ def build_queries(
     # Construct the SQL query
     match part.name:
         case "BGP":
-            bgp_query, known_vars = SQL_bgp.bgp_table_query(
-                part
-            )
+            bgp_query, _ = SQL_bgp.bgp_table_query(part)
             bgp_query: str = (
                 SQL_Constructor.table_constructor.create_table_w_select(
                     SQL_Constructor.table_constructor.get_table_name(
@@ -339,7 +350,7 @@ def build_queries(
                     part
                 ),
             )
-            return [part._vars]
+            return [part.get("_vars")]
         case "Filter":
             filter_query: str = SQL_filter.filter_query(
                 part, schemas1
@@ -370,7 +381,7 @@ def build_queries(
                     part
                 ),
             )
-            if project_query_join != None:
+            if project_query_join is not None:
                 write_query_to_output_dir(
                     output_dir,
                     project_query_join,
