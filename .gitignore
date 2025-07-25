@@ -170,6 +170,7 @@ data/*
 database/*
 testing_query_folder/*
 temp_tests/*
+temptemp_tests/*
 
 # VS code
 .vscode/
