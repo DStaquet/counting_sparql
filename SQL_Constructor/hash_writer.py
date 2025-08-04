@@ -1,3 +1,10 @@
+"""Modules to import"""
+
+from os.path import join
+
+import json
+from rdflib.plugins.sparql.parserutils import CompValue
+
 from SQL_Constructor.operation_constructor.join_constructor import (
     join_schemas,
 )
@@ -7,20 +14,12 @@ from SQL_Constructor.operation_constructor.leftjoin_constructor import (
 from SQL_Constructor.operation_constructor.project_constructor import (
     project_schemas,
 )
-
-from rdflib.plugins.sparql.parserutils import CompValue
-
-
-from os.path import join
-
 from SQL_Constructor.operation_constructor.union_constructor import (
     union_schemas,
 )
 from SQL_Constructor.table_constructor import (
     __encode_table_name,
 )
-
-import json
 
 
 def serialize_to_json(part: CompValue | list[set]) -> str:
@@ -65,7 +64,9 @@ def write_hash_schemas(
     match part.name:
         case "Filter":
             with open(
-                join(output_dir, "hash_values.json"), "a"
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
             ) as hash_file:
                 hash_file.write(
                     '"schema_'
@@ -77,7 +78,9 @@ def write_hash_schemas(
                 return schemas1
         case "Project":
             with open(
-                join(output_dir, "hash_values.json"), "a"
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
             ) as hash_file:
                 project_schema = project_schemas(
                     part, schemas1
@@ -94,7 +97,9 @@ def write_hash_schemas(
                 return schemas1
         case "LeftJoin":
             with open(
-                join(output_dir, "hash_values.json"), "a"
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
             ) as hash_file:
                 if schemas2 is None:
                     raise ValueError(
@@ -115,7 +120,9 @@ def write_hash_schemas(
                 return leftjoin_schema
         case "Join":
             with open(
-                join(output_dir, "hash_values.json"), "a"
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
             ) as hash_file:
                 if schemas2 is None:
                     raise ValueError(
@@ -136,7 +143,9 @@ def write_hash_schemas(
                 return join_schema
         case "Minus":
             with open(
-                join(output_dir, "hash_values.json"), "a"
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
             ) as hash_file:
                 hash_file.write(
                     '"schema_'
@@ -148,7 +157,9 @@ def write_hash_schemas(
                 return schemas1
         case "Union":
             with open(
-                join(output_dir, "hash_values.json"), "a"
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
             ) as hash_file:
                 if schemas2 is None:
                     raise ValueError(
@@ -169,7 +180,9 @@ def write_hash_schemas(
                 return union_schema
         case "SelectQuery":
             with open(
-                join(output_dir, "hash_values.json"), "a"
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
             ) as hash_file:
                 hash_file.write(
                     '"schema_'
@@ -195,7 +208,9 @@ def setup_hash_values(
     """
     hash_value: str = __encode_table_name(part)
     with open(
-        join(output_dir, "hash_values.json"), "a"
+        join(output_dir, "hash_values.json"),
+        "a",
+        encoding="utf-8",
     ) as hash_file:
         json_part: str = serialize_to_json(part)
         hash_file.write(
@@ -211,23 +226,35 @@ def setup_hash_values(
             hash_file.write(
                 ',\n"schema_' + schema_name + '": '
             )
-            hash_file.write(serialize_to_json(part._vars))
+            hash_file.write(
+                serialize_to_json(part.get("_vars"))
+            )
             hash_file.write("\n")
             hash_file.write(",\n")
 
-            return [part._vars]
+            return [part.get("_vars")]
 
+    schemas1: list[set] | None = None
+    schemas2: list[set] | None = None
     if "p" in part:
         schemas1 = setup_hash_values(part.p, output_dir)
         schemas2 = None
     elif "p1" in part and "p2" in part:
         schemas1 = setup_hash_values(part.p1, output_dir)
         hash_file = open(
-            join(output_dir, "hash_values.json"), "a"
+            join(output_dir, "hash_values.json"),
+            "a",
+            encoding="utf-8",
         )
         hash_file.write(",\n")
         hash_file.close()
         schemas2 = setup_hash_values(part.p2, output_dir)
+
+    if schemas1 is None:
+        raise ValueError(
+            "Schemas1 cannot be None for the part: "
+            + part.name
+        )
 
     # BGP cannot have come to this part of the function
     return write_hash_schemas(
