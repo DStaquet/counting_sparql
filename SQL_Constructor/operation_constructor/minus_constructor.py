@@ -31,7 +31,7 @@ def minus_query(
         str: Query string for the minus operation.
     """
     diff_dict: dict[str, list[str]] = diff_query_sub(
-        part, schemas1, schemas2, True
+        part, (schemas1, schemas2), minus=True
     )
 
     all_minus_queries: str = ""

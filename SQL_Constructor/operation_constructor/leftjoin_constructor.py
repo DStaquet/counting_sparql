@@ -281,7 +281,7 @@ def left_join_query(
     )
     leftjoin_diff_dict: dict[str, list[str]] = (
         diff_query_sub(
-            part, schemas1, schemas2, append_schemas=True
+            part, (schemas1, schemas2), append_schemas=True
         )
     )
 
