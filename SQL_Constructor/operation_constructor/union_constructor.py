@@ -1,10 +1,10 @@
-from SQL_Constructor.base_constructor import (
-    __encode_schema_name,
-)
-
+"""Modules to import"""
 
 from rdflib.plugins.sparql.parserutils import CompValue
 
+from SQL_Constructor.base_constructor import (
+    __encode_schema_name,
+)
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
     __encode_table_name,
@@ -50,7 +50,7 @@ def __union_query_sub_same_schema(
     else:
         delta_prefix = ""
 
-    union_query: str = (
+    union_query_str: str = (
         "SELECT "
         + ", ".join(
             f"(CASE WHEN r1.{var} IS NOT NULL THEN r1.{var} ELSE r2.{var} END) AS {var}"
@@ -67,28 +67,28 @@ def __union_query_sub_same_schema(
         + sch2_suffix
         + " AS r2 ON "
     )
-    union_query += " AND ".join(
+    union_query_str += " AND ".join(
         f"r1.{var} = r2.{var}" for var in sorted(schema1)
     )
-    union_query += ";\n"
+    union_query_str += ";\n"
 
     if add_schemas:
         suffix = "_" + __encode_schema_name(
             str(sorted(schema1))
         )
-        union_query = create_table_w_select(
+        union_query_str = create_table_w_select(
             delta_prefix
             + __encode_table_name(part)
             + suffix,
-            union_query,
+            union_query_str,
         )
     else:
-        union_query = create_table_w_select(
+        union_query_str = create_table_w_select(
             delta_prefix + __encode_table_name(part),
-            union_query,
+            union_query_str,
         )
 
-    return union_query
+    return union_query_str
 
 
 def __union_query_sub(
@@ -122,7 +122,7 @@ def __union_query_sub(
         + ";\n"
     )
 
-    union_query = create_table_w_select(
+    union_query_str = create_table_w_select(
         delta_prefix
         + __encode_table_name(part)
         + "_"
@@ -130,13 +130,61 @@ def __union_query_sub(
         left_union_query,
     )
 
-    return union_query
+    return union_query_str
+
+
+def _union_query_mult_schema(
+    part: CompValue,
+    schemas1: list[set[str]],
+    schemas2: list[set[str]],
+    is_delta: bool,
+) -> str:
+    """Generates the union query for multiple schemas."""
+    all_queries: str = ""
+    already_seen: list[set[str]] = []
+    for sch1 in schemas1:
+        for sch2 in schemas2:
+            if sch1 == sch2:
+                all_queries += (
+                    __union_query_sub_same_schema(
+                        part,
+                        sch1,
+                        sch2,
+                        len(schemas1),
+                        len(schemas2),
+                        True,
+                        is_delta=is_delta,
+                    )
+                )
+                already_seen.append(sch1)
+    for sch1 in schemas1:
+        if sch1 in already_seen:
+            continue
+        all_queries += __union_query_sub(
+            part,
+            sch1,
+            __encode_table_name(part.p1),
+            True,
+            is_delta=is_delta,
+        )
+    for sch2 in schemas2:
+        if sch2 in already_seen:
+            continue
+        all_queries += __union_query_sub(
+            part,
+            sch2,
+            __encode_table_name(part.p2),
+            True,
+            is_delta=is_delta,
+        )
+
+    return all_queries
 
 
 def union_query(
     part: CompValue,
-    schemas1: list[set[str]] = [],
-    schemas2: list[set[str]] = [],
+    schemas1: list[set[str]] | None = None,
+    schemas2: list[set[str]] | None = None,
     is_delta: bool = False,
 ) -> str:
     """Generates the union query.
@@ -147,6 +195,11 @@ def union_query(
     Returns:
         str: Query string containing the union operation.
     """
+    if schemas1 is None:
+        schemas1 = []
+    if schemas2 is None:
+        schemas2 = []
+
     if len(schemas1) == 1 and len(schemas2) == 1:
         if schemas1[0] == schemas2[0]:
             return __union_query_sub_same_schema(
@@ -171,43 +224,10 @@ def union_query(
                 is_delta=is_delta,
             )
     else:
-        all_queries: str = ""
-        already_seen: list[set[str]] = []
-        for sch1 in schemas1:
-            for sch2 in schemas2:
-                if sch1 == sch2:
-                    all_queries += (
-                        __union_query_sub_same_schema(
-                            part,
-                            sch1,
-                            sch2,
-                            len(schemas1),
-                            len(schemas2),
-                            True,
-                            is_delta=is_delta,
-                        )
-                    )
-                    already_seen.append(sch1)
-        for sch1 in schemas1:
-            if sch1 in already_seen:
-                continue
-            all_queries += __union_query_sub(
-                part,
-                sch1,
-                __encode_table_name(part.p1),
-                True,
-                is_delta=is_delta,
-            )
-        for sch2 in schemas2:
-            if sch2 in already_seen:
-                continue
-            all_queries += __union_query_sub(
-                part,
-                sch2,
-                __encode_table_name(part.p2),
-                True,
-                is_delta=is_delta,
-            )
+        all_queries: str = _union_query_mult_schema(
+            part, schemas1, schemas2, is_delta
+        )
+
         return all_queries
 
 
