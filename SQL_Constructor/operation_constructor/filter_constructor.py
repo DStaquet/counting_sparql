@@ -1,7 +1,4 @@
-from SQL_Constructor.base_constructor import (
-    __encode_schema_name,
-)
-
+"""Modules to import"""
 
 from rdflib.plugins.sparql.parserutils import (
     CompValue,
@@ -9,6 +6,9 @@ from rdflib.plugins.sparql.parserutils import (
 )
 from rdflib.term import Literal
 
+from SQL_Constructor.base_constructor import (
+    __encode_schema_name,
+)
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
     __encode_table_name,
@@ -27,11 +27,11 @@ def filter_expr_part(
         str: Expression part for the filter query.
     """
     filter_expr = ""
-    if type(expr.expr) == Expr:
+    if isinstance(expr.expr, Expr):
         filter_expr += filter_expr_part(
             expr.expr, curr_schema
         )
-        for i in range(len(expr.other)):
+        for i, _ in enumerate(expr.other):
             filter_expr += " AND "
             filter_expr += filter_expr_part(
                 expr.other[i], curr_schema
@@ -54,7 +54,7 @@ def filter_expr_part(
     return filter_expr
 
 
-def __atLeastOneOverlap(
+def at_least_one_overlap(
     schema: set[str], expr_part: Expr
 ) -> bool:  # type: ignore
     """Checks if there is at least one schema that overlaps with the entire expression.
@@ -66,9 +66,9 @@ def __atLeastOneOverlap(
     Returns:
         bool: Checks if schemas overlap.
     """
-    if type(expr_part.expr) == Expr:
-        for i in range(len(expr_part.other)):
-            return False or __atLeastOneOverlap(
+    if isinstance(expr_part.expr, Expr):
+        for i, _ in enumerate(expr_part.other):
+            return False or at_least_one_overlap(
                 schema, expr_part.other[i]
             )
     else:
@@ -79,18 +79,18 @@ def __atLeastOneOverlap(
             )
             or (
                 (expr_part.expr in schema)
-                and (type(expr_part.other) == Literal)
+                and (isinstance(expr_part.other, Literal))
             )
             or (
                 (expr_part.other in schema)
-                and (type(expr_part.expr) == Literal)
+                and (isinstance(expr_part.expr, Literal))
             )
         )
 
 
 def filter_query(
     part: CompValue,
-    schemas: list[set] = [],
+    schemas: list[set] | None = None,
     is_delta: bool = False,
 ) -> str:
     """Generate filter query for the current part of the algebra.
@@ -103,6 +103,9 @@ def filter_query(
     Returns:
         str: Query string for the filter operation.
     """
+    if schemas is None:
+        schemas = []
+
     # Construct table name to pull from
     if is_delta:
         from_table = "delta_" + __encode_table_name(part.p)
@@ -116,13 +119,13 @@ def filter_query(
             "SELECT "
             + ", ".join(
                 var
-                for var in sorted(part._vars)
+                for var in sorted(part.get("_vars"))
                 if var != "k_count"
             )
             + ", k_count\nFROM "
             + from_table
         )
-        if __atLeastOneOverlap(schemas[0], part.expr):
+        if at_least_one_overlap(schemas[0], part.expr):
             filter_str_part = (
                 " \nWHERE "
                 + filter_expr_part(part.expr, schemas[0])
@@ -149,7 +152,7 @@ def filter_query(
                 + "_"
                 + schema_suffix
             )
-            if __atLeastOneOverlap(schema, part.expr):
+            if at_least_one_overlap(schema, part.expr):
                 filter_str_part = (
                     " \nWHERE "
                     + filter_expr_part(part.expr, schema)
@@ -166,31 +169,3 @@ def filter_query(
             )
 
     return filter_strs
-
-
-'''def delta_filter_query(
-    part: CompValue, schemas: list[set[str]] = []
-) -> str:
-    """Build up the incremental delta filter queries.
-
-    Args:
-        part (CompValue): Current part of the algebra
-
-    Returns:
-        str: Query string to get the results of the delta filter operation
-    """
-    table_name: str = "delta_" + __encode_table_name(part.p)
-    filter_str: str = (
-        "SELECT "
-        + ", ".join(
-            var
-            for var in sorted(part._vars)
-            if var != "k_count"
-        )
-        + ", k_count\nFROM "
-        + table_name
-        + " \nWHERE "
-        + filter_expr_part(part.expr, schemas[0])
-        + ";"
-    )
-    return filter_str'''
