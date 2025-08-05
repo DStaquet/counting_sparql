@@ -1,3 +1,13 @@
+"""Tests for the left join query constructor in SQL_Constructor.
+This module tests the functionality of generating left join queries
+and delta left join queries, ensuring that the SQL generated matches
+the expected output for various SPARQL queries."""
+
+from rdflib.term import Variable
+from sqlparse import format as sql_format
+from pytest import mark
+from duckdb import DuckDBPyConnection, connect
+
 from SQL_Constructor.operation_constructor.leftjoin_constructor import (
     left_join_query,
     delta_left_join_query,
@@ -10,13 +20,6 @@ from build_data import get_query_object
 from build_data import (
     readQueryFile,
 )
-
-from rdflib.plugins.sparql.parserutils import CompValue
-from rdflib.term import Variable
-from sqlparse import format
-from pytest import mark
-
-from duckdb import DuckDBPyConnection, connect
 
 
 @mark.parametrize(
@@ -56,7 +59,7 @@ def test_left_join_query(
     leftjoin_leaves = all_type_leaves(part, "LeftJoin")
 
     for leftjoin_leaf in reversed(leftjoin_leaves):
-        leftjoin_query: str = format(
+        leftjoin_query: str = sql_format(
             left_join_query(
                 leftjoin_leaf, schemas1, schemas2
             ),
@@ -64,7 +67,7 @@ def test_left_join_query(
             keyword_case="upper",
         )
 
-    with open(expected_sql) as f:
+    with open(expected_sql, encoding="utf-8") as f:
         expected_sql = f.read()
 
     assert leftjoin_query == expected_sql
@@ -120,29 +123,29 @@ def test_delta_left_join_query(
         delta_leftjoin_tuple = delta_left_join_query(
             leftjoin_leaf, schemas1, schemas2
         )
-        delta_leftjoin_query: str = format(
+        delta_leftjoin_query: str = sql_format(
             delta_leftjoin_tuple[0],
             reindent=True,
             keyword_case="upper",
         )
-        delta_leftjoin_join_query: str = format(
+        delta_leftjoin_join_query: str = sql_format(
             delta_leftjoin_tuple[1],
             reindent=True,
             keyword_case="upper",
         )
 
-    with open(expected_sql) as f:
+    with open(expected_sql, encoding="utf-8") as f:
         expected = f.read()
 
     assert delta_leftjoin_query == expected
 
-    with open(expected_sql_join) as f:
+    with open(expected_sql_join, encoding="utf-8") as f:
         expected_join = f.read()
 
     assert delta_leftjoin_join_query == expected_join
 
 
-def __dropLeftjoinTables(
+def _drop_leftjoin_tables(
     duckdb_conn: DuckDBPyConnection,
     leftjoin_name: str,
 ) -> None:
@@ -155,7 +158,7 @@ def __dropLeftjoinTables(
     )
 
 
-def __buildNoOverlapBGPs(
+def _build_no_overlap_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     duckdb_conn: DuckDBPyConnection,
@@ -177,7 +180,7 @@ def __buildNoOverlapBGPs(
     )
 
 
-def __buildOneOverlapBGPs(
+def _build_one_overlap_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     bgp_three_name: str,
@@ -206,7 +209,7 @@ def __buildOneOverlapBGPs(
     )
 
 
-def __buildBGPs(
+def _build_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     duckdb_conn: DuckDBPyConnection,
@@ -268,7 +271,7 @@ def test_leftjoin_query_output(
     leftjoin_leaves = all_type_leaves(part, "LeftJoin")
 
     for leftjoin_leaf in reversed(leftjoin_leaves):
-        leftjoin_query: str = format(
+        leftjoin_query: str = sql_format(
             left_join_query(
                 leftjoin_leaf, schemas1, schemas2
             ),
@@ -280,13 +283,13 @@ def test_leftjoin_query_output(
     duckdb_conn: DuckDBPyConnection = connect(database_name)
 
     # Create the tables
-    __buildBGPs(bgp_one_name, bgp_two_name, duckdb_conn)
+    _build_bgps(bgp_one_name, bgp_two_name, duckdb_conn)
 
     for leftjoin_table_name in [
         leftjoin_name_joined,
         leftjoin_name_not_joined,
     ]:
-        __dropLeftjoinTables(
+        _drop_leftjoin_tables(
             duckdb_conn, leftjoin_table_name
         )
     duckdb_conn.execute(leftjoin_query)
@@ -304,7 +307,7 @@ def test_leftjoin_query_output(
     assert result == expected_output_not_joined
 
 
-def __buildDeltaBGPs(
+def _build_delta_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     duckdb_conn: DuckDBPyConnection,
@@ -341,7 +344,7 @@ def __buildDeltaBGPs(
     )
 
 
-def __buildNoOverlapDeltaBGPs(
+def _build_no_overlap_delta_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     duckdb_conn: DuckDBPyConnection,
@@ -379,7 +382,7 @@ def __buildNoOverlapDeltaBGPs(
     )
 
 
-def __buildOnceOverlapDeltaBGPs(
+def _build_once_overlap_delta_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     bgp_three_name: str,
@@ -473,12 +476,12 @@ def test_leftjoin_query_output_delta(
         delta_leftjoin_tuple = delta_left_join_query(
             leftjoin_leaf, schemas1, schemas2
         )
-        delta_leftjoin_query: str = format(
+        delta_leftjoin_query: str = sql_format(
             delta_leftjoin_tuple[0],
             reindent=True,
             keyword_case="upper",
         )
-        delta_leftjoin_join_query: str = format(
+        delta_leftjoin_join_query: str = sql_format(
             delta_leftjoin_tuple[1],
             reindent=True,
             keyword_case="upper",
@@ -488,8 +491,8 @@ def test_leftjoin_query_output_delta(
     duckdb_conn: DuckDBPyConnection = connect(database_name)
 
     # Create the tables
-    __buildBGPs(bgp_one_name, bgp_two_name, duckdb_conn)
-    __buildDeltaBGPs(
+    _build_bgps(bgp_one_name, bgp_two_name, duckdb_conn)
+    _build_delta_bgps(
         bgp_one_name, bgp_two_name, duckdb_conn
     )
 
@@ -501,7 +504,7 @@ def test_leftjoin_query_output_delta(
             leftjoin_name_joined,
             leftjoin_name_not_joined,
         ]:
-            __dropLeftjoinTables(
+            _drop_leftjoin_tables(
                 duckdb_conn, leftjoin_table_name
             )
         duckdb_conn.execute(method)
@@ -524,7 +527,7 @@ def test_leftjoin_query_output_delta(
 
 
 @mark.parametrize(
-    "query_file,expected_output_joined,expected_output_not_joined,schemas1,schemas2,bgp_one_name,bgp_two_name,leftjoin_name_joined,leftjoin_name_not_joined,database_name",
+    "query_file,expected_output_joined,schemas1,schemas2,bgp_one_name,bgp_two_name,leftjoin_name_joined,leftjoin_name_not_joined,database_name",
     [
         (
             "SQL_Constructor/operation_constructor/tests/queries/leftjoin/leftjoin_1_schema_no_overlap.sparql",
@@ -534,7 +537,6 @@ def test_leftjoin_query_output_delta(
                 ("b", "f", 1),
                 ("e", "f", 1),
             ],
-            [],
             [{Variable("x")}],
             [{Variable("y")}],
             "BGP_5969360655464534899",
@@ -548,7 +550,6 @@ def test_leftjoin_query_output_delta(
 def test_leftjoin_query_output_delta_no_overlap(
     query_file: str,
     expected_output_joined,
-    expected_output_not_joined,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     bgp_one_name: str,
@@ -571,12 +572,12 @@ def test_leftjoin_query_output_delta_no_overlap(
         delta_leftjoin_tuple = delta_left_join_query(
             leftjoin_leaf, schemas1, schemas2
         )
-        delta_leftjoin_query: str = format(
+        delta_leftjoin_query: str = sql_format(
             delta_leftjoin_tuple[0],
             reindent=True,
             keyword_case="upper",
         )
-        delta_leftjoin_join_query: str = format(
+        delta_leftjoin_join_query: str = sql_format(
             delta_leftjoin_tuple[1],
             reindent=True,
             keyword_case="upper",
@@ -585,10 +586,10 @@ def test_leftjoin_query_output_delta_no_overlap(
     # Execute the query
     duckdb_conn: DuckDBPyConnection = connect(database_name)
 
-    __buildNoOverlapBGPs(
+    _build_no_overlap_bgps(
         bgp_one_name, bgp_two_name, duckdb_conn
     )
-    __buildNoOverlapDeltaBGPs(
+    _build_no_overlap_delta_bgps(
         bgp_one_name, bgp_two_name, duckdb_conn
     )
 
@@ -600,7 +601,7 @@ def test_leftjoin_query_output_delta_no_overlap(
             leftjoin_name_joined,
             leftjoin_name_not_joined,
         ]:
-            __dropLeftjoinTables(
+            _drop_leftjoin_tables(
                 duckdb_conn, leftjoin_table_name
             )
         duckdb_conn.execute(method)
@@ -612,14 +613,6 @@ def test_leftjoin_query_output_delta_no_overlap(
         assert sorted(result) == sorted(
             expected_output_joined
         )
-
-        """ # Check if the not joined output is correct
-        result = duckdb_conn.execute(
-            f"SELECT x, k_count FROM delta_{leftjoin_name_not_joined};"
-        ).fetchall()
-        assert sorted(result) == sorted(
-            expected_output_not_joined
-        ) """
 
 
 @mark.parametrize(
@@ -675,12 +668,12 @@ def test_leftjoin_query_output_delta_no_overlap_once(
         delta_leftjoin_tuple = delta_left_join_query(
             leftjoin_leaf, schemas1, schemas2
         )
-        delta_leftjoin_query: str = format(
+        delta_leftjoin_query: str = sql_format(
             delta_leftjoin_tuple[0],
             reindent=True,
             keyword_case="upper",
         )
-        delta_leftjoin_join_query: str = format(
+        delta_leftjoin_join_query: str = sql_format(
             delta_leftjoin_tuple[1],
             reindent=True,
             keyword_case="upper",
@@ -689,13 +682,13 @@ def test_leftjoin_query_output_delta_no_overlap_once(
     # Execute the query
     duckdb_conn: DuckDBPyConnection = connect(database_name)
 
-    __buildOneOverlapBGPs(
+    _build_one_overlap_bgps(
         bgp_one_name,
         bgp_two_name,
         bgp_three_name,
         duckdb_conn,
     )
-    __buildOnceOverlapDeltaBGPs(
+    _build_once_overlap_delta_bgps(
         bgp_one_name,
         bgp_two_name,
         bgp_three_name,
@@ -710,7 +703,7 @@ def test_leftjoin_query_output_delta_no_overlap_once(
             leftjoin_name_joined,
             leftjoin_name_not_joined,
         ]:
-            __dropLeftjoinTables(
+            _drop_leftjoin_tables(
                 duckdb_conn, leftjoin_table_name
             )
         duckdb_conn.execute(method)

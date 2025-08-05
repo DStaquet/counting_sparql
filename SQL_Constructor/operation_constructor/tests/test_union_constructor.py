@@ -1,3 +1,12 @@
+"""Test cases for the union constructor in SQL_Constructor.
+These tests ensure that the union queries are generated correctly and that they produce the
+expected SQL output."""
+
+from pytest import mark
+from rdflib.term import Variable
+from sqlparse import format as sql_format
+from duckdb import DuckDBPyConnection, connect
+
 from SQL_Constructor.operation_constructor.union_constructor import (
     union_query,
     delta_union_query,
@@ -6,16 +15,7 @@ from SQL_Constructor.operation_constructor.tests.base_functions import (
     reset_seed,
     all_type_leaves,
 )
-from build_data import get_query_object
-from build_data import (
-    readQueryFile,
-)
-
-from pytest import mark
-from rdflib.term import Variable
-from sqlparse import format
-
-from duckdb import DuckDBPyConnection, connect
+from build_data import get_query_object, readQueryFile
 
 
 @mark.parametrize(
@@ -64,13 +64,13 @@ def test_union_query(
         union_query_str = union_query(
             union, schemas1, schemas2
         )
-        union_queries = format(
+        union_queries = sql_format(
             union_query_str,
             reindent=True,
             keyword_case="upper",
         )
 
-    with open(expected_sql, "r") as f:
+    with open(expected_sql, "r", encoding="utf-8") as f:
         expected_sql = f.read()
 
     assert union_queries == expected_sql
@@ -122,19 +122,19 @@ def test_delta_union_query(
         union_query_str = delta_union_query(
             union, schemas1, schemas2
         )
-        union_queries = format(
+        union_queries = sql_format(
             union_query_str,
             reindent=True,
             keyword_case="upper",
         )
 
-    with open(expected_sql, "r") as f:
+    with open(expected_sql, "r", encoding="utf-8") as f:
         expected_sql = f.read()
 
     assert union_queries == expected_sql
 
 
-def __dropUnionTables(
+def _drop_union_tables(
     duckdb_conn: DuckDBPyConnection,
     union_name_first: str,
     union_name_second: str = "",
@@ -155,7 +155,7 @@ def __dropUnionTables(
         )
 
 
-def __buildBGPs(
+def _build_bgps(
     bgp_name_one: str,
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
@@ -176,7 +176,7 @@ def __buildBGPs(
     )
 
 
-def __buildOverlapBGPs(
+def _build_overlap_bgps(
     bgp_name_one: str,
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
@@ -244,7 +244,7 @@ def test_union_query_output_no_overlap(
         union_query_str = union_query(
             union, schemas1, schemas2
         )
-        union_queries = format(
+        union_queries = sql_format(
             union_query_str,
             reindent=True,
             keyword_case="upper",
@@ -254,10 +254,10 @@ def test_union_query_output_no_overlap(
     duckdb_conn = connect(database_name)
 
     # Build the BGPs
-    __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
+    _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
 
     # Drop the union tables
-    __dropUnionTables(
+    _drop_union_tables(
         duckdb_conn, union_name_first, union_name_second
     )
 
@@ -326,7 +326,7 @@ def test_union_query_output_overlap(
         union_query_str = union_query(
             union, schemas1, schemas2
         )
-        union_queries = format(
+        union_queries = sql_format(
             union_query_str,
             reindent=True,
             keyword_case="upper",
@@ -336,12 +336,12 @@ def test_union_query_output_overlap(
     duckdb_conn = connect(database_name)
 
     # Build the BGPs
-    __buildOverlapBGPs(
+    _build_overlap_bgps(
         bgp_name_one, bgp_name_two, duckdb_conn
     )
 
     # Drop the union tables
-    __dropUnionTables(duckdb_conn, union_name)
+    _drop_union_tables(duckdb_conn, union_name)
 
     # Execute the query
     duckdb_conn.execute(union_queries)
@@ -354,7 +354,7 @@ def test_union_query_output_overlap(
     assert sorted(result) == sorted(expected_output)
 
 
-def __buildDeltaBGPs(
+def _build_delta_bgps(
     bgp_name_one: str,
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
@@ -435,7 +435,7 @@ def test_union_query_output_delta(
         union_query_str = delta_union_query(
             union, schemas1, schemas2
         )
-        union_queries = format(
+        union_queries = sql_format(
             union_query_str,
             reindent=True,
             keyword_case="upper",
@@ -445,13 +445,13 @@ def test_union_query_output_delta(
     duckdb_conn = connect(database_name)
 
     # Build the BGPs
-    __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
-    __buildDeltaBGPs(
+    _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
+    _build_delta_bgps(
         bgp_name_one, bgp_name_two, duckdb_conn
     )
 
     # Drop the union tables
-    __dropUnionTables(
+    _drop_union_tables(
         duckdb_conn, union_name_first, union_name_second
     )
 
@@ -476,7 +476,7 @@ def test_union_query_output_delta(
     )
 
 
-def __buildOverlapDeltaBGPs(
+def _build_overlap_delta_bgps(
     bgp_name_one: str,
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
@@ -558,7 +558,7 @@ def test_union_query_output_overlap_delta(
         union_query_str = delta_union_query(
             union, schemas1, schemas2
         )
-        union_queries = format(
+        union_queries = sql_format(
             union_query_str,
             reindent=True,
             keyword_case="upper",
@@ -568,15 +568,15 @@ def test_union_query_output_overlap_delta(
     duckdb_conn = connect(database_name)
 
     # Build the BGPs
-    __buildOverlapBGPs(
+    _build_overlap_bgps(
         bgp_name_one, bgp_name_two, duckdb_conn
     )
-    __buildOverlapDeltaBGPs(
+    _build_overlap_delta_bgps(
         bgp_name_one, bgp_name_two, duckdb_conn
     )
 
     # Drop the union tables
-    __dropUnionTables(duckdb_conn, union_name)
+    _drop_union_tables(duckdb_conn, union_name)
 
     # Execute the query
     duckdb_conn.execute(union_queries)

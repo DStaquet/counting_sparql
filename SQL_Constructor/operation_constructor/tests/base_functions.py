@@ -1,12 +1,13 @@
-from rdflib.plugins.sparql.parserutils import CompValue
+"""Modules to import"""
 
-from duckdb import DuckDBPyConnection, connect
+import os
+import sys
+
+from rdflib.plugins.sparql.parserutils import CompValue
 
 
 def reset_seed():
     """Resets the hashing seed to have deterministic results."""
-    import os
-    import sys
 
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:

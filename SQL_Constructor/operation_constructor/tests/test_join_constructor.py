@@ -1,3 +1,10 @@
+"""Tests for the join constructor."""
+
+from rdflib.term import Variable
+from sqlparse import format as sql_format
+from pytest import mark
+from duckdb import DuckDBPyConnection, connect
+
 from SQL_Constructor.operation_constructor.join_constructor import (
     join_query_str_constr,
     delta_join_queries_part_func,
@@ -11,13 +18,6 @@ from build_data import get_query_object
 from build_data import (
     readQueryFile,
 )
-
-from rdflib.plugins.sparql.parserutils import CompValue
-from rdflib.term import Variable
-from sqlparse import format
-from pytest import mark
-
-from duckdb import DuckDBPyConnection, connect
 
 
 @mark.parametrize(
@@ -78,20 +78,20 @@ def test_join_query(
             schemas2,
         )
         if isinstance(join_query_tuple, tuple):
-            join_queries += format(
+            join_queries += sql_format(
                 join_query_tuple[0],
                 reindent=True,
                 keyword_case="upper",
             )
         else:
-            join_queries += format(
+            join_queries += sql_format(
                 join_query_tuple,
                 reindent=True,
                 keyword_case="upper",
             )
 
     # Read the expected SQL query
-    with open(expected_sql, "r") as f:
+    with open(expected_sql, "r", encoding="utf-8") as f:
         expected_sql_str = f.read()
 
     # Compare the expected SQL query with the generated SQL query
@@ -151,21 +151,21 @@ def test_delta_join_query(
             schemas1,
             schemas2,
         )
-        join_queries += format(
+        join_queries += sql_format(
             join_query,
             reindent=True,
             keyword_case="upper",
         )
 
     # Read the expected SQL query
-    with open(expected_sql, "r") as f:
+    with open(expected_sql, "r", encoding="utf-8") as f:
         expected_sql_str = f.read()
 
     # Compare the expected SQL query with the generated SQL query
     assert join_queries == expected_sql_str
 
 
-def __constructBGPs(
+def _construct_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     duckdb_conn: DuckDBPyConnection,
@@ -186,7 +186,7 @@ def __constructBGPs(
     )
 
 
-def __dropJoinTables(
+def _drop_join_tables(
     join_table_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -248,13 +248,13 @@ def test_join_query_output(
             schemas2,
         )
         if isinstance(join_query_tuple, tuple):
-            join_queries += format(
+            join_queries += sql_format(
                 join_query_tuple[0],
                 reindent=True,
                 keyword_case="upper",
             )
         else:
-            join_queries += format(
+            join_queries += sql_format(
                 join_query_tuple,
                 reindent=True,
                 keyword_case="upper",
@@ -264,9 +264,9 @@ def test_join_query_output(
     duckdb_conn: DuckDBPyConnection = connect(database_name)
 
     # Constructs the BGPs for the join query
-    __constructBGPs(bgp_one, bgp_two, duckdb_conn)
+    _construct_bgps(bgp_one, bgp_two, duckdb_conn)
     # Drops the join table
-    __dropJoinTables(join_name, duckdb_conn)
+    _drop_join_tables(join_name, duckdb_conn)
 
     # Execute the join query
     duckdb_conn.execute(join_queries)
@@ -278,7 +278,7 @@ def test_join_query_output(
     assert result == expected_output
 
 
-def __constructDeltaBGPs(
+def _construct_delta_bgps(
     bgp_one_name: str,
     bgp_two_name: str,
     duckdb_conn: DuckDBPyConnection,
@@ -358,7 +358,7 @@ def test_join_query_delta(
             schemas1,
             schemas2,
         )
-        join_queries += format(
+        join_queries += sql_format(
             join_query,
             reindent=True,
             keyword_case="upper",
@@ -368,10 +368,10 @@ def test_join_query_delta(
     duckdb_conn: DuckDBPyConnection = connect(database_name)
 
     # Constructs the BGPs for the join query
-    __constructBGPs(bgp_one, bgp_two, duckdb_conn)
-    __constructDeltaBGPs(bgp_one, bgp_two, duckdb_conn)
+    _construct_bgps(bgp_one, bgp_two, duckdb_conn)
+    _construct_delta_bgps(bgp_one, bgp_two, duckdb_conn)
     # Drops the join table
-    __dropJoinTables(join_name, duckdb_conn)
+    _drop_join_tables(join_name, duckdb_conn)
 
     # Execute the join query
     duckdb_conn.execute(join_queries)

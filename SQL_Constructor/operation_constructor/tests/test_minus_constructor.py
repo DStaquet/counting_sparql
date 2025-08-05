@@ -1,3 +1,14 @@
+"""Tests for the minus constructor in SQL_Constructor.
+This file contains unit tests for the minus query generation and execution.
+It includes tests for both standard minus queries and delta minus queries.
+"""
+
+from rdflib.plugins.sparql.parserutils import CompValue
+from rdflib.term import Variable
+from sqlparse import format as sql_format
+from pytest import mark
+from duckdb import DuckDBPyConnection, connect
+
 from SQL_Constructor.operation_constructor.minus_constructor import (
     minus_query,
     delta_minus_query,
@@ -5,22 +16,11 @@ from SQL_Constructor.operation_constructor.minus_constructor import (
 from SQL_Constructor.operation_constructor.tests.base_functions import (
     all_type_leaves,
     reset_seed,
-    connect,
-    DuckDBPyConnection,
 )
 from build_data import get_query_object
 from build_data import (
     readQueryFile,
 )
-
-from rdflib.plugins.sparql.parserutils import CompValue
-from rdflib.term import Variable
-from sqlparse import format
-from pytest import mark
-
-from pandas import DataFrame
-from pandas.testing import assert_frame_equal
-from numpy import array
 
 
 @mark.parametrize(
@@ -104,40 +104,16 @@ def test_minus_query(
             minus, schemas1, schemas2
         )
 
-        minus_queries += format(
+        minus_queries += sql_format(
             current_query,
             reindent=True,
             keyword_case="upper",
         )
 
-    with open(expected_sql) as f:
+    with open(expected_sql, encoding="utf-8") as f:
         sql_queries = f.read()
 
     assert minus_queries == sql_queries
-
-    """ (
-    "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas.sparql",
-    "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta.sql",
-    "SQL_Constructor/operation_constructor/tests/queries/minus/minus_4_schemas_delta_join.sql",
-    [
-        {
-            Variable("x"),
-        },
-        {
-            Variable("y"),
-        },
-    ],
-    [
-        {
-            Variable("x"),
-            Variable("y"),
-        },
-        {
-            Variable("x"),
-            Variable("z"),
-        },
-    ],
-    ), """
 
 
 @mark.parametrize(
@@ -203,29 +179,29 @@ def test_delta_minus_query(
             delta_minus_query(minus, schemas1, schemas2)
         )
 
-        minus_queries += format(
+        minus_queries += sql_format(
             current_query,
             reindent=True,
             keyword_case="upper",
         )
 
-        minus_queries_join += format(
+        minus_queries_join += sql_format(
             current_join_query,
             reindent=True,
             keyword_case="upper",
         )
 
-    with open(expected_sql) as f:
+    with open(expected_sql, encoding="utf-8") as f:
         sql_queries = f.read()
 
-    with open(expected_sql_join) as f:
+    with open(expected_sql_join, encoding="utf-8") as f:
         sql_join_queries = f.read()
 
     assert minus_queries == sql_queries
     assert minus_queries_join == sql_join_queries
 
 
-def __buildBGPs(
+def _build_bgps(
     bgp_name_one: str,
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
@@ -262,7 +238,7 @@ def __buildBGPs(
     )
 
 
-def __build2SchemaExtraBGPs(
+def _build_2_schema_extra_bgps(
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -335,7 +311,7 @@ def test_minus_output(
             minus, schemas1, schemas2
         )
 
-        minus_queries += format(
+        minus_queries += sql_format(
             current_query,
             reindent=True,
             keyword_case="upper",
@@ -345,18 +321,18 @@ def test_minus_output(
     duckdb_conn = connect(database)
 
     # Build the BGPs
-    if type(bgp_name_two) == str:
-        __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
+    if isinstance(bgp_name_two, str):
+        _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
     else:
-        __buildBGPs(
+        _build_bgps(
             bgp_name_one, bgp_name_two[0], duckdb_conn
         )
-        __build2SchemaExtraBGPs(
+        _build_2_schema_extra_bgps(
             bgp_name_two[1], duckdb_conn
         )
 
     # Drop the minus table
-    __dropMinusTables(minus_table, duckdb_conn)
+    _drop_minus_tables(minus_table, duckdb_conn)
 
     # Execute the query
     duckdb_conn.execute(minus_queries)
@@ -370,7 +346,7 @@ def test_minus_output(
     assert values == expected_output
 
 
-def __buildDeltaBGPs(
+def _build_delta_bgps(
     bgp_name_one: str,
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
@@ -435,7 +411,7 @@ def __buildDeltaBGPs(
     )
 
 
-def __build2SchemaExtraDeltaBGPs(
+def _build_2_schema_extra_delta_bgps(
     bgp_name_two: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -463,7 +439,7 @@ def __build2SchemaExtraDeltaBGPs(
     )
 
 
-def __dropMinusTables(
+def _drop_minus_tables(
     minus_table: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -533,13 +509,13 @@ def test_minus_delta_output(
             delta_minus_query(minus, schemas1, schemas2)
         )
 
-        minus_queries += format(
+        minus_queries += sql_format(
             current_query,
             reindent=True,
             keyword_case="upper",
         )
 
-        minus_queries_join += format(
+        minus_queries_join += sql_format(
             current_join_query,
             reindent=True,
             keyword_case="upper",
@@ -548,31 +524,31 @@ def test_minus_delta_output(
     # Connect to the database
     duckdb_conn = connect(database)
 
-    if type(bgp_name_two) == str:
+    if isinstance(bgp_name_two, str):
         # Build the BGPs
-        __buildBGPs(bgp_name_one, bgp_name_two, duckdb_conn)
+        _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
         # Build the delta BGPs
-        __buildDeltaBGPs(
+        _build_delta_bgps(
             bgp_name_one, bgp_name_two, duckdb_conn
         )
     else:
         # Build the BGPs
-        __buildBGPs(
+        _build_bgps(
             bgp_name_one, bgp_name_two[0], duckdb_conn
         )
-        __build2SchemaExtraBGPs(
+        _build_2_schema_extra_bgps(
             bgp_name_two[1], duckdb_conn
         )
         # Build the delta BGPs
-        __buildDeltaBGPs(
+        _build_delta_bgps(
             bgp_name_one, bgp_name_two[0], duckdb_conn
         )
-        __build2SchemaExtraDeltaBGPs(
+        _build_2_schema_extra_delta_bgps(
             bgp_name_two[1], duckdb_conn
         )
 
     # Drop the minus tables
-    __dropMinusTables(minus_table, duckdb_conn)
+    _drop_minus_tables(minus_table, duckdb_conn)
 
     # Execute the query
     duckdb_conn.execute(minus_queries)

@@ -1,3 +1,10 @@
+"""Modules to import"""
+
+from rdflib.term import Variable
+from pytest import mark
+from sqlparse import format as sql_format
+from duckdb import DuckDBPyConnection, connect
+
 from SQL_Constructor.operation_constructor.filter_constructor import (
     filter_query,
 )
@@ -9,12 +16,6 @@ from build_data import get_query_object
 from build_data import (
     readQueryFile,
 )
-
-from rdflib.term import Variable
-from pytest import mark
-from sqlparse import format
-
-from duckdb import DuckDBPyConnection, connect
 
 
 @mark.parametrize(
@@ -67,12 +68,12 @@ def test_filter_query(
     filter_queries: str = ""
     delta_filter_queries: str = ""
     for filter_leaf in reversed(filter_leaves):
-        filter_queries += format(
+        filter_queries += sql_format(
             filter_query(filter_leaf, schemas),
             reindent=True,
             uppercase=True,
         )
-        delta_filter_queries += format(
+        delta_filter_queries += sql_format(
             filter_query(
                 filter_leaf, schemas, is_delta=True
             ),
@@ -80,16 +81,16 @@ def test_filter_query(
             uppercase=True,
         )
 
-    with open(expected_sql) as f:
+    with open(expected_sql, encoding="utf-8") as f:
         sql_queries = f.read()
-    with open(expected_delta) as f:
+    with open(expected_delta, encoding="utf-8") as f:
         delta_sql_queries = f.read()
 
     assert filter_queries == sql_queries
     assert delta_filter_queries == delta_sql_queries
 
 
-def __constructBGPs(
+def _construct_bgps(
     bgp_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -102,7 +103,7 @@ def __constructBGPs(
     )
 
 
-def __dropFilterTables(
+def _drop_filter_tables(
     filter_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -115,7 +116,7 @@ def __dropFilterTables(
     )
 
 
-def __constructDeltaBGPs(
+def _construct_delta_bgps(
     bgp_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -164,12 +165,12 @@ def test_filter_query_output(
     filter_queries: str = ""
     delta_filter_queries: str = ""
     for filter_leaf in reversed(filter_leaves):
-        filter_queries += format(
+        filter_queries += sql_format(
             filter_query(filter_leaf, schemas),
             reindent=True,
             uppercase=True,
         )
-        delta_filter_queries += format(
+        delta_filter_queries += sql_format(
             filter_query(
                 filter_leaf, schemas, is_delta=True
             ),
@@ -181,11 +182,11 @@ def test_filter_query_output(
     duckdb_conn = connect(database_name)
 
     # Construct the BGP tables
-    __constructBGPs(bgp_name, duckdb_conn)
-    __constructDeltaBGPs(bgp_name, duckdb_conn)
+    _construct_bgps(bgp_name, duckdb_conn)
+    _construct_delta_bgps(bgp_name, duckdb_conn)
 
     # Drop the filter tables
-    __dropFilterTables(filter_name, duckdb_conn)
+    _drop_filter_tables(filter_name, duckdb_conn)
 
     # Execute the filter queries
     duckdb_conn.execute(filter_queries)

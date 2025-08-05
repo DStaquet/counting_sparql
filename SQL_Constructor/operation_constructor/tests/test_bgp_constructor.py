@@ -1,27 +1,26 @@
-from SQL_Constructor.operation_constructor.bgp_constructor import (
-    bgp_table_query,
-    delta_bgp_queries,
-)
-from SQL_Constructor.table_constructor import get_table_name
-from build_data import get_query_object
-from build_data import (
-    readQueryFile,
-)
-from SQL_Constructor.table_constructor import (
-    create_table_w_select,
-)
-from SQL_Constructor.operation_constructor.tests.base_functions import (
-    all_type_leaves,
-    reset_seed,
-)
+"""Modules to import"""
 
 from pytest import mark
 
 from rdflib.plugins.sparql.parserutils import CompValue
 
-from sqlparse import format
+from sqlparse import format as sql_format
 
 from duckdb import DuckDBPyConnection, connect
+
+from SQL_Constructor.operation_constructor.bgp_constructor import (
+    bgp_table_query,
+    delta_bgp_queries,
+)
+from SQL_Constructor.operation_constructor.tests.base_functions import (
+    all_type_leaves,
+    reset_seed,
+)
+from SQL_Constructor.table_constructor import (
+    get_table_name,
+    create_table_w_select,
+)
+from build_data import readQueryFile, get_query_object
 
 
 @mark.parametrize(
@@ -60,14 +59,14 @@ def test_bgp_table_query(
     for bgp in reversed(bgp_leaves):
         current_query, _ = bgp_table_query(bgp)
 
-        bgp_queries += format(
+        bgp_queries += sql_format(
             create_table_w_select(
                 get_table_name(bgp), current_query
             ),
             reindent=True,
         )
 
-    with open(expected_sql) as f:
+    with open(expected_sql, encoding="utf-8") as f:
         expected_query = f.read()
 
     assert bgp_queries == expected_query
@@ -117,29 +116,29 @@ def test_bgp_table_delta_query(
             delta_bgp_queries(bgp)
         )
 
-        bgp_queries += format(
+        bgp_queries += sql_format(
             current_query,
             reindent=True,
             keyword_case="upper",
         )
 
-        bgp_join_queries += format(
+        bgp_join_queries += sql_format(
             current_join_query,
             reindent=True,
         )
 
-    with open(expected_sql) as f:
+    with open(expected_sql, encoding="utf-8") as f:
         expected_query = f.read()
 
     assert bgp_queries == expected_query
 
-    with open(expected_join_sql) as f:
+    with open(expected_join_sql, encoding="utf-8") as f:
         expected_join_query = f.read()
 
     assert bgp_join_queries == expected_join_query
 
 
-def __constructBaseGraph(
+def _construct_base_graph(
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Constructs the G graph table in the database."""
@@ -151,7 +150,7 @@ def __constructBaseGraph(
     )
 
 
-def __dropBGPTables(
+def _drop_bgp_tables(
     bgp_name: str, duckdb_conn: DuckDBPyConnection
 ) -> None:
     """Drops the tables created by the BGP query."""
@@ -161,7 +160,7 @@ def __dropBGPTables(
     )
 
 
-def __constructDeltaBaseGraph(
+def _construct_delta_base_graph(
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Constructs the delta_G graph table in the database."""
@@ -212,7 +211,7 @@ def test_bgp_query_output(
 
     for bgp in bgp_leaves:
         current_query, _ = bgp_table_query(bgp)
-        curr_bgp_query = format(
+        curr_bgp_query = sql_format(
             create_table_w_select(
                 get_table_name(bgp), current_query
             ),
@@ -220,9 +219,9 @@ def test_bgp_query_output(
         )
 
         with connect(database) as con:
-            __constructBaseGraph(con)
+            _construct_base_graph(con)
 
-            __dropBGPTables(get_table_name(bgp), con)
+            _drop_bgp_tables(get_table_name(bgp), con)
             con.execute(curr_bgp_query)
 
             result = con.execute(
@@ -266,10 +265,10 @@ def test_bgp_query_output_delta(
         current_query, _ = delta_bgp_queries(bgp)
 
         with connect(database) as con:
-            __constructBaseGraph(con)
-            __constructDeltaBaseGraph(con)
+            _construct_base_graph(con)
+            _construct_delta_base_graph(con)
 
-            __dropBGPTables(get_table_name(bgp), con)
+            _drop_bgp_tables(get_table_name(bgp), con)
             con.execute(current_query)
 
             result = con.execute(

@@ -1,3 +1,13 @@
+"""Test cases for the project query and delta project query functions in the SQL Constructor module.
+These tests ensure that the project queries are generated correctly and that they produce the
+expected SQL output.
+"""
+
+from pytest import mark
+from rdflib.term import Variable
+from sqlparse import format as sql_format
+from duckdb import DuckDBPyConnection, connect
+
 from SQL_Constructor.operation_constructor.project_constructor import (
     project_query,
     delta_project_query,
@@ -6,16 +16,7 @@ from SQL_Constructor.operation_constructor.tests.base_functions import (
     reset_seed,
     all_type_leaves,
 )
-from build_data import get_query_object
-from build_data import (
-    readQueryFile,
-)
-
-from pytest import mark
-from rdflib.term import Variable
-from sqlparse import format
-
-from duckdb import DuckDBPyConnection, connect
+from build_data import readQueryFile, get_query_object
 
 
 @mark.parametrize(
@@ -57,20 +58,20 @@ def test_project_query(
         )
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
-            project_queries_formatted: str = format(
+            project_queries_formatted: str = sql_format(
                 project_query_curr,
                 reindent=True,
                 keyword_case="upper",
             )
             project_queries += project_queries_formatted
         else:
-            project_queries += format(
+            project_queries += sql_format(
                 project_query_tuple,
                 reindent=True,
                 keyword_case="upper",
             )
 
-    with open(expected_sql, "r") as f:
+    with open(expected_sql, "r", encoding="utf-8") as f:
         expected = f.read()
 
     assert project_queries == expected
@@ -115,26 +116,26 @@ def test_delta_project_query(
         )
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
-            project_queries_formatted: str = format(
+            project_queries_formatted: str = sql_format(
                 project_query_curr,
                 reindent=True,
                 keyword_case="upper",
             )
             project_queries += project_queries_formatted
         else:
-            project_queries += format(
+            project_queries += sql_format(
                 project_query_tuple,
                 reindent=True,
                 keyword_case="upper",
             )
 
-    with open(expected_sql, "r") as f:
+    with open(expected_sql, "r", encoding="utf-8") as f:
         expected = f.read()
 
     assert project_queries == expected
 
 
-def __dropProjectTables(
+def _drop_project_tables(
     project_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -147,7 +148,7 @@ def __dropProjectTables(
     )
 
 
-def __constructDeltaBGP(
+def _construct_delta_bgp(
     bgp_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -160,7 +161,7 @@ def __constructDeltaBGP(
     )
 
 
-def __constructBGP(
+def _construct_bgp(
     bgp_name: str,
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
@@ -210,14 +211,14 @@ def test_project_query_output(
         )
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
-            project_queries_formatted: str = format(
+            project_queries_formatted: str = sql_format(
                 project_query_curr,
                 reindent=True,
                 keyword_case="upper",
             )
             project_queries += project_queries_formatted
         else:
-            project_queries += format(
+            project_queries += sql_format(
                 project_query_tuple,
                 reindent=True,
                 keyword_case="upper",
@@ -227,10 +228,10 @@ def test_project_query_output(
     duckb_conn = connect(database)
 
     # Construct the BGP tables
-    __constructBGP(bgp_name, duckb_conn)
+    _construct_bgp(bgp_name, duckb_conn)
 
     # Drop the project tables
-    __dropProjectTables(project_name, duckb_conn)
+    _drop_project_tables(project_name, duckb_conn)
 
     # Execute the project query
     duckb_conn.execute(project_queries)
@@ -279,7 +280,7 @@ def test_project_query_delta_output(
         )
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
-            project_queries_formatted: str = format(
+            project_queries_formatted: str = sql_format(
                 project_query_curr,
                 reindent=True,
                 keyword_case="upper",
@@ -288,7 +289,7 @@ def test_project_query_delta_output(
                 project_queries_formatted
             )
         else:
-            delta_project_queries += format(
+            delta_project_queries += sql_format(
                 project_query_tuple,
                 reindent=True,
                 keyword_case="upper",
@@ -298,11 +299,11 @@ def test_project_query_delta_output(
     duckb_conn = connect(database)
 
     # Construct the BGP tables
-    __constructBGP(bgp_name, duckb_conn)
-    __constructDeltaBGP(bgp_name, duckb_conn)
+    _construct_bgp(bgp_name, duckb_conn)
+    _construct_delta_bgp(bgp_name, duckb_conn)
 
     # Drop the project tables
-    __dropProjectTables(project_name, duckb_conn)
+    _drop_project_tables(project_name, duckb_conn)
 
     # Execute the project query
     duckb_conn.execute(delta_project_queries)
