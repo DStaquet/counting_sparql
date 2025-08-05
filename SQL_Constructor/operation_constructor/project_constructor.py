@@ -1,13 +1,13 @@
+"""Modules to import"""
+
+from rdflib.plugins.sparql.parserutils import CompValue
+
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
     add_table_to_dict,
     make_group_by,
     make_join,
 )
-
-
-from rdflib.plugins.sparql.parserutils import CompValue
-
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
     __encode_table_name,
@@ -48,7 +48,7 @@ def double_schemas(
         list[set[str]]: Double schemas list
     """
     already_seen_projection_schemas = list()
-    double_schemas = list()
+    double_schemas_list = list()
     for schema in schemas1:
         for new_schema in new_schemas:
             projected_schema = schema.intersection(
@@ -62,8 +62,8 @@ def double_schemas(
                     projected_schema
                 )
             else:
-                double_schemas.append(projected_schema)
-    return double_schemas
+                double_schemas_list.append(projected_schema)
+    return double_schemas_list
 
 
 def __projected_variables(schema: set[str]) -> str:
@@ -71,11 +71,11 @@ def __projected_variables(schema: set[str]) -> str:
     return ", ".join(var for var in sorted(schema)) + ", "
 
 
-def __projectPVToSchema(
-    PV: set[str], schema: set[str]
+def _project_pv_to_schema(
+    pv: set[str], schema: set[str]
 ) -> set[str]:
     """Projects the PV to the schema."""
-    return PV.intersection(schema)
+    return pv.intersection(schema)
 
 
 def __construct_project_str_one_schema(
@@ -90,7 +90,7 @@ def __construct_project_str_one_schema(
     Returns:
         str: The string for the projection
     """
-    projected_schema = __projectPVToSchema(
+    projected_schema = _project_pv_to_schema(
         set(part.PV), schema
     )
     if projected_schema:
@@ -121,7 +121,7 @@ def __construct_project_str_one_schema(
     return project_str
 
 
-def __constructProjectStrMultSchema(
+def _construct_project_str_mult_schema(
     part: CompValue,
     schemas: list[set[str]],
     from_table_name: str,
@@ -141,7 +141,7 @@ def __constructProjectStrMultSchema(
     projection_dict: dict[str, list[str]] = dict()
 
     for schema in schemas:
-        projected_schema = __projectPVToSchema(
+        projected_schema = _project_pv_to_schema(
             set(part.PV), schema
         )
 
@@ -190,7 +190,7 @@ def __constructProjectStrMultSchema(
 
 def project_query(
     part: CompValue,
-    schemas1: list[set[str]] = [],
+    schemas1: list[set[str]] | None = None,
     is_delta: bool = False,
 ) -> tuple[str, str] | str:
     """Generate project query for the current part of the algebra.
@@ -202,6 +202,9 @@ def project_query(
     Returns:
         str: Query string for the project operation.
     """
+    if schemas1 is None:
+        schemas1 = []
+
     if is_delta:
         from_table_name = "delta_" + __encode_table_name(
             part.p
@@ -227,7 +230,7 @@ def project_query(
         )
     else:
         project_dict: dict[str, list[str]] = (
-            __constructProjectStrMultSchema(
+            _construct_project_str_mult_schema(
                 part,
                 schemas1,
                 from_table_name,
