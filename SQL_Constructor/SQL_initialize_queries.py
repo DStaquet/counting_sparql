@@ -414,11 +414,13 @@ def build_queries(
         case "Join":
             join_query_tuple = SQL_join.join_query_str_constr(
                 part,
-                SQL_Constructor.table_constructor.get_table_name(
-                    part.p1
-                ),
-                SQL_Constructor.table_constructor.get_table_name(
-                    part.p2
+                (
+                    SQL_Constructor.table_constructor.get_table_name(
+                        part.p1
+                    ),
+                    SQL_Constructor.table_constructor.get_table_name(
+                        part.p2
+                    ),
                 ),
                 schemas1,
                 schemas2,

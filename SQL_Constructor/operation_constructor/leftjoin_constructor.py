@@ -205,21 +205,25 @@ def __join_part(
             suffix = ""
         return join_query(
             part,
-            __encode_table_name(part.p1),
-            __encode_table_name(part.p2),
+            (
+                __encode_table_name(part.p1),
+                __encode_table_name(part.p2),
+                __encode_table_name(part) + suffix,
+            ),
             schemas1,
             schemas2,
-            __encode_table_name(part) + suffix,
         )
     else:
         return join_query(
             part,
-            __encode_table_name(part.p1),
-            __encode_table_name(part.p2),
+            (
+                __encode_table_name(part.p1),
+                __encode_table_name(part.p2),
+                __encode_table_name(part),
+            ),
             schemas1,
             schemas2,
-            __encode_table_name(part),
-            is_leftjoin_part=True,
+            bools=((False, False), True),
         )
 
 

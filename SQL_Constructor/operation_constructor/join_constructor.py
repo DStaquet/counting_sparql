@@ -1,3 +1,7 @@
+"""Modules to import"""
+
+from rdflib.plugins.sparql.parserutils import CompValue
+
 from SQL_Constructor import table_constructor
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
@@ -6,10 +10,6 @@ from SQL_Constructor.base_constructor import (
     make_join,
     add_table_to_dict,
 )
-
-
-from rdflib.plugins.sparql.parserutils import CompValue
-
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
     __encode_table_name,
@@ -38,7 +38,9 @@ def join_schemas(
     return new_schema
 
 
-def sch2SelectClause(sch1: set[str], sch2: set[str]) -> str:
+def sch2_select_clause(
+    sch1: set[str], sch2: set[str]
+) -> str:
     """Returns the schema of the second table
 
     Args:
@@ -54,7 +56,7 @@ def sch2SelectClause(sch1: set[str], sch2: set[str]) -> str:
     )
 
 
-def __sortVarsByTuples(
+def _sort_vars_by_tuples(
     schema1: set[str], schema2: set[str] | None
 ) -> list[tuple[str, str]]:
     """Sorts the schemas by the number of variables.
@@ -93,41 +95,45 @@ def __join_query_one_schema(
         str: Query string for the join operation
     """
     if schemas1[0] == schemas2[0]:
-        join_query: str = (
+        join_query_str: str = (
             "SELECT "
             + ", ".join(
                 f"r1.{var} AS {var}"
                 for var in sorted(
-                    part.p1._vars.union(part.p2._vars)
+                    part.p1.get("_vars").union(
+                        part.p2.get("_vars")
+                    )
                 )
             )
             + ", r1.k_count * r2.k_count as k_count\n"
         )
-        join_query += "FROM "
-        join_query += table_name_one
-        join_query += " AS r1 JOIN "
-        join_query += table_name_two
-        join_query += " AS r2 "
+        join_query_str += "FROM "
+        join_query_str += table_name_one
+        join_query_str += " AS r1 JOIN "
+        join_query_str += table_name_two
+        join_query_str += " AS r2 "
         if (
-            part.p1._vars.intersection(part.p2._vars)
+            part.p1.get("_vars").intersection(
+                part.p2.get("_vars")
+            )
             != set()
         ):
-            join_query += "ON "
-            join_query += " AND ".join(
+            join_query_str += "ON "
+            join_query_str += " AND ".join(
                 f"r1.{var} = r2.{var}"
                 for var in sorted(
-                    part.p1._vars.intersection(
-                        part.p2._vars
+                    part.p1.get("_vars").intersection(
+                        part.p2.get("_vars")
                     )
                 )
             )
-        join_query += ";\n"
+        join_query_str += ";\n"
 
     else:
-        sorted_vars = __sortVarsByTuples(
+        sorted_vars = _sort_vars_by_tuples(
             schemas1[0], schemas2[0]
         )
-        join_query: str = (
+        join_query_str: str = (
             "SELECT "
             + ", ".join(
                 f"{key}.{var} AS {var}"
@@ -141,15 +147,15 @@ def __join_query_one_schema(
             + " AS r2 "
         )
         if schemas1[0].intersection(schemas2[0]) != set():
-            join_query += "WHERE " + " AND ".join(
+            join_query_str += "WHERE " + " AND ".join(
                 f"r1.{var} = r2.{var}"
                 for var in sorted(
                     schemas1[0].intersection(schemas2[0])
                 )
             )
-        join_query += ";\n"
+        join_query_str += ";\n"
 
-    return join_query
+    return join_query_str
 
 
 def __join_query_mult_schema(
@@ -192,7 +198,7 @@ def __join_query_mult_schema(
             else:
                 sch2_suffix: str = ""
 
-            sorted_vars = __sortVarsByTuples(sch1, sch2)
+            sorted_vars = _sort_vars_by_tuples(sch1, sch2)
             if sch1.intersection(sch2) == set():
                 curr_join_query: str = (
                     "SELECT "
@@ -263,10 +269,9 @@ def __join_query_mult_schema(
 
 def join_query_str_constr(
     part: CompValue,
-    table_name_one: str,
-    table_name_two: str,
-    schemas1: list[set[str]] = [],
-    schemas2: list[set[str]] = [],
+    table_names: tuple[str, str],
+    schemas1: list[set[str]] | None = None,
+    schemas2: list[set[str]] | None = None,
     new_table_name: str | None = None,
 ) -> str | tuple[str, str]:
     """Generates the string with all the join queries.
@@ -282,13 +287,17 @@ def join_query_str_constr(
     Returns:
         str: String containing the join queries.
     """
+    table_name_one, table_name_two = table_names
+    if schemas1 is None:
+        schemas1 = []
+    if schemas2 is None:
+        schemas2 = []
+
     join_queries_dict: dict[str, list[str]] = join_query(
         part,
-        table_name_one,
-        table_name_two,
+        (table_name_one, table_name_two, new_table_name),
         schemas1,
         schemas2,
-        new_table_name=new_table_name,
     )
 
     join_queries: str = ""
@@ -322,22 +331,39 @@ def join_query_str_constr(
 
 def join_query(
     part: CompValue,
-    table_name_one: str,
-    table_name_two: str,
-    schemas1: list[set[str]] = [],
-    schemas2: list[set[str]] = [],
-    new_table_name: str | None = None,
-    is_delta_and_first: tuple[bool, bool] = (False, False),
-    is_leftjoin_part: bool = False,
+    table_names: tuple[str, str, str | None],
+    schemas1: list[set[str]] | None = None,
+    schemas2: list[set[str]] | None = None,
+    bools: tuple[tuple[bool, bool], bool] = (
+        (False, False),
+        False,
+    ),
 ) -> dict[str, list[str]]:
-    """Generates the join part according to two parts in the parse tree.
+    """Generates the join queries based on the part and schemas.
 
     Args:
-        part (CompValue): Current part of the algebra.
+        part (CompValue): Current part of the query.
+        table_names (tuple[str, str, str  |  None]): Current table names (first_table, second_table, new_table).
+        schemas1 (list[set[str]] | None, optional): First schema. Defaults to None which creates an empty list.
+        schemas2 (list[set[str]] | None, optional): Second schemas. Defaults to None which creates an empty list.
+        bools (tuple[tuple[bool, bool], bool], optional): Tuple for to indicate if it is a delta and the first plus
+            bool to indicate if it is for a leftjoin. Defaults to ( (False, False), False, ).
+
+    Raises:
+        ValueError: There are no schemas to join on.
 
     Returns:
-        str: The SQL query to join both parts.
+        dict[str, list[str]]: Dictionary containing the join queries per key.
     """
+    is_delta_and_first, is_leftjoin_part = bools
+    table_name_one, table_name_two, new_table_name = (
+        table_names
+    )
+    if schemas1 is None:
+        schemas1 = []
+    if schemas2 is None:
+        schemas2 = []
+
     if is_delta_and_first[0] and new_table_name is None:
         new_table_name = (
             "delta_"
@@ -396,26 +422,29 @@ def delta_join_queries_part_func(
     """
     first_delta_query: dict[str, list[str]] = join_query(
         part,
-        "delta_"
-        + table_constructor.get_table_name(part.p1),
-        __encode_table_name(part.p2),
+        (
+            "delta_"
+            + table_constructor.get_table_name(part.p1),
+            __encode_table_name(part.p2),
+            new_table_name,
+        ),
         schemas1,
         schemas2,
-        is_delta_and_first=(True, True),
-        new_table_name=new_table_name,
-        is_leftjoin_part=is_leftjoin_part,
+        bools=((True, True), is_leftjoin_part),
     )
 
     second_delta_query: dict[str, list[str]] = join_query(
         part,
-        "nu_" + table_constructor.get_table_name(part.p1),
-        "delta_"
-        + table_constructor.get_table_name(part.p2),
+        (
+            "nu_"
+            + table_constructor.get_table_name(part.p1),
+            "delta_"
+            + table_constructor.get_table_name(part.p2),
+            new_table_name,
+        ),
         schemas1,
         schemas2,
-        is_delta_and_first=(True, False),
-        new_table_name=new_table_name,
-        is_leftjoin_part=is_leftjoin_part,
+        bools=((True, False), is_leftjoin_part),
     )
 
     combined_delta_query_dict = combine_dict_queries(
@@ -449,14 +478,16 @@ def left_join_select_clause(part: CompValue) -> str:
     return_str: str = (
         ", ".join(
             var
-            for var in sorted(part.p1._vars)
+            for var in sorted(part.p1.get("_vars"))
             if var != "k_count"
         )
         + ", "
         + ", ".join(
             var
             for var in sorted(
-                part.p2._vars.difference(part.p1._vars)
+                part.p2.get("_vars").difference(
+                    part.p1.get("_vars")
+                )
             )
             if var != "k_count"
         )
@@ -492,10 +523,15 @@ def delta_join_sub(
         + " AS r2 "
     )
     first_query += "ON "
-    if part1._vars.intersection(part2._vars) != set():
+    if (
+        part1.get("_vars").intersection(part2.get("_vars"))
+        != set()
+    ):
         first_query += " AND ".join(
             f"r1.{var} = r2.{var}"
-            for var in part1._vars.intersection(part2._vars)
+            for var in part1.get("_vars").intersection(
+                part2.get("_vars")
+            )
         )
         first_query += "\n"
     else:
@@ -505,11 +541,14 @@ def delta_join_sub(
         "k_count = EXCLUDED.k_count + k_count\n"
         + "WHERE "
         + " AND ".join(
-            f"{var} = EXCLUDED.{var}" for var in part1._vars
+            f"{var} = EXCLUDED.{var}"
+            for var in part1.get("_vars")
         )
         + " AND ".join(
             f"{var} = EXCLUDED.{var}"
-            for var in part2._vars.difference(part1._vars)
+            for var in part2.get("_vars").difference(
+                part1.get("_vars")
+            )
         )
     )
     first_query += ";\n"
@@ -531,10 +570,15 @@ def delta_join_sub(
         + " AS r2\n"
     )
     second_query += "ON "
-    if part1._vars.intersection(part2._vars) != set():
+    if (
+        part1.get("_vars").intersection(part2.get("_vars"))
+        != set()
+    ):
         second_query += " AND ".join(
             f"r1.{var} = r2.{var}"
-            for var in part1._vars.intersection(part2._vars)
+            for var in part1.get("_vars").intersection(
+                part2.get("_vars")
+            )
         )
         second_query += "\n"
     else:
@@ -544,11 +588,14 @@ def delta_join_sub(
         "k_count = EXCLUDED.k_count + k_count\n"
         + "WHERE "
         + " AND ".join(
-            f"{var} = EXCLUDED.{var}" for var in part1._vars
+            f"{var} = EXCLUDED.{var}"
+            for var in part1.get("_vars")
         )
         + " AND ".join(
             f"{var} = EXCLUDED.{var}"
-            for var in part2._vars.difference(part1._vars)
+            for var in part2.get("_vars").difference(
+                part1.get("_vars")
+            )
         )
     )
     second_query += ";\n"

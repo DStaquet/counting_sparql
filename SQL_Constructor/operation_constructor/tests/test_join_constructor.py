@@ -70,8 +70,10 @@ def test_join_query(
     for join_leaf in join_leaves:
         join_query_tuple = join_query_str_constr(
             join_leaf,
-            get_table_name(join_leaf.p1),
-            get_table_name(join_leaf.p2),
+            (
+                get_table_name(join_leaf.p1),
+                get_table_name(join_leaf.p2),
+            ),
             schemas1,
             schemas2,
         )
@@ -238,8 +240,10 @@ def test_join_query_output(
     for join_leaf in join_leaves:
         join_query_tuple = join_query_str_constr(
             join_leaf,
-            get_table_name(join_leaf.p1),
-            get_table_name(join_leaf.p2),
+            (
+                get_table_name(join_leaf.p1),
+                get_table_name(join_leaf.p2),
+            ),
             schemas1,
             schemas2,
         )
