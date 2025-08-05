@@ -1,64 +1,24 @@
+"""Modules to import"""
+
+from rdflib.plugins.sparql.parserutils import CompValue
+
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
-    count_k_counts_together,
     make_join,
+    make_group_by,
 )
 from SQL_Constructor.operation_constructor.diff_constructor import (
     delta_diff_sub,
     diff_query_sub,
 )
-
-from rdflib.plugins.sparql.parserutils import CompValue
-
 from SQL_Constructor.operation_constructor.join_constructor import (
     join_query,
     delta_join_queries_part_func,
-)
-from SQL_Constructor.base_constructor import (
-    make_group_by,
-    make_join,
 )
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
     __encode_table_name,
 )
-
-
-'''def __delta_join_part(
-    part: CompValue,
-    schemas1: list[set[str]],
-    schemas2: list[set[str]],
-) -> str:
-    """Generates the delta join part of the left join query.
-
-    Args:
-        part (CompValue): Current part of the query
-        schemas1 (list[set[str]]): Schemas of the left child of the part
-        schemas2 (list[set[str]]): Schemas of the right child of the part
-
-    Returns:
-        str: Join part of the left join query.
-    """
-    if len(schemas1) == 0 or len(schemas2) == 0:
-        raise ValueError("No schemas to join on.")
-    elif len(schemas1) == 1 and len(schemas2) == 1:
-        return delta_join_queries_part_func(
-            part,
-            schemas1,
-            schemas2,
-            new_table_name="delta_"
-            + __encode_table_name(part)
-            + "_"
-            + __encode_schema_name(
-                str(sorted(schemas1[0])),
-            ),
-        )
-    else:
-        return delta_join_queries_part_func(
-            part,
-            schemas1,
-            schemas2,
-        )'''
 
 
 def __delta_diff_part(
@@ -79,13 +39,13 @@ def __delta_diff_part(
     """
     if len(schemas1) == 0:
         raise ValueError("No schemas to diff on.")
-    else:
-        diff_queries: dict[str, list[str]] = delta_diff_sub(
-            part,
-            schemas1,
-            schemas2,
-            append_schemas=is_leftjoin_part,
-        )
+
+    diff_queries: dict[str, list[str]] = delta_diff_sub(
+        part,
+        schemas1,
+        schemas2,
+        append_schemas=is_leftjoin_part,
+    )
 
     diff_queries_str: str = make_group_by(
         diff_queries, schemas1, is_delta=True
@@ -94,13 +54,6 @@ def __delta_diff_part(
     diff_queries_outer_join: str = make_join(
         diff_queries, schemas1, is_delta=True
     )
-
-    """diff_queries_str += countKCountsTogether(
-        schemas1,
-        to_table="delta_" + __encode_table_name(part),
-        from_table="prep_delta_"
-        + __encode_table_name(part),
-    )"""
 
     return diff_queries_str, diff_queries_outer_join
 
@@ -227,7 +180,7 @@ def __join_part(
         )
 
 
-def __leftJoinWithCreate(
+def _leftjoin_with_create(
     leftjoin_join_dict: dict[str, list[str]],
     leftjoin_diff_dict: dict[str, list[str]],
 ) -> str:
@@ -245,10 +198,6 @@ def __leftJoinWithCreate(
     # Join queries
     leftjoin_join: str = ""
     for key in leftjoin_join_dict:
-        """if len(leftjoin_join_dict[key]) > 1:
-        raise ValueError(
-            "Left join should not have multiple queries."
-        )"""
         leftjoin_join += create_table_w_select(
             key, leftjoin_join_dict[key][0]
         )
@@ -256,10 +205,6 @@ def __leftJoinWithCreate(
     # Diff queries
     leftjoin_diff: str = ""
     for key in leftjoin_diff_dict:
-        """if len(leftjoin_diff_dict[key]) > 1:
-        raise ValueError(
-            "Left join diff should not have multiple queries."
-        )"""
         leftjoin_diff += create_table_w_select(
             key, leftjoin_diff_dict[key][0]
         )
@@ -269,8 +214,8 @@ def __leftJoinWithCreate(
 
 def left_join_query(
     part: CompValue,
-    schemas1: list[set[str]] = [],
-    schemas2: list[set[str]] = [],
+    schemas1: list[set[str]] | None = None,
+    schemas2: list[set[str]] | None = None,
 ) -> str:
     """Generates the leftjoin query.
 
@@ -280,6 +225,11 @@ def left_join_query(
     Returns:
         str: Query string for the leftjoin operation.
     """
+    if schemas1 is None:
+        schemas1 = []
+    if schemas2 is None:
+        schemas2 = []
+
     leftjoin_join_dict: dict[str, list[str]] = __join_part(
         part, schemas1, schemas2
     )
@@ -289,6 +239,6 @@ def left_join_query(
         )
     )
 
-    return __leftJoinWithCreate(
+    return _leftjoin_with_create(
         leftjoin_join_dict, leftjoin_diff_dict
     )
