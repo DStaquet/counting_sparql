@@ -7,17 +7,17 @@ SELECT ?product ?label ?propertyTextual
 WHERE {
  { 
  ?product rdfs:label ?label .
- ?product rdf:type bsbm-inst:ProductTypeTA .
- ?product bsbm:productFeature bsbm-inst:ProductFeatureFA .
+ ?product rdf:type bsbm-inst:ProductTypeTB .
+ ?product bsbm:productFeature bsbm-inst:ProductFeatureFD .
 	?product bsbm:productFeature bsbm-inst:ProductFeatureFB .
  ?product bsbm:productPropertyTextual1 ?propertyTextual .
 	?product bsbm:productPropertyNumeric1 ?p1 .
 	FILTER ( ?p1 > 122 )
  } UNION {
  ?product rdfs:label ?label .
- ?product rdf:type bsbm-inst:ProductTypeTB .
- ?product bsbm:productFeature bsbm-inst:ProductFeatureFB .
-	?product bsbm:productFeature bsbm-inst:ProductFeatureFC .
+ ?product rdf:type bsbm-inst:ProductTypeTD .
+ ?product bsbm:productFeature bsbm-inst:ProductFeatureFD .
+	?product bsbm:productFeature bsbm-inst:ProductFeatureFA .
  ?product bsbm:productPropertyTextual1 ?propertyTextual .
 	?product bsbm:productPropertyNumeric2 ?p2 .
 	FILTER ( ?p2> 293 ) 
