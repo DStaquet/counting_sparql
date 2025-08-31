@@ -118,6 +118,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--runs",
+        "-r",
         type=int,
         default=3,
         help="The number of runs to average over.",
@@ -167,29 +168,55 @@ if __name__ == "__main__":
     ) as f:
         aggregation_nu_sql = f.read()
 
-    prep_aggregation_query(
-        conn,
-        args,
-    )
+    avg_increm_time = 0.0
+    avg_scratch_time = 0.0
 
-    print("Running aggregation incrementally...")
-    conn.execute("DROP TABLE IF EXISTS Agg;")
-    conn.execute("DROP TABLE IF EXISTS nu_Agg_increm;")
-    conn.execute(aggregation_sql)
-    conn.execute("DROP TABLE IF EXISTS delta_Agg;")
-    start_time = time()
-    conn.execute(aggregation_delta_sql)
-    end_time = time()
-    print(
-        f"Delta aggregation completed in {(end_time - start_time)*1000} milliseconds."
-    )
+    for run in range(args.runs):
+        print(f"Run {run+1}/{args.runs}")
 
-    conn.execute("DROP TABLE IF EXISTS nu_Agg;")
-    start_time = time()
-    conn.execute(aggregation_nu_sql)
-    end_time = time()
+        prep_aggregation_query(
+            conn,
+            args,
+        )
+
+        print("Running aggregation incrementally...")
+        conn.execute("DROP TABLE IF EXISTS Agg;")
+        conn.execute("DROP TABLE IF EXISTS nu_Agg_increm;")
+        conn.execute(aggregation_sql)
+        conn.execute("DROP TABLE IF EXISTS delta_Agg;")
+        start_time = time()
+        conn.execute(aggregation_delta_sql)
+        end_time = time()
+        print(
+            f"Delta aggregation completed in {(end_time - start_time)*1000} milliseconds."
+        )
+        avg_increm_time += (end_time - start_time) * 1000
+        print(
+            "Average incremental time so far: ",
+            avg_increm_time / (run + 1),
+        )
+
+        conn.execute("DROP TABLE IF EXISTS nu_Agg;")
+        start_time = time()
+        conn.execute(aggregation_nu_sql)
+        end_time = time()
+        print(
+            f"Scratch aggregation completed in {(end_time - start_time)*1000} milliseconds."
+        )
+        avg_scratch_time += (end_time - start_time) * 1000
+        print(
+            "Average scratch time so far: ",
+            avg_scratch_time / (run + 1),
+        )
+        print()
+
+    avg_increm_time /= args.runs
+    avg_scratch_time /= args.runs
     print(
-        f"Scratch aggregation completed in {(end_time - start_time)*1000} milliseconds."
+        f"Average incremental aggregation time: {avg_increm_time} milliseconds."
+    )
+    print(
+        f"Average scratch aggregation time: {avg_scratch_time} milliseconds."
     )
 
     print("Done.")
