@@ -168,8 +168,8 @@ if __name__ == "__main__":
     ) as f:
         aggregation_nu_sql = f.read()
 
-    avg_increm_time = 0.0
-    avg_scratch_time = 0.0
+    avg_increm_time: float = 0.0
+    avg_scratch_time: float = 0.0
 
     for run in range(args.runs):
         print(f"Run {run+1}/{args.runs}")

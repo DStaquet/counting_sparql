@@ -3,19 +3,19 @@ SELECT Agg.product,
        (CAST (delta_Agg.value1 AS INT) + CAST (Agg.value1 AS INT)) AS value1,
        1 AS k_count
 FROM delta_Project_6206501852706074180 AS delta_Agg, Project_6206501852706074180 AS Agg
-WHERE (delta_Agg.product = Agg.product)
-UNION
-SELECT delta_Agg.product,
-       CAST (delta_Agg.value1 AS INT) AS value1,
-       1 AS k_count
-FROM delta_Project_6206501852706074180 AS delta_Agg
-WHERE delta_Agg.product NOT IN (SELECT product FROM Project_6206501852706074180)
+WHERE (delta_Agg.product = Agg.product) AND delta_Agg.product IN (SELECT product FROM Project_6206501852706074180)
 UNION
 SELECT Agg.product,
        Agg.value1 AS value1,
        -Agg.k_count AS k_count
 FROM Project_6206501852706074180 AS Agg, delta_Project_6206501852706074180 AS delta_Agg
-WHERE delta_Agg.product = Agg.product;
+WHERE delta_Agg.product = Agg.product
+UNION
+SELECT delta_Agg.product,
+       (CAST (Agg.value1 AS INT) - CAST (delta_Agg.value1 AS INT)) AS value1,
+       1 AS k_count
+FROM delta_Project_6206501852706074180 AS delta_Agg, Project_6206501852706074180 AS Agg
+WHERE (delta_Agg.product = Agg.product) AND delta_Agg.product NOT IN (SELECT product FROM nu_Project_6206501852706074180);
 
 CREATE TABLE nu_Agg_increm AS
 SELECT (CASE
