@@ -1,0 +1,6 @@
+CREATE TABLE Agg AS
+SELECT COUNT(x) AS x,
+       y,
+       1 AS k_count
+FROM Project_8618330694388824078
+GROUP BY y;
