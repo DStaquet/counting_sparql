@@ -198,4 +198,5 @@ bsbm_generator/td_data/*
 bsbm_data/input_data/*.ttl
 bsbm_data/input_data/*.nt
 bsbm_data/output_data/*
+bsbm_data/input_data/*
 diff_testing/*

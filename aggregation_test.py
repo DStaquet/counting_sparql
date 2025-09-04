@@ -184,6 +184,7 @@ if __name__ == "__main__":
         conn.execute("DROP TABLE IF EXISTS nu_Agg_increm;")
         conn.execute(aggregation_sql)
         conn.execute("DROP TABLE IF EXISTS delta_Agg;")
+        conn.execute("DROP TABLE IF EXISTS temp_Agg;")
         start_time = time()
         conn.execute(aggregation_delta_sql)
         end_time = time()
