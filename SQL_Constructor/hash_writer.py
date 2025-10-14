@@ -192,6 +192,24 @@ def write_hash_schemas(
                 hash_file.write(serialize_to_json(schemas1))
                 hash_file.write(",\n")
                 return schemas1
+        case "AggregateJoin":
+            with open(
+                join(output_dir, "hash_values.json"),
+                "a",
+                encoding="utf-8",
+            ) as hash_file:
+                hash_file.write(
+                    '"schema_'
+                    + __encode_table_name(part)
+                    + '": '
+                )
+                hash_file.write(serialize_to_json(schemas1))
+                hash_file.write(",\n")
+                return schemas1
+        case "Group":
+            return schemas1
+        case "Extend":
+            return schemas1
 
     raise NotImplementedError(
         "Part name not supported for writing hash schemas"

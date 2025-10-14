@@ -3,7 +3,7 @@ PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
-SELECT ?product ?value1
+SELECT ?product (SUM(?value1) AS ?sumValue1)
 WHERE { 
 	?product rdfs:label ?label .
 	?product a bsbm-inst:ProductTypeTB .
@@ -11,3 +11,4 @@ WHERE {
 	?product bsbm:productFeature bsbm-inst:ProductFeatureFB .
 	?product bsbm:productPropertyNumeric1 ?value1 . 
 }
+GROUP BY ?product

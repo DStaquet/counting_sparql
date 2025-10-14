@@ -17,6 +17,9 @@ from SQL_Constructor.operation_constructor import (
     minus_constructor as SQL_minus,
     union_constructor as SQL_union,
 )
+from SQL_Constructor.aggregation_constructor import (
+    aggregation_constructor as SQL_aggregate,
+)
 
 
 def write_query_to_output_dir(
@@ -266,6 +269,21 @@ def build_increm_queries(
                 filename_prefix="delta_",
             )
             part_schemas = schemas1
+        case "AggregateJoin":
+            aggregate_join_query: str = (
+                SQL_aggregate.delta_aggregate_join_query(
+                    part
+                )
+            )
+            write_query_to_output_dir(
+                output_dir,
+                aggregate_join_query,
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
+                filename_prefix="delta_",
+            )
+            part_schemas = schemas1
     if part_schemas is None:
         part_schemas = schemas1
     if part.name == "SelectQuery":
@@ -487,4 +505,17 @@ def build_queries(
                 ),
             )
             return schemas1
+        case "AggregateJoin":
+            aggregate_join_query: str = (
+                SQL_aggregate.aggregate_join_query(part)
+            )
+            write_query_to_output_dir(
+                output_dir,
+                aggregate_join_query,
+                SQL_Constructor.table_constructor.get_table_name(
+                    part
+                ),
+            )
+            return schemas1
+
     return schemas1

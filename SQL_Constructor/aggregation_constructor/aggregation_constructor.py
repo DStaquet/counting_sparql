@@ -1,0 +1,99 @@
+"""Module to generate SQL queries for aggregation operations"""
+
+from rdflib.plugins.sparql.parserutils import CompValue
+
+from SQL_Constructor.aggregation_constructor.sum_constructor import (
+    sum_join_query,
+    delta_sum_join_query,
+)
+
+from SQL_Constructor.table_constructor import (
+    create_table_w_select,
+    get_table_name,
+)
+
+
+def _get_aggregate_objects(
+    part: CompValue,
+) -> tuple[list[CompValue], CompValue]:
+    """Extracts the name of the aggregate function from a CompValue object.
+
+    Args:
+        aggregate (CompValue): The CompValue object representing the aggregate function.
+    Returns:
+        str: The name of the aggregate function.
+    """
+    # Gets the aggregate and its name
+    aggregate_list = part.get("A")
+    aggregate_values: list[CompValue] = []
+    for aggregate in range(len(aggregate_list) - 1):
+        aggregate_values.append(aggregate_list[aggregate])
+    aggregate_sample: CompValue = aggregate_list[-1]
+
+    return aggregate_values, aggregate_sample
+
+
+def aggregate_join_query(
+    part: CompValue,
+) -> str:
+    """Generates the SQL query for an AggregateJoin operation.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set]): List of already calculated schemas
+            lower in the parse tree
+    Returns:
+        str: The SQL query for the AggregateJoin operation
+    """
+    aggregate_values, aggregate_sample = (
+        _get_aggregate_objects(part)
+    )
+
+    # Match the aggregate name to the corresponding function
+    match aggregate_values[0].name:
+        case "Aggregate_Sum":
+            sum_query: str = sum_join_query(
+                aggregate_values,
+                aggregate_sample,
+                part,
+            )
+            return create_table_w_select(
+                get_table_name(part), sum_query
+            )
+        case _:
+            raise NotImplementedError(
+                f"Aggregate {aggregate_values[0].name} not implemented"
+            )
+
+
+def delta_aggregate_join_query(
+    part: CompValue,
+) -> str:
+    """Generates the SQL query for a DeltaAggregateJoin operation.
+
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set]): List of already calculated schemas
+            lower in the parse tree
+    Returns:
+        str: The SQL query for the DeltaAggregateJoin operation
+    """
+    aggregate_values, aggregate_sample = (
+        _get_aggregate_objects(part)
+    )
+
+    # Match the aggregate name to the corresponding function
+    match aggregate_values[0].name:
+        case "Aggregate_Sum":
+            sum_query: str = delta_sum_join_query(
+                aggregate_values,
+                aggregate_sample,
+                part,
+            )
+            return create_table_w_select(
+                "delta_" + get_table_name(part), sum_query
+            )
+        case _:
+            raise NotImplementedError(
+                f"Aggregate {aggregate_values[0].name} not implemented"
+            )

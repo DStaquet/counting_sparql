@@ -400,6 +400,23 @@ def dropTablesRec(
             curr_schemas: list[set[str]] = schemas1
         case "SelectQuery":
             curr_schemas = schemas1
+        case "Extend":
+            curr_schemas = schemas1
+            return (
+                prev_query,
+                prev_delta_query,
+                curr_schemas,
+            )
+        case "Group":
+            curr_schemas = schemas1
+            return (
+                prev_query,
+                prev_delta_query,
+                curr_schemas,
+            )
+        case "AggregateJoin":
+            # TODO: check schemas
+            curr_schemas = schemas1
         case _:
             raise NotImplementedError(
                 f"Drop tables for {part.name} not implemented"
