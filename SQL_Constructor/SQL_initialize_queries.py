@@ -291,6 +291,8 @@ def build_increm_queries(
             part, part_schemas, "nu_"
         )
         nu_query_sum = ""
+    elif part.name in ["Group", "Extend"]:
+        return part_schemas
     else:
         nu_query, nu_query_sum = (
             base_constructor.nu_queries(part, part_schemas)

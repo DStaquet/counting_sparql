@@ -155,6 +155,7 @@ def make_join(
     is_delta: bool = False,
     is_select: bool = False,
     select_schema: set[str] | None = None,
+    new_table_name: str | None = None,
 ) -> str:
     """Generates the join query string.
 
@@ -170,6 +171,25 @@ def make_join(
     """
     if select_schema is None:
         select_schema = set()
+
+    print(schemas, tables_to_make)
+    if (
+        len(schemas) == 1
+        and len(tables_to_make) == 1
+        and len(
+            tables_to_make[list(tables_to_make.keys())[0]]
+        )
+        == 2
+    ):
+        if new_table_name is not None:
+            return final_outer_join_query(
+                list(tables_to_make.keys())[0][0],
+                list(tables_to_make.keys())[0][1],
+                schemas[0],
+                "nu_ " + new_table_name,
+                is_delta=is_delta,
+                is_select=is_select,
+            )
 
     all_queries: str = ""
     for key in tables_to_make:
@@ -953,6 +973,7 @@ def nu_queries(
     nu_query: str = make_join(
         dict_nu_queries,
         schemas,
+        new_table_name="nu_" + __encode_table_name(part),
     )
 
     nu_query_groupby: str = make_group_by(
