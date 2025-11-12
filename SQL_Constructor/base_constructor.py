@@ -172,7 +172,6 @@ def make_join(
     if select_schema is None:
         select_schema = set()
 
-    print(schemas, tables_to_make)
     if (
         len(schemas) == 1
         and len(tables_to_make) == 1

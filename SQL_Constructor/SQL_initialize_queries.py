@@ -348,9 +348,13 @@ def build_queries(
     """
     if "p" in part:
         schemas1 = build_queries(part.p, output_dir)
+        schemas2 = []
     elif "p1" in part and "p2" in part:
         schemas1 = build_queries(part.p1, output_dir)
         schemas2 = build_queries(part.p2, output_dir)
+    else:
+        schemas1 = []
+        schemas2 = []
     # Construct the SQL query
     match part.name:
         case "BGP":
@@ -518,6 +522,8 @@ def build_queries(
                     part
                 ),
             )
-            return schemas1
+            return SQL_aggregate.aggregate_schemas(
+                part, schemas1
+            )
 
     return schemas1

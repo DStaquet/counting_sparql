@@ -13,6 +13,38 @@ from SQL_Constructor.table_constructor import (
 )
 
 
+def aggregate_schemas(
+    part: CompValue,
+    schemas1: list[set],
+) -> list[set]:
+    """Generates the schema for an AggregateJoin operation.
+    Args:
+        part (CompValue): Current part of the query
+        schemas1 (list[set]): List of already calculated schemas
+            lower in the parse tree
+    Returns:
+        list[set]: The schema for the AggregateJoin operation
+    """
+    aggregate_values, aggregate_sample = (
+        _get_aggregate_objects(part)
+    )
+
+    new_schemas: list[set] = []
+
+    for schema1 in schemas1:
+        new_schema: set = set()
+        for aggregate_var in schema1:
+            if aggregate_var in aggregate_sample.get(
+                "_vars"
+            ) or aggregate_var in aggregate_values[0].get(
+                "_vars"
+            ):
+                new_schema.add(aggregate_var)
+        new_schemas.append(new_schema)
+
+    return new_schemas
+
+
 def _get_aggregate_objects(
     part: CompValue,
 ) -> tuple[list[CompValue], CompValue]:
