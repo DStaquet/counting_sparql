@@ -51,6 +51,9 @@ def timer(
         + ".sql"
     )
 
+    # TODO: Remove
+    print(query_str)
+
     start_timer: float = time()
     duckdb_conn.execute(query_str)
     end_timer: float = time()
@@ -91,6 +94,8 @@ def timing_per_operator(
     else:
         timings: dict[str, dict[str, float]] = dict()
 
+    if part.name in ["Group", "Extend"]:
+        return timings
     if not increm:
         timing_scratch: float = timer(
             query_dir, part, "", duckdb_conn

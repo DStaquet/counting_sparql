@@ -205,15 +205,20 @@ def project_query(
     if schemas1 is None:
         schemas1 = []
 
+    # From table part in case of aggregates
+    from_part = part.p
+    while from_part.name in ["Group", "Extend"]:
+        from_part = from_part.p
+
     if is_delta:
         from_table_name = "delta_" + __encode_table_name(
-            part.p
+            from_part
         )
         new_table_name = "delta_" + __encode_table_name(
             part
         )
     else:
-        from_table_name = __encode_table_name(part.p)
+        from_table_name = __encode_table_name(from_part)
         new_table_name = __encode_table_name(part)
 
     if len(schemas1) == 0:

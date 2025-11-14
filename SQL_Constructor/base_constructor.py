@@ -181,11 +181,19 @@ def make_join(
         == 2
     ):
         if new_table_name is not None:
+            print(
+                list(tables_to_make.keys())[0],
+                tables_to_make,
+            )
             return final_outer_join_query(
-                list(tables_to_make.keys())[0][0],
-                list(tables_to_make.keys())[0][1],
+                tables_to_make[
+                    list(tables_to_make.keys())[0]
+                ][0],
+                tables_to_make[
+                    list(tables_to_make.keys())[0]
+                ][1],
                 schemas[0],
-                "nu_ " + new_table_name,
+                new_table_name,
                 is_delta=is_delta,
                 is_select=is_select,
             )
@@ -940,12 +948,12 @@ def nu_queries(
     if len(schemas) == 1:
         dict_nu_queries = add_table_to_dict(
             "nu_" + __encode_table_name(part),
-            f"SELECT * FROM {__encode_table_name(part)};",
+            f"{__encode_table_name(part)}",
             dict_nu_queries,
         )
         dict_nu_queries = add_table_to_dict(
             "nu_" + __encode_table_name(part),
-            f"SELECT * FROM delta_{__encode_table_name(part)};",
+            f"delta_{__encode_table_name(part)}",
             dict_nu_queries,
         )
     else:

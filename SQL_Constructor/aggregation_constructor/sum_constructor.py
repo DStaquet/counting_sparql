@@ -27,7 +27,7 @@ def sum_join_query(
     select_clause = (
         f"SELECT {aggregate_sample.vars}, "
         + ", ".join(
-            f"SUM(CAST ({value.vars}) AS INT) AS {value.vars}"
+            f"SUM(CAST ({value.vars} AS INT)) AS {value.vars}"
             for value in aggregate_values
         )
         + ", 1 AS k_count"
