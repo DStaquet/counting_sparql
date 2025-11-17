@@ -60,7 +60,7 @@ def _delta_sum_join_query_additions(
     """
     # Create select clause
     select_clause = (
-        f"SELECT {aggregate_sample.vars}, "
+        f"SELECT Agg.{aggregate_sample.vars}, "
         + ", ".join(
             f"(CAST (delta_Agg.{value.vars} AS INT) "
             + f"+ CAST (Agg.{value.vars} AS INT)) AS {value.vars}"
@@ -106,7 +106,7 @@ def _delta_sum_join_query_subtractions(
     """
     # Create select clause
     select_clause = (
-        f"SELECT {aggregate_sample.vars}, "
+        f"SELECT Agg.{aggregate_sample.vars}, "
         + ", ".join(
             f"(CAST (delta_Agg.{value.vars} AS INT) "
             + f"- CAST (Agg.{value.vars} AS INT)) AS {value.vars}"
@@ -152,7 +152,7 @@ def _delta_sum_join_query_deletions(
     """
     # Create select clause
     select_clause = (
-        f"SELECT {aggregate_sample.vars}, "
+        f"SELECT Agg.{aggregate_sample.vars}, "
         + ", ".join(
             f"Agg.{value.vars}"
             for value in aggregate_values
