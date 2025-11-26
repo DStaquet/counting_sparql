@@ -81,7 +81,7 @@ def getAllProducts(g: Graph) -> dict[str, list[tuple]]:
 
 
 def getBaseProducts(
-    all_product_dict: dict[str, list[tuple]]
+    all_product_dict: dict[str, list[tuple]],
 ) -> tuple[Graph, set[str]]:
     base_g = Graph()
 
@@ -301,8 +301,8 @@ if __name__ == "__main__":
         all_product_dict,
         S_in_graph,
         10,
-        1,
-        1,
+        1000,
+        1000,
         args.output_dir,
     )
 

@@ -181,10 +181,6 @@ def make_join(
         == 2
     ):
         if new_table_name is not None:
-            print(
-                list(tables_to_make.keys())[0],
-                tables_to_make,
-            )
             return final_outer_join_query(
                 tables_to_make[
                     list(tables_to_make.keys())[0]

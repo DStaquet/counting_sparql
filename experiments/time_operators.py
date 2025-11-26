@@ -51,9 +51,6 @@ def timer(
         + ".sql"
     )
 
-    # TODO: Remove
-    print(query_str)
-
     start_timer: float = time()
     duckdb_conn.execute(query_str)
     end_timer: float = time()

@@ -123,7 +123,7 @@ def compare_plot_from_dict(
                 + "_"
                 + str(already_seen_keys.count(curr_key))
             )
-        print(f"Key: {key}, curr_key: {curr_key}")
+        # print(f"Key: {key}, curr_key: {curr_key}")
         already_seen_keys.append(to_add_key)
         bins.append(curr_key)
         cmp_arr_one.append(inp_dict[key]["incremental"])

@@ -4,6 +4,7 @@ import argparse
 import os
 import sys
 
+from csv import DictReader
 from time import time
 
 from duckdb import connect, DuckDBPyConnection
@@ -17,6 +18,66 @@ from build_data import (
     get_query_object,
 )
 from setup_queries import get_query_output_dir
+
+
+def _generate_product_data(
+    duckdb_conn: DuckDBPyConnection,
+    data_file: str,
+    table_name: str,
+) -> str:
+
+    # Dropping and creating Products table
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS {table_name};"
+    )
+    duckdb_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS {table_name} "
+        + "(product_id VARCHAR, value1 INT, k_count INT);"
+    )
+
+    # Inserting product data based on given data file
+    insert_line = f"INSERT INTO {table_name} (product_id, value1, k_count) VALUES "
+    with open(data_file, "r", encoding="utf-8") as data_f:
+        csv_dict = DictReader(data_f)
+        for line in csv_dict:
+            if "PropertyNumeric" in line["p"]:
+                insert_line += f"('{line['s']}', {int(line['o'])}, {int(line['k_count'])}),"
+    insert_line = insert_line[:-1] + ";"
+    return insert_line
+
+
+def prep_aggregation_table(
+    duckdb_conn: DuckDBPyConnection,
+    args_namespace: argparse.Namespace,
+) -> None:
+    """Prepares the previous table to run the aggregation on."""
+
+    # Data loading for base table
+    duckdb_conn.execute(
+        _generate_product_data(
+            duckdb_conn,
+            args_namespace.data_file,
+            "Products",
+        )
+    )
+
+    # Data loading for delta table
+    duckdb_conn.execute(
+        _generate_product_data(
+            duckdb_conn,
+            args_namespace.delta_file,
+            "delta_Products",
+        )
+    )
+
+    # Data loading for nu table for scratch aggregation
+    duckdb_conn.execute(
+        _generate_product_data(
+            duckdb_conn,
+            args_namespace.nu_file,
+            "nu_Products",
+        )
+    )
 
 
 def prep_aggregation_query(
@@ -174,7 +235,7 @@ if __name__ == "__main__":
     for run in range(args.runs):
         print(f"Run {run+1}/{args.runs}")
 
-        prep_aggregation_query(
+        prep_aggregation_table(
             conn,
             args,
         )
@@ -197,6 +258,7 @@ if __name__ == "__main__":
             avg_increm_time / (run + 1),
         )
 
+        print("Running aggregation from scratch...")
         conn.execute("DROP TABLE IF EXISTS nu_Agg;")
         start_time = time()
         conn.execute(aggregation_nu_sql)
