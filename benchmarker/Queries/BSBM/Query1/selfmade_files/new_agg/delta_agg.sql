@@ -1,4 +1,18 @@
 CREATE TABLE delta_Agg AS
+SELECT product_id, SUM(CAST (value1 AS INT) * k_count) as value1, 1 as k_count
+FROM delta_Products
+GROUP BY product_id;
+
+CREATE TABLE nu_Agg_increm AS
+SELECT * FROM Agg EXCEPT (SELECT * FROM delta_Agg)
+UNION
+SELECT * FROM delta_Agg EXCEPT (SELECT * FROM Agg)
+UNION
+SELECT Agg.product_id, CAST (Agg.value1 AS INT) + CAST (delta_Agg.value1 AS INT), 1 as k_count
+FROM Agg, delta_Agg
+WHERE Agg.product_id = delta_Agg.product_id;
+
+/* CREATE TABLE delta_Agg AS
 SELECT delta_Agg.product_id,
        SUM(CAST (delta_Agg.value1 AS INT) * delta_Agg.k_count) AS value1,
        1 AS k_count
@@ -15,7 +29,7 @@ SELECT product_id,
        SUM(CAST (value1 AS INT) * k_count) AS value1,
        1 AS k_count
 FROM temp_Agg
-GROUP BY product_id;
+GROUP BY product_id; */
 
 /* CREATE TABLE delta_Agg AS
 SELECT Agg.product,
