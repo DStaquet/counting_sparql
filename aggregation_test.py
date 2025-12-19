@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+from random import randint, sample
 
 from csv import DictReader
 from time import time
@@ -18,6 +19,60 @@ from build_data import (
     get_query_object,
 )
 from setup_queries import get_query_output_dir
+
+
+def _values_per_product(
+    product_ids: list[str],
+    m_values_count: int,
+    max_value: int,
+) -> dict[str, list[int]]:
+    return_dict: dict[str, list[int]] = {}
+
+    for product_id in product_ids:
+        for _ in range(m_values_count):
+            return_dict[product_id] = return_dict.get(
+                product_id, []
+            ) + [randint(1, max_value)]
+
+    return return_dict
+
+
+def _generate_synthethic_products_data(
+    duckdb_conn: DuckDBPyConnection,
+    n_product_count: int,
+    m_product_values_count: int,
+    table_name: str,
+    max_value: int = 1000,
+) -> tuple[str, dict[str, list[int]]]:
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS {table_name};"
+    )
+    duckdb_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS {table_name}"
+        + " (product_id VARCHAR, value1 INT, k_count INT);"
+    )
+
+    # Construct all synthetic product ids and their values
+    product_ids = [
+        "http://example.org/" + str(n)
+        for n in range(1, n_product_count + 1)
+    ]
+    products_w_values: dict[str, list[int]] = (
+        _values_per_product(
+            product_ids, m_product_values_count, max_value
+        )
+    )
+
+    # Generate the SQL insert statement
+    insert_line = f"INSERT INTO {table_name} (product_id, value1, k_count) VALUES "
+    for product_id, values in products_w_values.items():
+        for value in values:
+            insert_line += f"('{product_id}', {value}, 1),"
+    insert_line = insert_line[:-1] + ";"
+
+    # Returns the insert line and the generated products with values to use to to
+    # generate deltas later on
+    return insert_line, products_w_values
 
 
 def _generate_product_data(
@@ -46,38 +101,109 @@ def _generate_product_data(
     return insert_line
 
 
+def _generate_deltas(
+    duckdb_conn: DuckDBPyConnection,
+    products: dict[str, list[int]],
+    delta_counts: tuple[int, int],
+    table_name: str,
+    max_value: int = 1000,
+) -> tuple[str, dict[str, list[int]]]:
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS {table_name};"
+    )
+    duckdb_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS {table_name} "
+        + "(product_id VARCHAR, value1 INT, k_count INT);"
+    )
+
+    delta_count, sample_size = delta_counts
+    # Choose random products to delete values from
+    to_delete_from_products = sample(
+        list(products.keys()), delta_count // 2
+    )
+    to_insert_to_products = sample(
+        list(products.keys()), delta_count // 2
+    )
+
+    # Add delete statements to delta SQL
+    delta_sql = "INSERT INTO delta_Products (product_id, value1, k_count) VALUES "
+    for product_id in to_delete_from_products:
+        if products[product_id]:
+            values_to_delete = sample(
+                products[product_id], sample_size
+            )
+            for value_to_delete in values_to_delete:
+                delta_sql += f"('{product_id}', {value_to_delete}, -1),"
+                products[product_id].remove(value_to_delete)
+    # Add insert statements to delta SQL
+    for product_id in to_insert_to_products:
+        for _ in range(sample_size):
+            new_value = randint(1, max_value)
+            delta_sql += (
+                f"('{product_id}', {new_value}, 1),"
+            )
+            products[product_id].append(new_value)
+    delta_sql = delta_sql[:-1] + ";"
+
+    return delta_sql, products
+
+
+def _generate_nu_query(
+    duckdb_conn: DuckDBPyConnection,
+    table_name: str,
+    products: dict[str, list[int]],
+) -> str:
+    duckdb_conn.execute(
+        f"DROP TABLE IF EXISTS nu_{table_name};"
+    )
+    duckdb_conn.execute(
+        f"CREATE TABLE IF NOT EXISTS nu_{table_name} "
+        + "(product_id VARCHAR, value1 INT, k_count INT);"
+    )
+
+    nu_sql = "INSERT INTO nu_Products (product_id, value1, k_count) VALUES "
+    for product_id, values in products.items():
+        for value in values:
+            nu_sql += f"('{product_id}', {value}, 1),"
+    nu_sql = nu_sql[:-1] + ";"
+    return nu_sql
+
+
 def prep_aggregation_table(
     duckdb_conn: DuckDBPyConnection,
     args_namespace: argparse.Namespace,
 ) -> None:
     """Prepares the previous table to run the aggregation on."""
 
-    # Data loading for base table
-    duckdb_conn.execute(
-        _generate_product_data(
-            duckdb_conn,
-            args_namespace.data_file,
-            "Products",
-        )
-    )
+    max_value_value = 1000
 
-    # Data loading for delta table
-    duckdb_conn.execute(
-        _generate_product_data(
+    g_build_query, product_dict = (
+        _generate_synthethic_products_data(
             duckdb_conn,
-            args_namespace.delta_file,
-            "delta_Products",
+            args_namespace.n,
+            args_namespace.m,
+            table_name="Products",
+            max_value=max_value_value,
         )
     )
+    duckdb_conn.execute(g_build_query)
 
-    # Data loading for nu table for scratch aggregation
-    duckdb_conn.execute(
-        _generate_product_data(
-            duckdb_conn,
-            args_namespace.nu_file,
-            "nu_Products",
-        )
+    delta_query, product_dict_nu = _generate_deltas(
+        duckdb_conn,
+        product_dict,
+        delta_counts=(
+            args_namespace.delta_count,
+            args_namespace.sample_size,
+        ),
+        table_name="delta_Products",
+        max_value=max_value_value,
     )
+    duckdb_conn.execute(delta_query)
+
+    nu_build_query = _generate_nu_query(
+        duckdb_conn, "Products", product_dict_nu
+    )
+    duckdb_conn.execute(nu_build_query)
 
 
 def prep_aggregation_query(
@@ -204,6 +330,34 @@ if __name__ == "__main__":
         "aggregation_nu_sql_file",
         type=str,
         help="The SQL file that contains the aggregation operator for the nu.",
+    )
+    parser.add_argument(
+        "--n",
+        "-n",
+        type=int,
+        default=1000,
+        help="Number of products to generate.",
+    )
+    parser.add_argument(
+        "--m",
+        "-m",
+        type=int,
+        default=10,
+        help="Number of values per product to generate.",
+    )
+    parser.add_argument(
+        "--delta_count",
+        "-dc",
+        type=int,
+        default=100,
+        help="Number of delta changes to generate.",
+    )
+    parser.add_argument(
+        "--sample_size",
+        "-sas",
+        type=int,
+        default=1,
+        help="Number of values to change per product in delta.",
     )
 
     args = parser.parse_args()

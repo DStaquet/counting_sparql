@@ -186,10 +186,10 @@ def writeBaseG(
             f"Writing base graph to {output_file}.", end=""
         )
         with open(output_file, "w") as f:
-            f.write("s, p, o, k_count\n")
+            f.write("s,p,o,k_count\n")
             for s, p, o in base_g:
                 f.write(
-                    f'"{str(s)}", "{str(p)}", "{str(o)}", 1\n'
+                    f'"{str(s)}","{str(p)}","{str(o)}",1\n'
                 )
         print(f" Done.")
         return
@@ -216,25 +216,25 @@ def writeDeltaGs(
             with open(
                 f"{output_dir}/delta_{i}.{format}", "w"
             ) as f:
-                f.write("s, p, o, k_count\n")
+                f.write("s,p,o,k_count\n")
                 for s, p, o in insert_G:
                     f.write(
-                        f'"{str(s)}", "{str(p)}", "{str(o)}", 1\n'
+                        f'"{str(s)}","{str(p)}","{str(o)}",1\n'
                     )
             with open(
                 f"{output_dir}/delta_{i}.{format}", "a"
             ) as f:
                 for s, p, o in delete_G:
                     f.write(
-                        f'"{str(s)}", "{str(p)}", "{str(o)}", -1\n'
+                        f'"{str(s)}","{str(p)}","{str(o)}", -1\n'
                     )
             with open(
                 f"{output_dir}/nu_{i}.{nu_format}", "w"
             ) as f:
-                f.write("s, p, o, k_count\n")
+                f.write("s,p,o,k_count\n")
                 for s, p, o in nu_G:
                     f.write(
-                        f'"{str(s)}", "{str(p)}", "{str(o)}", 1\n'
+                        f'"{str(s)}","{str(p)}","{str(o)}", 1\n'
                     )
             continue
         insert_G.serialize(
@@ -301,8 +301,8 @@ if __name__ == "__main__":
         all_product_dict,
         S_in_graph,
         10,
-        1000,
-        1000,
+        100,
+        100,
         args.output_dir,
     )
 
