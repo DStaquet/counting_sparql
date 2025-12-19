@@ -386,13 +386,14 @@ if __name__ == "__main__":
     avg_increm_time: float = 0.0
     avg_scratch_time: float = 0.0
 
+    print("Preparing products tables...")
+    prep_aggregation_table(
+        conn,
+        args,
+    )
+
     for run in range(args.runs):
         print(f"Run {run+1}/{args.runs}")
-
-        prep_aggregation_table(
-            conn,
-            args,
-        )
 
         print("Running aggregation incrementally...")
         conn.execute("DROP TABLE IF EXISTS Agg;")
