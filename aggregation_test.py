@@ -288,7 +288,7 @@ if __name__ == "__main__":
         type=str,
         help="The directory where the SQL queries are stored.",
     )
-    parser.add_argument(
+    """ parser.add_argument(
         "data_file",
         type=str,
         help="The base graph data file to use.",
@@ -302,7 +302,7 @@ if __name__ == "__main__":
         "nu_file",
         type=str,
         help="The nu file to use.",
-    )
+    ) """
     parser.add_argument(
         "--runs",
         "-r",

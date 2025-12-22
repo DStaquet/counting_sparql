@@ -4,9 +4,9 @@ FROM delta_Products
 GROUP BY product_id;
 
 CREATE TABLE nu_Agg_increm AS
-SELECT * FROM Agg EXCEPT (SELECT * FROM delta_Agg)
+SELECT * FROM Agg WHERE NOT EXISTS (SELECT * FROM delta_Agg WHERE delta_Agg.product_id = Agg.product_id)
 UNION
-SELECT * FROM delta_Agg EXCEPT (SELECT * FROM Agg)
+SELECT * FROM delta_Agg WHERE NOT EXISTS (SELECT * FROM Agg WHERE Agg.product_id = delta_Agg.product_id)
 UNION
 SELECT Agg.product_id, CAST (Agg.value1 AS INT) + CAST (delta_Agg.value1 AS INT), 1 as k_count
 FROM Agg, delta_Agg
