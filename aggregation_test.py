@@ -177,6 +177,7 @@ def prep_aggregation_table(
 
     max_value_value = 1000
 
+    print("Generating synthetic products data...")
     g_build_query, product_dict = (
         _generate_synthethic_products_data(
             duckdb_conn,
@@ -188,6 +189,7 @@ def prep_aggregation_table(
     )
     duckdb_conn.execute(g_build_query)
 
+    print("Generating delta products data...")
     delta_query, product_dict_nu = _generate_deltas(
         duckdb_conn,
         product_dict,
@@ -200,6 +202,7 @@ def prep_aggregation_table(
     )
     duckdb_conn.execute(delta_query)
 
+    print("Generating nu products data...")
     nu_build_query = _generate_nu_query(
         duckdb_conn, "Products", product_dict_nu
     )

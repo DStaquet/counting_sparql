@@ -1,0 +1,1078 @@
+Running script with 1000 products, 50 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.957023620605469 milliseconds.
+Average incremental time so far:  13.957023620605469
+Running aggregation from scratch...
+Scratch aggregation completed in 7.631063461303711 milliseconds.
+Average scratch time so far:  7.631063461303711
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.913921356201172 milliseconds.
+Average incremental time so far:  11.93547248840332
+Running aggregation from scratch...
+Scratch aggregation completed in 7.244586944580078 milliseconds.
+Average scratch time so far:  7.4378252029418945
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.565208435058594 milliseconds.
+Average incremental time so far:  11.812051137288412
+Running aggregation from scratch...
+Scratch aggregation completed in 8.222579956054688 milliseconds.
+Average scratch time so far:  7.699410120646159
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.13946533203125 milliseconds.
+Average incremental time so far:  11.393904685974121
+Running aggregation from scratch...
+Scratch aggregation completed in 7.877349853515625 milliseconds.
+Average scratch time so far:  7.743895053863525
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.642290115356445 milliseconds.
+Average incremental time so far:  11.243581771850586
+Running aggregation from scratch...
+Scratch aggregation completed in 7.323980331420898 milliseconds.
+Average scratch time so far:  7.659912109375
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.45901870727539 milliseconds.
+Average incremental time so far:  10.946154594421387
+Running aggregation from scratch...
+Scratch aggregation completed in 7.274389266967773 milliseconds.
+Average scratch time so far:  7.595658302307129
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 8.793830871582031 milliseconds.
+Average incremental time so far:  10.638679776872907
+Running aggregation from scratch...
+Scratch aggregation completed in 6.997585296630859 milliseconds.
+Average scratch time so far:  7.5102193014962335
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.030818939208984 milliseconds.
+Average incremental time so far:  10.437697172164917
+Running aggregation from scratch...
+Scratch aggregation completed in 7.158994674682617 milliseconds.
+Average scratch time so far:  7.466316223144531
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 8.981704711914062 milliseconds.
+Average incremental time so far:  10.275920232137045
+Running aggregation from scratch...
+Scratch aggregation completed in 6.8531036376953125 milliseconds.
+Average scratch time so far:  7.398181491427952
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 8.767366409301758 milliseconds.
+Average incremental time so far:  10.125064849853516
+Running aggregation from scratch...
+Scratch aggregation completed in 8.328437805175781 milliseconds.
+Average scratch time so far:  7.491207122802734
+
+Average incremental aggregation time: 10.125064849853516 milliseconds.
+Average scratch aggregation time: 7.491207122802734 milliseconds.
+Done.
+
+
+Running script with 1000 products, 100 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.160943984985352 milliseconds.
+Average incremental time so far:  13.160943984985352
+Running aggregation from scratch...
+Scratch aggregation completed in 11.505126953125 milliseconds.
+Average scratch time so far:  11.505126953125
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.759353637695312 milliseconds.
+Average incremental time so far:  11.960148811340332
+Running aggregation from scratch...
+Scratch aggregation completed in 10.939598083496094 milliseconds.
+Average scratch time so far:  11.222362518310547
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.040355682373047 milliseconds.
+Average incremental time so far:  10.986884435017904
+Running aggregation from scratch...
+Scratch aggregation completed in 11.298179626464844 milliseconds.
+Average scratch time so far:  11.247634887695312
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 8.957386016845703 milliseconds.
+Average incremental time so far:  10.479509830474854
+Running aggregation from scratch...
+Scratch aggregation completed in 10.73598861694336 milliseconds.
+Average scratch time so far:  11.119723320007324
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.933948516845703 milliseconds.
+Average incremental time so far:  10.370397567749023
+Running aggregation from scratch...
+Scratch aggregation completed in 10.375499725341797 milliseconds.
+Average scratch time so far:  10.970878601074219
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.495973587036133 milliseconds.
+Average incremental time so far:  10.224660237630209
+Running aggregation from scratch...
+Scratch aggregation completed in 14.986038208007812 milliseconds.
+Average scratch time so far:  11.640071868896484
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.727239608764648 milliseconds.
+Average incremental time so far:  10.153600147792272
+Running aggregation from scratch...
+Scratch aggregation completed in 12.90130615234375 milliseconds.
+Average scratch time so far:  11.820248195103236
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 8.613348007202148 milliseconds.
+Average incremental time so far:  9.961068630218506
+Running aggregation from scratch...
+Scratch aggregation completed in 12.650489807128906 milliseconds.
+Average scratch time so far:  11.924028396606445
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.165048599243164 milliseconds.
+Average incremental time so far:  9.872621960110134
+Running aggregation from scratch...
+Scratch aggregation completed in 11.167526245117188 milliseconds.
+Average scratch time so far:  11.839972601996529
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.34457778930664 milliseconds.
+Average incremental time so far:  9.819817543029785
+Running aggregation from scratch...
+Scratch aggregation completed in 10.636329650878906 milliseconds.
+Average scratch time so far:  11.719608306884766
+
+Average incremental aggregation time: 9.819817543029785 milliseconds.
+Average scratch aggregation time: 11.719608306884766 milliseconds.
+Done.
+
+
+Running script with 1000 products, 1000 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.063026428222656 milliseconds.
+Average incremental time so far:  12.063026428222656
+Running aggregation from scratch...
+Scratch aggregation completed in 25.708913803100586 milliseconds.
+Average scratch time so far:  25.708913803100586
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.226249694824219 milliseconds.
+Average incremental time so far:  11.144638061523438
+Running aggregation from scratch...
+Scratch aggregation completed in 23.975133895874023 milliseconds.
+Average scratch time so far:  24.842023849487305
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.43756103515625 milliseconds.
+Average incremental time so far:  10.575612386067709
+Running aggregation from scratch...
+Scratch aggregation completed in 20.455360412597656 milliseconds.
+Average scratch time so far:  23.379802703857422
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 8.748054504394531 milliseconds.
+Average incremental time so far:  10.118722915649414
+Running aggregation from scratch...
+Scratch aggregation completed in 25.027036666870117 milliseconds.
+Average scratch time so far:  23.791611194610596
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.950088500976562 milliseconds.
+Average incremental time so far:  10.284996032714844
+Running aggregation from scratch...
+Scratch aggregation completed in 27.89592742919922 milliseconds.
+Average scratch time so far:  24.61247444152832
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.413719177246094 milliseconds.
+Average incremental time so far:  10.139783223470053
+Running aggregation from scratch...
+Scratch aggregation completed in 26.7484188079834 milliseconds.
+Average scratch time so far:  24.968465169270832
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.377241134643555 milliseconds.
+Average incremental time so far:  10.030848639351982
+Running aggregation from scratch...
+Scratch aggregation completed in 23.013830184936523 milliseconds.
+Average scratch time so far:  24.689231600080216
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.220600128173828 milliseconds.
+Average incremental time so far:  9.929567575454712
+Running aggregation from scratch...
+Scratch aggregation completed in 23.063182830810547 milliseconds.
+Average scratch time so far:  24.48597550392151
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 9.467363357543945 milliseconds.
+Average incremental time so far:  9.878211551242405
+Running aggregation from scratch...
+Scratch aggregation completed in 26.626110076904297 milliseconds.
+Average scratch time so far:  24.72376823425293
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.075569152832031 milliseconds.
+Average incremental time so far:  9.897947311401367
+Running aggregation from scratch...
+Scratch aggregation completed in 27.708768844604492 milliseconds.
+Average scratch time so far:  25.022268295288086
+
+Average incremental aggregation time: 9.897947311401367 milliseconds.
+Average scratch aggregation time: 25.022268295288086 milliseconds.
+Done.
+
+
+Running script with 5000 products, 50 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 15.607595443725586 milliseconds.
+Average incremental time so far:  15.607595443725586
+Running aggregation from scratch...
+Scratch aggregation completed in 19.7145938873291 milliseconds.
+Average scratch time so far:  19.7145938873291
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.420654296875 milliseconds.
+Average incremental time so far:  14.014124870300293
+Running aggregation from scratch...
+Scratch aggregation completed in 14.740467071533203 milliseconds.
+Average scratch time so far:  17.227530479431152
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.75689697265625 milliseconds.
+Average incremental time so far:  13.261715571085611
+Running aggregation from scratch...
+Scratch aggregation completed in 15.010356903076172 milliseconds.
+Average scratch time so far:  16.48847262064616
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.619640350341797 milliseconds.
+Average incremental time so far:  12.601196765899658
+Running aggregation from scratch...
+Scratch aggregation completed in 19.042253494262695 milliseconds.
+Average scratch time so far:  17.126917839050293
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.040925979614258 milliseconds.
+Average incremental time so far:  12.289142608642578
+Running aggregation from scratch...
+Scratch aggregation completed in 21.687030792236328 milliseconds.
+Average scratch time so far:  18.0389404296875
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.13383674621582 milliseconds.
+Average incremental time so far:  12.263258298238119
+Running aggregation from scratch...
+Scratch aggregation completed in 19.396066665649414 milliseconds.
+Average scratch time so far:  18.265128135681152
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.97416877746582 milliseconds.
+Average incremental time so far:  12.079102652413505
+Running aggregation from scratch...
+Scratch aggregation completed in 14.714717864990234 milliseconds.
+Average scratch time so far:  17.75792666843959
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.054204940795898 milliseconds.
+Average incremental time so far:  12.075990438461304
+Running aggregation from scratch...
+Scratch aggregation completed in 15.891790390014648 milliseconds.
+Average scratch time so far:  17.524659633636475
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.876510620117188 milliseconds.
+Average incremental time so far:  12.164937125311958
+Running aggregation from scratch...
+Scratch aggregation completed in 23.03600311279297 milliseconds.
+Average scratch time so far:  18.13703113132053
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.730432510375977 milliseconds.
+Average incremental time so far:  12.12148666381836
+Running aggregation from scratch...
+Scratch aggregation completed in 19.961118698120117 milliseconds.
+Average scratch time so far:  18.31943988800049
+
+Average incremental aggregation time: 12.12148666381836 milliseconds.
+Average scratch aggregation time: 18.31943988800049 milliseconds.
+Done.
+
+
+Running script with 5000 products, 100 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 15.769481658935547 milliseconds.
+Average incremental time so far:  15.769481658935547
+Running aggregation from scratch...
+Scratch aggregation completed in 22.0639705657959 milliseconds.
+Average scratch time so far:  22.0639705657959
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.575553894042969 milliseconds.
+Average incremental time so far:  14.672517776489258
+Running aggregation from scratch...
+Scratch aggregation completed in 20.668983459472656 milliseconds.
+Average scratch time so far:  21.366477012634277
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.084888458251953 milliseconds.
+Average incremental time so far:  14.14330800374349
+Running aggregation from scratch...
+Scratch aggregation completed in 21.098852157592773 milliseconds.
+Average scratch time so far:  21.27726872762044
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 16.065120697021484 milliseconds.
+Average incremental time so far:  14.623761177062988
+Running aggregation from scratch...
+Scratch aggregation completed in 21.999597549438477 milliseconds.
+Average scratch time so far:  21.45785093307495
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.115001678466797 milliseconds.
+Average incremental time so far:  14.12200927734375
+Running aggregation from scratch...
+Scratch aggregation completed in 21.4078426361084 milliseconds.
+Average scratch time so far:  21.44784927368164
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.53707504272461 milliseconds.
+Average incremental time so far:  13.691186904907227
+Running aggregation from scratch...
+Scratch aggregation completed in 20.59316635131836 milliseconds.
+Average scratch time so far:  21.305402119954426
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.467933654785156 milliseconds.
+Average incremental time so far:  13.37357929774693
+Running aggregation from scratch...
+Scratch aggregation completed in 19.919633865356445 milliseconds.
+Average scratch time so far:  21.10743522644043
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.699676513671875 milliseconds.
+Average incremental time so far:  13.164341449737549
+Running aggregation from scratch...
+Scratch aggregation completed in 21.50559425354004 milliseconds.
+Average scratch time so far:  21.15720510482788
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.352798461914062 milliseconds.
+Average incremental time so far:  13.296392228868273
+Running aggregation from scratch...
+Scratch aggregation completed in 21.128416061401367 milliseconds.
+Average scratch time so far:  21.154006322224934
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.49551773071289 milliseconds.
+Average incremental time so far:  13.216304779052734
+Running aggregation from scratch...
+Scratch aggregation completed in 19.810199737548828 milliseconds.
+Average scratch time so far:  21.019625663757324
+
+Average incremental aggregation time: 13.216304779052734 milliseconds.
+Average scratch aggregation time: 21.019625663757324 milliseconds.
+Done.
+
+
+Running script with 5000 products, 1000 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 16.025066375732422 milliseconds.
+Average incremental time so far:  16.025066375732422
+Running aggregation from scratch...
+Scratch aggregation completed in 94.23637390136719 milliseconds.
+Average scratch time so far:  94.23637390136719
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.469602584838867 milliseconds.
+Average incremental time so far:  13.747334480285645
+Running aggregation from scratch...
+Scratch aggregation completed in 85.81161499023438 milliseconds.
+Average scratch time so far:  90.02399444580078
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.834383010864258 milliseconds.
+Average incremental time so far:  13.109683990478516
+Running aggregation from scratch...
+Scratch aggregation completed in 88.98186683654785 milliseconds.
+Average scratch time so far:  89.6766185760498
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.692689895629883 milliseconds.
+Average incremental time so far:  13.005435466766357
+Running aggregation from scratch...
+Scratch aggregation completed in 91.55702590942383 milliseconds.
+Average scratch time so far:  90.14672040939331
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.892152786254883 milliseconds.
+Average incremental time so far:  12.582778930664062
+Running aggregation from scratch...
+Scratch aggregation completed in 84.21707153320312 milliseconds.
+Average scratch time so far:  88.96079063415527
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.802196502685547 milliseconds.
+Average incremental time so far:  12.45268185933431
+Running aggregation from scratch...
+Scratch aggregation completed in 87.55803108215332 milliseconds.
+Average scratch time so far:  88.72699737548828
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.593652725219727 milliseconds.
+Average incremental time so far:  12.187106268746513
+Running aggregation from scratch...
+Scratch aggregation completed in 83.27150344848633 milliseconds.
+Average scratch time so far:  87.94764110020229
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 10.553598403930664 milliseconds.
+Average incremental time so far:  11.982917785644531
+Running aggregation from scratch...
+Scratch aggregation completed in 85.38389205932617 milliseconds.
+Average scratch time so far:  87.62717247009277
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 12.079715728759766 milliseconds.
+Average incremental time so far:  11.993673112657335
+Running aggregation from scratch...
+Scratch aggregation completed in 89.76984024047852 milliseconds.
+Average scratch time so far:  87.8652466668023
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 11.917591094970703 milliseconds.
+Average incremental time so far:  11.986064910888672
+Running aggregation from scratch...
+Scratch aggregation completed in 88.25349807739258 milliseconds.
+Average scratch time so far:  87.90407180786133
+
+Average incremental aggregation time: 11.986064910888672 milliseconds.
+Average scratch aggregation time: 87.90407180786133 milliseconds.
+Done.
+
+
+Running script with 10000 products, 50 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 19.082307815551758 milliseconds.
+Average incremental time so far:  19.082307815551758
+Running aggregation from scratch...
+Scratch aggregation completed in 24.05381202697754 milliseconds.
+Average scratch time so far:  24.05381202697754
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.829397201538086 milliseconds.
+Average incremental time so far:  16.955852508544922
+Running aggregation from scratch...
+Scratch aggregation completed in 24.111270904541016 milliseconds.
+Average scratch time so far:  24.082541465759277
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.715433120727539 milliseconds.
+Average incremental time so far:  16.20904604593913
+Running aggregation from scratch...
+Scratch aggregation completed in 22.8424072265625 milliseconds.
+Average scratch time so far:  23.66916338602702
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.964103698730469 milliseconds.
+Average incremental time so far:  15.897810459136963
+Running aggregation from scratch...
+Scratch aggregation completed in 24.3685245513916 milliseconds.
+Average scratch time so far:  23.844003677368164
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 15.057086944580078 milliseconds.
+Average incremental time so far:  15.729665756225586
+Running aggregation from scratch...
+Scratch aggregation completed in 22.66526222229004 milliseconds.
+Average scratch time so far:  23.60825538635254
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.20140266418457 milliseconds.
+Average incremental time so far:  15.474955240885416
+Running aggregation from scratch...
+Scratch aggregation completed in 20.979881286621094 milliseconds.
+Average scratch time so far:  23.170193036397297
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.375686645507812 milliseconds.
+Average incremental time so far:  15.317916870117188
+Running aggregation from scratch...
+Scratch aggregation completed in 21.512269973754883 milliseconds.
+Average scratch time so far:  22.933346884591238
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.73291015625 milliseconds.
+Average incremental time so far:  15.119791030883789
+Running aggregation from scratch...
+Scratch aggregation completed in 21.582841873168945 milliseconds.
+Average scratch time so far:  22.764533758163452
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.700485229492188 milliseconds.
+Average incremental time so far:  14.962090386284721
+Running aggregation from scratch...
+Scratch aggregation completed in 21.912813186645508 milliseconds.
+Average scratch time so far:  22.669898139105904
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.831615447998047 milliseconds.
+Average incremental time so far:  14.849042892456055
+Running aggregation from scratch...
+Scratch aggregation completed in 22.269010543823242 milliseconds.
+Average scratch time so far:  22.629809379577637
+
+Average incremental aggregation time: 14.849042892456055 milliseconds.
+Average scratch aggregation time: 22.629809379577637 milliseconds.
+Done.
+
+
+Running script with 10000 products, 100 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 18.380165100097656 milliseconds.
+Average incremental time so far:  18.380165100097656
+Running aggregation from scratch...
+Scratch aggregation completed in 23.6814022064209 milliseconds.
+Average scratch time so far:  23.6814022064209
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 16.167402267456055 milliseconds.
+Average incremental time so far:  17.273783683776855
+Running aggregation from scratch...
+Scratch aggregation completed in 29.575586318969727 milliseconds.
+Average scratch time so far:  26.628494262695312
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 16.45660400390625 milliseconds.
+Average incremental time so far:  17.00139045715332
+Running aggregation from scratch...
+Scratch aggregation completed in 23.7581729888916 milliseconds.
+Average scratch time so far:  25.671720504760742
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.740943908691406 milliseconds.
+Average incremental time so far:  16.436278820037842
+Running aggregation from scratch...
+Scratch aggregation completed in 22.97830581665039 milliseconds.
+Average scratch time so far:  24.998366832733154
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.493227005004883 milliseconds.
+Average incremental time so far:  16.04766845703125
+Running aggregation from scratch...
+Scratch aggregation completed in 22.156715393066406 milliseconds.
+Average scratch time so far:  24.430036544799805
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.478994369506836 milliseconds.
+Average incremental time so far:  15.619556109110514
+Running aggregation from scratch...
+Scratch aggregation completed in 22.501468658447266 milliseconds.
+Average scratch time so far:  24.108608563741047
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 14.507532119750977 milliseconds.
+Average incremental time so far:  15.460695539202009
+Running aggregation from scratch...
+Scratch aggregation completed in 22.505760192871094 milliseconds.
+Average scratch time so far:  23.87963022504534
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 15.060186386108398 milliseconds.
+Average incremental time so far:  15.410631895065308
+Running aggregation from scratch...
+Scratch aggregation completed in 23.546695709228516 milliseconds.
+Average scratch time so far:  23.838013410568237
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 13.311147689819336 milliseconds.
+Average incremental time so far:  15.1773558722602
+Running aggregation from scratch...
+Scratch aggregation completed in 23.841381072998047 milliseconds.
+Average scratch time so far:  23.83838759528266
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 15.082836151123047 milliseconds.
+Average incremental time so far:  15.167903900146484
+Running aggregation from scratch...
+Scratch aggregation completed in 23.753881454467773 milliseconds.
+Average scratch time so far:  23.829936981201172
+
+Average incremental aggregation time: 15.167903900146484 milliseconds.
+Average scratch aggregation time: 23.829936981201172 milliseconds.
+Done.
+
+
+Running script with 20000 products, 50 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 25.18177032470703 milliseconds.
+Average incremental time so far:  25.18177032470703
+Running aggregation from scratch...
+Scratch aggregation completed in 35.303592681884766 milliseconds.
+Average scratch time so far:  35.303592681884766
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 22.327661514282227 milliseconds.
+Average incremental time so far:  23.75471591949463
+Running aggregation from scratch...
+Scratch aggregation completed in 29.456138610839844 milliseconds.
+Average scratch time so far:  32.379865646362305
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 18.917322158813477 milliseconds.
+Average incremental time so far:  22.14225133260091
+Running aggregation from scratch...
+Scratch aggregation completed in 27.548789978027344 milliseconds.
+Average scratch time so far:  30.769507090250652
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 21.587133407592773 milliseconds.
+Average incremental time so far:  22.003471851348877
+Running aggregation from scratch...
+Scratch aggregation completed in 38.51962089538574 milliseconds.
+Average scratch time so far:  32.707035541534424
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 25.19822120666504 milliseconds.
+Average incremental time so far:  22.64242172241211
+Running aggregation from scratch...
+Scratch aggregation completed in 37.72759437561035 milliseconds.
+Average scratch time so far:  33.71114730834961
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 24.015188217163086 milliseconds.
+Average incremental time so far:  22.871216138203938
+Running aggregation from scratch...
+Scratch aggregation completed in 40.99702835083008 milliseconds.
+Average scratch time so far:  34.92546081542969
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 19.609451293945312 milliseconds.
+Average incremental time so far:  22.405249731881277
+Running aggregation from scratch...
+Scratch aggregation completed in 35.578012466430664 milliseconds.
+Average scratch time so far:  35.0186824798584
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 21.002531051635742 milliseconds.
+Average incremental time so far:  22.229909896850586
+Running aggregation from scratch...
+Scratch aggregation completed in 32.55748748779297 milliseconds.
+Average scratch time so far:  34.71103310585022
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 19.00625228881836 milliseconds.
+Average incremental time so far:  21.87172571818034
+Running aggregation from scratch...
+Scratch aggregation completed in 27.49180793762207 milliseconds.
+Average scratch time so far:  33.90889697604709
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 20.20549774169922 milliseconds.
+Average incremental time so far:  21.705102920532227
+Running aggregation from scratch...
+Scratch aggregation completed in 31.482696533203125 milliseconds.
+Average scratch time so far:  33.666276931762695
+
+Average incremental aggregation time: 21.705102920532227 milliseconds.
+Average scratch aggregation time: 33.666276931762695 milliseconds.
+Done.
+
+
+Running script with 20000 products, 100 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 21.747112274169922 milliseconds.
+Average incremental time so far:  21.747112274169922
+Running aggregation from scratch...
+Scratch aggregation completed in 42.2821044921875 milliseconds.
+Average scratch time so far:  42.2821044921875
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 19.0274715423584 milliseconds.
+Average incremental time so far:  20.38729190826416
+Running aggregation from scratch...
+Scratch aggregation completed in 42.95086860656738 milliseconds.
+Average scratch time so far:  42.61648654937744
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 21.134138107299805 milliseconds.
+Average incremental time so far:  20.636240641276043
+Running aggregation from scratch...
+Scratch aggregation completed in 42.80376434326172 milliseconds.
+Average scratch time so far:  42.6789124806722
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 19.52075958251953 milliseconds.
+Average incremental time so far:  20.357370376586914
+Running aggregation from scratch...
+Scratch aggregation completed in 41.3362979888916 milliseconds.
+Average scratch time so far:  42.34325885772705
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 21.313905715942383 milliseconds.
+Average incremental time so far:  20.548677444458008
+Running aggregation from scratch...
+Scratch aggregation completed in 51.62549018859863 milliseconds.
+Average scratch time so far:  44.19970512390137
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 22.939205169677734 milliseconds.
+Average incremental time so far:  20.94709873199463
+Running aggregation from scratch...
+Scratch aggregation completed in 50.30989646911621 milliseconds.
+Average scratch time so far:  45.21807034810384
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 20.972251892089844 milliseconds.
+Average incremental time so far:  20.95069204057966
+Running aggregation from scratch...
+Scratch aggregation completed in 50.894737243652344 milliseconds.
+Average scratch time so far:  46.02902276175363
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 22.511959075927734 milliseconds.
+Average incremental time so far:  21.14585041999817
+Running aggregation from scratch...
+Scratch aggregation completed in 50.03070831298828 milliseconds.
+Average scratch time so far:  46.52923345565796
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 22.238731384277344 milliseconds.
+Average incremental time so far:  21.26728163825141
+Running aggregation from scratch...
+Scratch aggregation completed in 46.82445526123047 milliseconds.
+Average scratch time so far:  46.56203587849935
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 23.97322654724121 milliseconds.
+Average incremental time so far:  21.53787612915039
+Running aggregation from scratch...
+Scratch aggregation completed in 51.33557319641113 milliseconds.
+Average scratch time so far:  47.03938961029053
+
+Average incremental aggregation time: 21.53787612915039 milliseconds.
+Average scratch aggregation time: 47.03938961029053 milliseconds.
+Done.
+
+
+Running script with 50000 products, 50 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 38.50150108337402 milliseconds.
+Average incremental time so far:  38.50150108337402
+Running aggregation from scratch...
+Scratch aggregation completed in 63.22884559631348 milliseconds.
+Average scratch time so far:  63.22884559631348
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 33.05339813232422 milliseconds.
+Average incremental time so far:  35.77744960784912
+Running aggregation from scratch...
+Scratch aggregation completed in 60.4705810546875 milliseconds.
+Average scratch time so far:  61.84971332550049
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 34.40690040588379 milliseconds.
+Average incremental time so far:  35.32059987386068
+Running aggregation from scratch...
+Scratch aggregation completed in 62.819480895996094 milliseconds.
+Average scratch time so far:  62.17296918233236
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 33.826351165771484 milliseconds.
+Average incremental time so far:  34.94703769683838
+Running aggregation from scratch...
+Scratch aggregation completed in 62.061309814453125 milliseconds.
+Average scratch time so far:  62.14505434036255
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 36.5910530090332 milliseconds.
+Average incremental time so far:  35.275840759277344
+Running aggregation from scratch...
+Scratch aggregation completed in 64.65435028076172 milliseconds.
+Average scratch time so far:  62.64691352844238
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 38.11907768249512 milliseconds.
+Average incremental time so far:  35.74971357981364
+Running aggregation from scratch...
+Scratch aggregation completed in 62.64305114746094 milliseconds.
+Average scratch time so far:  62.64626979827881
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 34.82460975646973 milliseconds.
+Average incremental time so far:  35.61755589076451
+Running aggregation from scratch...
+Scratch aggregation completed in 72.38364219665527 milliseconds.
+Average scratch time so far:  64.03732299804688
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 36.82732582092285 milliseconds.
+Average incremental time so far:  35.7687771320343
+Running aggregation from scratch...
+Scratch aggregation completed in 61.7365837097168 milliseconds.
+Average scratch time so far:  63.749730587005615
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 34.98578071594238 milliseconds.
+Average incremental time so far:  35.68177753024631
+Running aggregation from scratch...
+Scratch aggregation completed in 63.22836875915527 milliseconds.
+Average scratch time so far:  63.69180149502225
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 33.67185592651367 milliseconds.
+Average incremental time so far:  35.48078536987305
+Running aggregation from scratch...
+Scratch aggregation completed in 62.16239929199219 milliseconds.
+Average scratch time so far:  63.53886127471924
+
+Average incremental aggregation time: 35.48078536987305 milliseconds.
+Average scratch aggregation time: 63.53886127471924 milliseconds.
+Done.
+
+
+Running script with 50000 products, 100 inputs per product, 10 products to delta, 10 samples per delta, 10 runs
+Preparing products tables...
+Generating synthetic products data...
+Generating delta products data...
+Generating nu products data...
+Run 1/10
+Running aggregation incrementally...
+Delta aggregation completed in 39.58916664123535 milliseconds.
+Average incremental time so far:  39.58916664123535
+Running aggregation from scratch...
+Scratch aggregation completed in 103.95979881286621 milliseconds.
+Average scratch time so far:  103.95979881286621
+
+Run 2/10
+Running aggregation incrementally...
+Delta aggregation completed in 38.94472122192383 milliseconds.
+Average incremental time so far:  39.26694393157959
+Running aggregation from scratch...
+Scratch aggregation completed in 110.6882095336914 milliseconds.
+Average scratch time so far:  107.32400417327881
+
+Run 3/10
+Running aggregation incrementally...
+Delta aggregation completed in 41.536569595336914 milliseconds.
+Average incremental time so far:  40.023485819498696
+Running aggregation from scratch...
+Scratch aggregation completed in 99.02119636535645 milliseconds.
+Average scratch time so far:  104.55640157063802
+
+Run 4/10
+Running aggregation incrementally...
+Delta aggregation completed in 33.30659866333008 milliseconds.
+Average incremental time so far:  38.34426403045654
+Running aggregation from scratch...
+Scratch aggregation completed in 98.4339714050293 milliseconds.
+Average scratch time so far:  103.02579402923584
+
+Run 5/10
+Running aggregation incrementally...
+Delta aggregation completed in 34.32464599609375 milliseconds.
+Average incremental time so far:  37.540340423583984
+Running aggregation from scratch...
+Scratch aggregation completed in 94.70939636230469 milliseconds.
+Average scratch time so far:  101.36251449584961
+
+Run 6/10
+Running aggregation incrementally...
+Delta aggregation completed in 33.867835998535156 milliseconds.
+Average incremental time so far:  36.928256352742515
+Running aggregation from scratch...
+Scratch aggregation completed in 98.18887710571289 milliseconds.
+Average scratch time so far:  100.83357493082683
+
+Run 7/10
+Running aggregation incrementally...
+Delta aggregation completed in 34.72161293029785 milliseconds.
+Average incremental time so far:  36.61302157810756
+Running aggregation from scratch...
+Scratch aggregation completed in 99.18451309204102 milliseconds.
+Average scratch time so far:  100.59799466814313
+
+Run 8/10
+Running aggregation incrementally...
+Delta aggregation completed in 34.01589393615723 milliseconds.
+Average incremental time so far:  36.28838062286377
+Running aggregation from scratch...
+Scratch aggregation completed in 93.59860420227051 milliseconds.
+Average scratch time so far:  99.72307085990906
+
+Run 9/10
+Running aggregation incrementally...
+Delta aggregation completed in 35.82191467285156 milliseconds.
+Average incremental time so far:  36.23655107286241
+Running aggregation from scratch...
+Scratch aggregation completed in 103.5161018371582 milliseconds.
+Average scratch time so far:  100.14451874627008
+
+Run 10/10
+Running aggregation incrementally...
+Delta aggregation completed in 41.44787788391113 milliseconds.
+Average incremental time so far:  36.757683753967285
+Running aggregation from scratch...
+Scratch aggregation completed in 105.37433624267578 milliseconds.
+Average scratch time so far:  100.66750049591064
+
+Average incremental aggregation time: 36.757683753967285 milliseconds.
+Average scratch aggregation time: 100.66750049591064 milliseconds.
+Done.
