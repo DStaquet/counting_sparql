@@ -22,10 +22,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 562.3927116394043 ms
-Average: 562.3927116394043 ms
-Incremental time: 1122.6780414581299 ms
-Average: 1122.6780414581299 ms
+Scratch time: 1026.681900024414 ms
+Average: 1026.681900024414 ms
+Incremental time: 2949.054002761841 ms
+Average: 2949.054002761841 ms
 
 Run: 2 of 5
 Loading base graph data
@@ -51,10 +51,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 549.2115020751953 ms
-Average: 555.8021068572998 ms
-Incremental time: 1087.6355171203613 ms
-Average: 1105.1567792892456 ms
+Scratch time: 902.1213054656982 ms
+Average: 964.4016027450562 ms
+Incremental time: 3271.4946269989014 ms
+Average: 3110.274314880371 ms
 
 Run: 3 of 5
 Loading base graph data
@@ -80,10 +80,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 546.809196472168 ms
-Average: 552.8044700622559 ms
-Incremental time: 893.5089111328125 ms
-Average: 1034.6074899037678 ms
+Scratch time: 1070.6541538238525 ms
+Average: 999.8191197713217 ms
+Incremental time: 3104.4554710388184 ms
+Average: 3108.33470026652 ms
 
 Run: 4 of 5
 Loading base graph data
@@ -109,10 +109,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 643.5558795928955 ms
-Average: 575.4923224449158 ms
-Incremental time: 1254.8563480377197 ms
-Average: 1089.6697044372559 ms
+Scratch time: 1147.5296020507812 ms
+Average: 1036.7467403411865 ms
+Incremental time: 3050.9331226348877 ms
+Average: 3093.984305858612 ms
 
 Run: 5 of 5
 Loading base graph data
@@ -138,10 +138,10 @@ Delta 7 of 10
 Delta 8 of 10
 Delta 9 of 10
 Delta 10 of 10
-Scratch time: 583.7247371673584 ms
-Average: 577.1388053894043 ms
-Incremental time: 1154.4816493988037 ms
-Average: 1102.6320934295654 ms
+Scratch time: 1062.4401569366455 ms
+Average: 1041.8854236602783 ms
+Incremental time: 2793.966770172119 ms
+Average: 3033.9807987213135 ms
 
-Average scratch time: 577.1388053894043 ms
-Average incremental time: 1102.6320934295654 ms
+Average scratch time: 1041.8854236602783 ms
+Average incremental time: 3033.9807987213135 ms
