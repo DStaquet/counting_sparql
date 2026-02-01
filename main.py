@@ -2,7 +2,10 @@
 
 from os.path import join
 
-from benchmarker.benchmark import run_benchmark
+from benchmarker.benchmark import (
+    run_benchmark,
+    set_entire_query,
+)
 from benchmarker.mult_benchmark import run_chain_benchmark
 
 
@@ -178,6 +181,7 @@ if __name__ == "__main__":
 
     if args.setup:
         setup_query_files(args.query, args.query_files)
+        set_entire_query(args.query, args.query_files)
 
     # Connect to the database
     duckdb_conn = connect(args.db)

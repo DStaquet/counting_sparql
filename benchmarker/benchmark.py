@@ -2,6 +2,7 @@
 
 from os.path import join
 from time import time
+import sqlparse
 from rdflib.plugins.sparql.parserutils import CompValue
 from duckdb import DuckDBPyConnection
 
@@ -17,6 +18,76 @@ from experiments.experiments import (
 )
 from SQL_Constructor.table_constructor import get_table_name
 from benchmarker.dict_maker import constructDictFromTree
+
+
+def __write_entire_query_to_output_dir(
+    output_dir: str,
+    query: str,
+    filename: str,
+) -> None:
+    """Writes the entire query to the output directory
+
+    Args:
+        output_dir (str): Directory to write the SQL queries
+        query (str): The query to write
+        filename (str): The name of the file
+    """
+    query = sqlparse.format(
+        query, reindent=True, keyword_case="upper"
+    )
+    print(
+        f"Writing the entire query to {output_dir}/{filename}.sql"
+    )
+    with open(
+        f"{output_dir}/{filename}.sql",
+        "w",
+        encoding="utf-8",
+    ) as f:
+        f.write(query)
+
+
+def set_entire_query(
+    query: str,
+    query_files_dir: str,
+) -> None:
+    """Gets the entire query and writes it to a file.
+
+    Args:
+        query (str): Query to write.
+        query_files_dir (str): Output dir.
+    """
+    # Get the query object
+    q_query_object = get_query_object(readQueryFile(query))
+
+    # Get the query input
+    query_input_dir = get_query_input(
+        query_files_dir, q_query_object
+    )
+
+    # Build dictionary with SQL queries
+    sql_queries = constructDictFromTree(
+        q_query_object.algebra, query_input_dir
+    )
+    sql_delta_queries = constructDictFromTree(
+        q_query_object.algebra, query_input_dir, True
+    )
+
+    run_query_str = entire_run_query(
+        q_query_object.algebra.p, sql_queries
+    )
+    __write_entire_query_to_output_dir(
+        query_input_dir,
+        run_query_str,
+        "scratch_query",
+    )
+    run_query_delta_str = entire_run_query(
+        q_query_object.algebra.p, sql_delta_queries
+    )
+    __write_entire_query_to_output_dir(
+        query_input_dir,
+        run_query_delta_str,
+        "incremental_query",
+    )
 
 
 def entire_run_query(

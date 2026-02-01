@@ -1,4 +1,5 @@
 from os.path import exists, join
+import sqlparse
 from duckdb import DuckDBPyConnection
 from rdflib.plugins.sparql import algebra, parser
 from rdflib.plugins.sparql.parser import parseQuery
@@ -16,7 +17,6 @@ from SQL_Constructor.operation_constructor import (
     leftjoin_constructor as SQL_leftjoin,
     union_constructor as SQL_union,
 )
-
 from SQL_Constructor.table_constructor import (
     __encode_table_name,
 )

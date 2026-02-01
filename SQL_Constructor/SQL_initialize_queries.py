@@ -1,9 +1,11 @@
 """Modules to import"""
 
 from typing import Union
+from os.path import join
 
 from rdflib.plugins.sparql.parserutils import CompValue
 import sqlparse
+from duckdb import DuckDBPyConnection
 
 from SQL_Constructor import base_constructor
 import SQL_Constructor.table_constructor
