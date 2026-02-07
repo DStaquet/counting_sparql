@@ -5,9 +5,17 @@ Experiments for connecting multiple solid pods to a DuckDB database and storing 
 from argparse import ArgumentParser
 from threading import Thread, Lock
 
-from requests import get, RequestException
+from requests import get, RequestException, put
 from duckdb import DuckDBPyConnection, connect
 from rdflib import Graph
+
+from example_constructor.graph_constructor import (
+    build_hop_graph,
+    Graph as custom_Graph,
+)
+from example_constructor.graph_splitter import (
+    split_graph_into_pods,
+)
 
 
 def connect_main_db(db_path: str) -> DuckDBPyConnection:
@@ -98,8 +106,30 @@ def __get_pod_data(pod_url: str) -> str:
     return response.text
 
 
+def _put_data_in_pod(
+    data: custom_Graph, pod_url: str, filename: str
+) -> None:
+    turtle_to_insert = data.graph_to_turtle(
+        "http://example.org/node",
+        "http://example.org/edges",
+    )
+
+    r = put(
+        pod_url + filename,
+        data=turtle_to_insert,
+        headers={"Content-Type": "text/turtle"},
+        timeout=10,
+    )
+
+    print(turtle_to_insert)
+
+
 def handle_pod_connection(
-    conn: DuckDBPyConnection, pod_url: str, db_lock: Lock
+    conn: DuckDBPyConnection,
+    pod_url: str,
+    filename: str,
+    db_lock: Lock,
+    data: custom_Graph,
 ):
     """Handles the connection to a pod and stores its data in the DuckDB database.
 
@@ -109,6 +139,7 @@ def handle_pod_connection(
     """
     pod_data = __get_pod_data(pod_url)
     triples = __parse_pod_data(pod_data)
+    _put_data_in_pod(data, pod_url, filename)
     __put_pod_data(conn, pod_url, triples, db_lock)
     print(f"Data from pod {pod_url} stored in database.")
 
@@ -130,7 +161,38 @@ if __name__ == "__main__":
         help="List of pod URLs to connect to",
         required=True,
     )
+    arg_parser.add_argument(
+        "-f",
+        "--filename",
+        help="Filename to store the random data in.",
+        default="hops.ttl",
+    )
+    arg_parser.add_argument(
+        "-e",
+        "--edges",
+        help="The edges to build between bottlenecks",
+        default=10,
+    )
+    arg_parser.add_argument(
+        "-b",
+        "--bottlenecks",
+        help="The amount of bottlenecks",
+        default=4,
+    )
+    arg_parser.add_argument(
+        "-v",
+        "--vertices",
+        help="The amount of vertices per bottleneck",
+        default=10,
+    )
     args = arg_parser.parse_args()
+
+    og_graph = build_hop_graph(
+        args.edges, args.vertices, args.bottlenecks
+    )
+    split_graphs = split_graph_into_pods(
+        og_graph, len(args.pods)
+    )
 
     # Connect to the DuckDB database
     duckdb_connection = connect_main_db(args.database)
@@ -141,10 +203,17 @@ if __name__ == "__main__":
     # We will connect to three pods multithreadedly
     threads = []
     lock = Lock()
-    for pod in args.pods:
+    filename = args.filename
+    for i, pod in enumerate(args.pods):
         thread = Thread(
             target=handle_pod_connection,
-            args=(duckdb_connection, pod, lock),
+            args=(
+                duckdb_connection,
+                pod,
+                filename,
+                lock,
+                split_graphs[i],
+            ),
         )
         threads.append(thread)
         thread.start()

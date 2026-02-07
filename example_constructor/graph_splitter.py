@@ -3,7 +3,14 @@
 from random import randint
 
 # pylint: disable=import-error
-from graph_constructor import Graph, build_hop_graph
+from example_constructor.graph_constructor import (
+    build_hop_graph,
+    Graph,
+)
+
+
+def __remove_quotes(given_string: str) -> str:
+    return given_string[1 : len(given_string) - 1]
 
 
 def split_graph_into_pods(
@@ -20,8 +27,8 @@ def split_graph_into_pods(
             graphs.
     """
     triple_list = og_graph.graph_to_triple_list(
-        "http://example.org/node/",
-        "http://example.org/edge/",
+        "",
+        "",
     )
 
     split_list: list[Graph] = []
@@ -33,11 +40,17 @@ def split_graph_into_pods(
     ]
 
     for triple in triple_list:
+        if triple[2] == "'Node'":
+            continue
         index = randint(0, amount - 1)
-        seen_vertices[index].add(triple[0])
-        seen_vertices[index].add(triple[2])
+        seen_vertices[index].add(__remove_quotes(triple[0]))
+        seen_vertices[index].add(__remove_quotes(triple[2]))
         split_triples[index].append(
-            (triple[0], triple[1], triple[2])
+            (
+                __remove_quotes(triple[0]),
+                __remove_quotes(triple[1]),
+                __remove_quotes(triple[2]),
+            )
         )
 
     for index in range(amount):
@@ -52,8 +65,9 @@ def split_graph_into_pods(
 
 
 if __name__ == "__main__":
-    og_graph: Graph = build_hop_graph(1000, 1000, 4)
-    print(og_graph)
-    split_graphs = split_graph_into_pods(og_graph, 3)
-    for graph in split_graphs:
+    og_g: Graph = build_hop_graph(5, 5, 4)
+    print(og_g)
+    split_graphs = split_graph_into_pods(og_g, 3)
+    for i, graph in enumerate(split_graphs):
+        print("Graph:", i)
         print(graph)
