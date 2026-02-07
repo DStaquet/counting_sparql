@@ -27,6 +27,22 @@ class Graph:
 
         return Graph(vertices_diff, edges_diff)
 
+    def get_vertices(self) -> list[str]:
+        """Get the vertices of the graph.
+
+        Returns:
+            list[str]: List of all vertices of the graph.
+        """
+        return self.vertices
+
+    def get_edges(self) -> list[tuple[str, str, str]]:
+        """Gets the edges of the graph.
+
+        Returns:
+            list[tuple[str, str, str, str]]: List of all edges.
+        """
+        return self.edges
+
     def union(self, other):
         """Returns the union of two graphs.
 
