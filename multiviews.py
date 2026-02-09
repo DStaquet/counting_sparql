@@ -18,6 +18,20 @@ from example_constructor.graph_splitter import (
 )
 
 
+def _read_ttl_data(
+    data_file: str,
+) -> custom_Graph:
+    vertices: set[str] = set()
+    edges: set[tuple[str, str, str]] = set()
+    with open(data_file, "r", encoding="utf-8") as handle:
+        g: Graph = Graph().parse(data=handle.read())
+        for s, p, o in g:
+            vertices.add(f"'{s}'")
+            edges.add((f"'{s}'", f"'{p}'", f"'{o}'"))
+
+    return custom_Graph(list(vertices), list(edges))
+
+
 def connect_main_db(db_path: str) -> DuckDBPyConnection:
     """Connects to a DuckDB database at the specified path.
 
@@ -107,14 +121,18 @@ def __get_pod_data(pod_url: str) -> str:
 
 
 def _put_data_in_pod(
-    data: custom_Graph, pod_url: str, filename: str
+    data: custom_Graph,
+    pod_url: str,
+    filename: str,
+    turtle_to_insert: str | None = None,
 ) -> None:
-    turtle_to_insert = data.graph_to_turtle(
-        "http://example.org/node",
-        "http://example.org/edges",
-    )
+    if not turtle_to_insert:
+        turtle_to_insert = data.graph_to_turtle(
+            "http://example.org/node",
+            "http://example.org/edges",
+        )
 
-    r = put(
+    put(
         pod_url + filename,
         data=turtle_to_insert,
         headers={"Content-Type": "text/turtle"},
@@ -185,6 +203,11 @@ if __name__ == "__main__":
         help="The amount of vertices per bottleneck",
         default=10,
     )
+    arg_parser.add_argument(
+        "-df",
+        "--data_file",
+        help="The data file to pull data from.",
+    )
     args = arg_parser.parse_args()
 
     og_graph = build_hop_graph(
@@ -193,6 +216,7 @@ if __name__ == "__main__":
     split_graphs = split_graph_into_pods(
         og_graph, len(args.pods)
     )
+    custom_graph = _read_ttl_data(args.data_file)
 
     # Connect to the DuckDB database
     duckdb_connection = connect_main_db(args.database)
@@ -203,14 +227,14 @@ if __name__ == "__main__":
     # We will connect to three pods multithreadedly
     threads = []
     lock = Lock()
-    filename = args.filename
+    hop_filename = args.filename
     for i, pod in enumerate(args.pods):
         thread = Thread(
             target=handle_pod_connection,
             args=(
                 duckdb_connection,
                 pod,
-                filename,
+                hop_filename,
                 lock,
                 split_graphs[i],
             ),
@@ -220,3 +244,13 @@ if __name__ == "__main__":
 
     for thread in threads:
         thread.join()
+
+    with open(
+        args.data_file, encoding="utf-8"
+    ) as data_handle:
+        _put_data_in_pod(
+            custom_graph,
+            args.pods[0],
+            args.filename,
+            data_handle.read(),
+        )
