@@ -66,7 +66,6 @@ def split_graph_into_pods(
 
 if __name__ == "__main__":
     og_g: Graph = build_hop_graph(5, 5, 4)
-    print(og_g)
     split_graphs = split_graph_into_pods(og_g, 3)
     for i, graph in enumerate(split_graphs):
         print("Graph:", i)
