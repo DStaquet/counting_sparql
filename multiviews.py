@@ -162,6 +162,13 @@ def handle_pod_connection(
     print(f"Data from pod {pod_url} stored in database.")
 
 
+def ivm(query_file: str, query_dir: str) -> None:
+    from build_data import setup_query_files
+
+    # Put ready the query files
+    setup_query_files(query_file, query_dir)
+
+
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
         description="Connect to DuckDB database"
@@ -208,6 +215,18 @@ if __name__ == "__main__":
         "--data_file",
         help="The data file to pull data from.",
     )
+    arg_parser.add_argument(
+        "-qd",
+        "--query_dir",
+        help="The query directory to store the ivm files.",
+        required=True,
+    )
+    arg_parser.add_argument(
+        "-q",
+        "--query_file",
+        help="The query file to run on the pods",
+        required=True,
+    )
     args = arg_parser.parse_args()
 
     og_graph = build_hop_graph(
@@ -216,7 +235,7 @@ if __name__ == "__main__":
     split_graphs = split_graph_into_pods(
         og_graph, len(args.pods)
     )
-    custom_graph = _read_ttl_data(args.data_file)
+    """ custom_graph = _read_ttl_data(args.data_file) """
 
     # Connect to the DuckDB database
     duckdb_connection = connect_main_db(args.database)
@@ -245,7 +264,9 @@ if __name__ == "__main__":
     for thread in threads:
         thread.join()
 
-    with open(
+    ivm(args.query_file, args.query_dir)
+
+    """ with open(
         args.data_file, encoding="utf-8"
     ) as data_handle:
         _put_data_in_pod(
@@ -253,4 +274,4 @@ if __name__ == "__main__":
             args.pods[0],
             args.filename,
             data_handle.read(),
-        )
+        ) """
