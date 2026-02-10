@@ -4,7 +4,9 @@ Experiments for connecting multiple solid pods to a DuckDB database and storing 
 
 from argparse import ArgumentParser
 from threading import Thread, Lock
-import os, sys
+import os
+import sys
+from os.path import join
 
 from requests import get, RequestException, put
 from duckdb import DuckDBPyConnection, connect
@@ -13,10 +15,13 @@ from rdflib import Graph
 from example_constructor.graph_constructor import (
     build_hop_graph,
     Graph as custom_Graph,
+    select_delta_edges_hop_graph,
 )
 from example_constructor.graph_splitter import (
     split_graph_into_pods,
 )
+from build_data import setup_query_files
+from benchmarker.benchmark import set_entire_query
 
 
 def _read_ttl_data(
@@ -51,16 +56,28 @@ def connect_main_db(db_path: str) -> DuckDBPyConnection:
     return conn
 
 
+def _create_table(
+    table_name: str, conn: DuckDBPyConnection
+) -> None:
+    conn.execute(
+        f"CREATE OR REPLACE TABLE {table_name}"
+        + " (pod_id STRING, s STRING, p STRING, o STRING, k_count INT);"
+    )
+
+
 def __create_multi_pod_view(
     conn: DuckDBPyConnection,
     view_name: str,
+    delta_view_name: str,
+    nu_view_name: str,
 ) -> None:
     """Creates a view in the DuckDB database to combine data from multiple pods."""
     # Create mutex lock for thread safety if needed
-    conn.execute(
-        f"CREATE OR REPLACE TABLE {view_name}"
-        + " (pod_id STRING,subject STRING, predicate STRING, object STRING);"
-    )
+    _create_table(view_name, conn)
+    # Create the delta
+    _create_table(delta_view_name, conn)
+    # Create the nu_table
+    _create_table(nu_view_name, conn)
 
 
 def __parse_pod_data(
@@ -90,14 +107,16 @@ def __put_pod_data(
     pod_name: str,
     triples: list[tuple[str, str, str, str]],
     db_lock: Lock,
+    table_name: str,
+    ins_or_del: int = 1,
 ):
     """Inserts pod data into the multi-pod view in the DuckDB database."""
     # Create mutex lock for thread safety if needed
     with db_lock:
         for triple in triples:
             conn.execute(
-                "INSERT INTO multi_pod_view (pod_id, subject, predicate, object)"
-                + f" VALUES ('{pod_name}', '{triple[1]}', '{triple[2]}', '{triple[3]}');",
+                f"INSERT INTO {table_name} (pod_id, s, p, o, k_count)"
+                + f" VALUES ('{pod_name}', '{triple[1]}', '{triple[2]}', '{triple[3]}', {ins_or_del});",
             )
 
 
@@ -115,9 +134,7 @@ def __get_pod_data(pod_url: str) -> str:
     except RequestException:
         return f"Error fetching data from pod {pod_url}"
     finally:
-        print(
-            f"Data fetched from pod {pod_url}: {response.text}"
-        )
+        print(f"Data fetched from pod {pod_url}.")
     return response.text
 
 
@@ -140,7 +157,24 @@ def _put_data_in_pod(
         timeout=10,
     )
 
-    print(turtle_to_insert)
+    # print(turtle_to_insert)
+
+
+def _put_delta_in_pod(
+    deltas: tuple[custom_Graph, custom_Graph, custom_Graph],
+    pod_url: str,
+    delta_filenames: tuple[str, str],
+    nu_filename: str,
+) -> None:
+    delta_del, delta_ins, nu_graph = deltas
+
+    # Insert the deletions
+    _put_data_in_pod(delta_del, pod_url, delta_filenames[0])
+    # Insert the insertions
+    _put_data_in_pod(delta_ins, pod_url, delta_filenames[1])
+
+    # Insert the nu graph
+    _put_data_in_pod(nu_graph, pod_url, nu_filename)
 
 
 def handle_pod_connection(
@@ -148,28 +182,135 @@ def handle_pod_connection(
     pod_url: str,
     filename: str,
     db_lock: Lock,
-    data: custom_Graph,
-):
+    graphs_and_deltas: tuple[
+        custom_Graph,
+        tuple[custom_Graph, custom_Graph, custom_Graph],
+    ],
+    table_names: tuple[str, str, str],
+) -> None:
     """Handles the connection to a pod and stores its data in the DuckDB database.
 
     Args:
         conn (DuckDBPyConnection): The DuckDB connection object.
         pod_url (str): The URL of the pod to connect to.
     """
-    pod_data = __get_pod_data(pod_url)
-    triples = __parse_pod_data(pod_data)
+    data, deltas = graphs_and_deltas
     _put_data_in_pod(data, pod_url, filename)
-    __put_pod_data(conn, pod_url, triples, db_lock)
+    _put_delta_in_pod(
+        deltas,
+        pod_url,
+        ("delta_ins_" + filename, "delta_del_" + filename),
+        "nu_" + filename,
+    )
+    # Get the normal data
+    pod_data = __get_pod_data(join(pod_url, filename))
+    triples = __parse_pod_data(pod_data)
+    __put_pod_data(
+        conn, pod_url, triples, db_lock, table_names[0]
+    )
+    # Get the delta data
+    ins_data = __get_pod_data(
+        join(pod_url, "delta_ins_" + filename)
+    )
+    del_data = __get_pod_data(
+        join(pod_url, "delta_del_" + filename)
+    )
+    ins_triples = __parse_pod_data(ins_data)
+    del_triples = __parse_pod_data(del_data)
+    __put_pod_data(
+        conn, pod_url, ins_triples, db_lock, table_names[1]
+    )
+    __put_pod_data(
+        conn,
+        pod_url,
+        del_triples,
+        db_lock,
+        table_names[1],
+        -1,
+    )
+    # Get the nu data
+    nu_data = __get_pod_data(
+        join(pod_url, "nu_" + filename)
+    )
+    nu_triples = __parse_pod_data(nu_data)
+    __put_pod_data(
+        conn, pod_url, nu_triples, db_lock, table_names[2]
+    )
     print(f"Data from pod {pod_url} stored in database.")
 
 
-def ivm(query_file: str, query_dir: str) -> None:
-    from build_data import setup_query_files
-    from benchmarker.benchmark import set_entire_query
+def _sql_query(
+    query_output_dir: str,
+    aggregator_db: DuckDBPyConnection,
+    query_to_execute: str,
+) -> None:
+    # Execute the from SQL queries
+    with open(
+        join(query_output_dir, query_to_execute),
+        "r",
+        encoding="utf-8",
+    ) as handle:
+        aggregator_db.execute(handle.read())
+
+
+def _drop_tables(
+    query_output_dir: str, aggregator_db: DuckDBPyConnection
+) -> None:
+    with open(
+        join(query_output_dir, "drop_tables.sql"),
+        encoding="utf-8",
+    ) as drop_handle:
+        aggregator_db.execute(drop_handle.read())
+    with open(
+        join(query_output_dir, "drop_delta_tables.sql"),
+        encoding="utf-8",
+    ) as drop_handle:
+        aggregator_db.execute(drop_handle.read())
+
+
+def ivm(
+    query_file: str,
+    query_dir: str,
+    aggregator_db: DuckDBPyConnection,
+) -> None:
 
     # Put ready the query files
-    setup_query_files(query_file, query_dir)
+    query_output_dir = setup_query_files(
+        query_file, query_dir
+    )
     set_entire_query(query_file, query_dir)
+
+    _drop_tables(query_output_dir, aggregator_db)
+    # Execute the scratch query
+    _sql_query(
+        query_output_dir, aggregator_db, "scratch_query.sql"
+    )
+    # Execute the IVM query
+    _sql_query(
+        query_output_dir,
+        aggregator_db,
+        "incremental_query.sql",
+    )
+
+
+def _deltas_per_pod(
+    split_g: list[custom_Graph],
+    edges_to_delete: int,
+    bottlenecks: int,
+    many_vertices: int,
+) -> list[tuple[custom_Graph, custom_Graph, custom_Graph]]:
+    return_list: list[
+        tuple[custom_Graph, custom_Graph, custom_Graph]
+    ] = []
+    for _, graph in enumerate(split_g):
+        current = select_delta_edges_hop_graph(
+            graph,
+            edges_to_delete,
+            bottlenecks,
+            many_vertices,
+        )
+        return_list.append(current)
+    return return_list
 
 
 if __name__ == "__main__":
@@ -204,20 +345,30 @@ if __name__ == "__main__":
     arg_parser.add_argument(
         "-e",
         "--edges",
-        help="The edges to build between bottlenecks",
+        help="The fraction for the edges to build between bottlenecks",
         default=10,
+        type=int,
     )
     arg_parser.add_argument(
         "-b",
         "--bottlenecks",
         help="The amount of bottlenecks",
         default=4,
+        type=int,
     )
     arg_parser.add_argument(
         "-v",
         "--vertices",
         help="The amount of vertices per bottleneck",
         default=10,
+        type=int,
+    )
+    arg_parser.add_argument(
+        "-ed",
+        "--edges_to_delete",
+        help="The amount of edges to delete",
+        default=1,
+        type=int,
     )
     arg_parser.add_argument(
         "-df",
@@ -244,18 +395,25 @@ if __name__ == "__main__":
     split_graphs = split_graph_into_pods(
         og_graph, len(args.pods)
     )
+    split_deltas = _deltas_per_pod(
+        split_graphs,
+        args.edges_to_delete,
+        args.bottlenecks,
+        args.edges,
+    )
     """ custom_graph = _read_ttl_data(args.data_file) """
 
     # Connect to the DuckDB database
     duckdb_connection = connect_main_db(args.database)
     __create_multi_pod_view(
-        duckdb_connection, "multi_pod_view"
+        duckdb_connection, "G", "delta_G", "nu_G"
     )
 
     # We will connect to three pods multithreadedly
     threads = []
     lock = Lock()
     hop_filename = args.filename
+    multiview_table_names = ("G", "delta_G", "nu_G")
     for i, pod in enumerate(args.pods):
         thread = Thread(
             target=handle_pod_connection,
@@ -264,7 +422,8 @@ if __name__ == "__main__":
                 pod,
                 hop_filename,
                 lock,
-                split_graphs[i],
+                (split_graphs[i], split_deltas[i]),
+                multiview_table_names,
             ),
         )
         threads.append(thread)
@@ -273,7 +432,7 @@ if __name__ == "__main__":
     for thread in threads:
         thread.join()
 
-    ivm(args.query_file, args.query_dir)
+    ivm(args.query_file, args.query_dir, duckdb_connection)
 
     """ with open(
         args.data_file, encoding="utf-8"

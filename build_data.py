@@ -124,7 +124,7 @@ def build_data(
 def setup_query_files(
     query_str: str,
     output_dir: str,
-) -> None:
+) -> str:
     """Constructs the BGP queries and writes them to the output directory.
 
     Args:
@@ -170,6 +170,8 @@ def setup_query_files(
         q_query_object.algebra,
         query_output_dir,
     )
+
+    return query_output_dir
 
 
 def __findDropableTables(
