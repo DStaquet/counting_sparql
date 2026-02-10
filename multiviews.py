@@ -4,6 +4,7 @@ Experiments for connecting multiple solid pods to a DuckDB database and storing 
 
 from argparse import ArgumentParser
 from threading import Thread, Lock
+import os, sys
 
 from requests import get, RequestException, put
 from duckdb import DuckDBPyConnection, connect
@@ -164,12 +165,20 @@ def handle_pod_connection(
 
 def ivm(query_file: str, query_dir: str) -> None:
     from build_data import setup_query_files
+    from benchmarker.benchmark import set_entire_query
 
     # Put ready the query files
     setup_query_files(query_file, query_dir)
+    set_entire_query(query_file, query_dir)
 
 
 if __name__ == "__main__":
+    hashseed = os.getenv("PYTHONHASHSEED")
+    if not hashseed:
+        os.environ["PYTHONHASHSEED"] = "0"
+        os.execv(
+            sys.executable, [sys.executable] + sys.argv
+        )
     arg_parser = ArgumentParser(
         description="Connect to DuckDB database"
     )
