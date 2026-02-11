@@ -8,6 +8,7 @@ import os
 import sys
 from os.path import join
 from typing import Iterable, Any
+from datetime import date
 
 from requests import get, RequestException, put
 from duckdb import DuckDBPyConnection, connect
@@ -20,6 +21,9 @@ from example_constructor.graph_constructor import (
 )
 from example_constructor.graph_splitter import (
     split_graph_into_pods,
+)
+from example_constructor.we_are_poc_constructor import (
+    generate_random_ratings,
 )
 from build_data import setup_query_files
 from benchmarker.benchmark import set_entire_query
@@ -140,12 +144,12 @@ def __get_pod_data(pod_url: str) -> str:
 
 
 def _put_data_in_pod(
-    data: custom_Graph,
     pod_url: str,
     filename: str,
+    data: custom_Graph | None = None,
     turtle_to_insert: str | None = None,
 ) -> None:
-    if not turtle_to_insert:
+    if not turtle_to_insert and data:
         turtle_to_insert = data.graph_to_turtle(
             "http://example.org/node/",
             "http://example.org/edges/",
@@ -170,12 +174,12 @@ def _put_delta_in_pod(
     delta_del, delta_ins, nu_graph = deltas
 
     # Insert the deletions
-    _put_data_in_pod(delta_del, pod_url, delta_filenames[0])
+    _put_data_in_pod(pod_url, delta_filenames[0], delta_del)
     # Insert the insertions
-    _put_data_in_pod(delta_ins, pod_url, delta_filenames[1])
+    _put_data_in_pod(pod_url, delta_filenames[1], delta_ins)
 
     # Insert the nu graph
-    _put_data_in_pod(nu_graph, pod_url, nu_filename)
+    _put_data_in_pod(pod_url, nu_filename, nu_graph)
 
 
 def _handle_delta_pod_connection(
@@ -233,7 +237,7 @@ def handle_pod_connection(
         pod_url (str): The URL of the pod to connect to.
     """
     data, deltas = graphs_and_deltas
-    _put_data_in_pod(data, pod_url, filename)
+    _put_data_in_pod(pod_url, filename, data)
     _put_delta_in_pod(
         deltas,
         pod_url,
@@ -247,6 +251,39 @@ def handle_pod_connection(
         conn, pod_url, triples, db_lock, table_name
     )
     print(f"Data from pod {pod_url} stored in database.")
+
+
+def handle_pod_connection_we_are(
+    pod_url: str,
+    filename: str,
+    triple_amount: int,
+    hospital_amount: int,
+    rating_interval: tuple[int, int],
+    dates: tuple[date, date],
+) -> None:
+    """Handles the we are POC connection cases.
+
+    Args:
+        pod_url (str): URL to each pod.
+        filename (str): Filename to store the data in.
+        triple_amount (int): Amount of triples to generate.
+        hospital_amount (int): Amount of possible hospitals.
+        rating_interval (tuple[int, int]): Rating interval.
+        dates (tuple[date, date]): Interval of dates to choose.
+    """
+    turtle_to_insert = generate_random_ratings(
+        "http://example.org/we_are/",
+        triple_amount,
+        hospital_amount,
+        rating_interval,
+        dates,
+    )
+
+    _put_data_in_pod(
+        pod_url, filename, turtle_to_insert=turtle_to_insert
+    )
+
+    print(f"Put data for hospitals in pod {pod_url}.")
 
 
 def sql_query(
@@ -337,7 +374,10 @@ def _thread_per_pod(
         thread.join()
 
 
-def hops_main(given_args: Namespace) -> None:
+def hops_main(
+    given_args: Namespace,
+    duckdb_conn: DuckDBPyConnection,
+) -> None:
     """Main function for the hop scenario POC.
 
     Args:
@@ -359,19 +399,13 @@ def hops_main(given_args: Namespace) -> None:
     )
     # custom_graph = _read_ttl_data(args.data_file)
 
-    # Connect to the DuckDB database
-    duckdb_connection = connect_main_db(given_args.database)
-    __create_multi_pod_view(
-        duckdb_connection, "G", "delta_G", "nu_G"
-    )
-
     # Put the data for the non IVM part ready
     lock = Lock()
     _thread_per_pod(
         handle_pod_connection,
         [
             (
-                duckdb_connection,
+                duckdb_conn,
                 pod,
                 given_args.filename,
                 lock,
@@ -389,7 +423,7 @@ def hops_main(given_args: Namespace) -> None:
     # Execute the scratch query
     sql_query(
         query_output_dir,
-        duckdb_connection,
+        duckdb_conn,
         "scratch_query.sql",
         drop=True,
     )
@@ -400,7 +434,7 @@ def hops_main(given_args: Namespace) -> None:
         _handle_delta_pod_connection,
         [
             (
-                duckdb_connection,
+                duckdb_conn,
                 pod,
                 given_args.filename,
                 lock,
@@ -413,14 +447,43 @@ def hops_main(given_args: Namespace) -> None:
     # Execute the IVM query
     sql_query(
         query_output_dir,
-        duckdb_connection,
+        duckdb_conn,
         "incremental_query.sql",
     )
     print("Finished the incremental queries.")
 
 
-def we_are_poc_main(args: Namespace) -> None:
-    pass
+def we_are_poc_main(
+    given_args: Namespace,
+    triple_amount: int,
+    hospital_amount: int,
+    rating_interval: tuple[int, int],
+    dates: tuple[date, date],
+) -> None:
+    """Main function for the We Are POC.
+
+    Args:
+        args (Namespace): Given arguments.
+        triple_amount (int): Amount of triples.
+        hospital_amount (int): Amount of hospitals to choose.
+        rating_interval (tuple[int, int]): Rating interval.
+        dates (tuple[date, date]): Dates to choose between.
+    """
+    _thread_per_pod(
+        handle_pod_connection_we_are,
+        [
+            (
+                pod,
+                given_args.filename,
+                triple_amount,
+                hospital_amount,
+                rating_interval,
+                dates,
+            )
+            for pod in given_args.pods
+        ],
+        given_args,
+    )
 
 
 if __name__ == "__main__":
@@ -506,10 +569,22 @@ if __name__ == "__main__":
     )
     args = arg_parser.parse_args()
 
+    # Connect to the DuckDB database
+    duckdb_connection = connect_main_db(args.database)
+    __create_multi_pod_view(
+        duckdb_connection, "G", "delta_G", "nu_G"
+    )
+
     if args.type == "hop":
-        hops_main(args)
+        hops_main(args, duckdb_connection)
     elif args.type == "we_are":
-        we_are_poc_main(args)
+        we_are_poc_main(
+            args,
+            10,
+            3,
+            (1, 10),
+            (date(2025, 12, 1), date(2026, 1, 31)),
+        )
 
     """ with open(
         args.data_file, encoding="utf-8"

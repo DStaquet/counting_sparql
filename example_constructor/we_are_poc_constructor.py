@@ -35,7 +35,7 @@ def generate_random_ratings(
         str: RDF string in Turtle format to use.
     """
     return_str: str = (
-        f"PREFIX : {given_uri}\n"
+        f"PREFIX : <{given_uri}>\n"
         + f"PREFIX xsd: {XSD_URI}\n\n"
     )
 
