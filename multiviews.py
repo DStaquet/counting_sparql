@@ -337,6 +337,92 @@ def _thread_per_pod(
         thread.join()
 
 
+def hops_main(given_args: Namespace) -> None:
+    """Main function for the hop scenario POC.
+
+    Args:
+        given_args (Namespace): Namespace with arguments.
+    """
+    og_graph = build_hop_graph(
+        given_args.edges,
+        given_args.vertices,
+        given_args.bottlenecks,
+    )
+    split_graphs = split_graph_into_pods(
+        og_graph, len(given_args.pods)
+    )
+    split_deltas = _deltas_per_pod(
+        split_graphs,
+        given_args.edges_to_delete,
+        given_args.bottlenecks,
+        given_args.edges,
+    )
+    # custom_graph = _read_ttl_data(args.data_file)
+
+    # Connect to the DuckDB database
+    duckdb_connection = connect_main_db(given_args.database)
+    __create_multi_pod_view(
+        duckdb_connection, "G", "delta_G", "nu_G"
+    )
+
+    # Put the data for the non IVM part ready
+    lock = Lock()
+    _thread_per_pod(
+        handle_pod_connection,
+        [
+            (
+                duckdb_connection,
+                pod,
+                given_args.filename,
+                lock,
+                (split_graphs[i], split_deltas[i]),
+                "G",
+            )
+            for i, pod in enumerate(given_args.pods)
+        ],
+        given_args,
+    )
+    print("Finished putting all the data in the database.")
+    query_output_dir = _setup_queries(
+        given_args.query_file, given_args.query_dir
+    )
+    # Execute the scratch query
+    sql_query(
+        query_output_dir,
+        duckdb_connection,
+        "scratch_query.sql",
+        drop=True,
+    )
+    print("Run from scratch.")
+
+    # Get the delta values
+    _thread_per_pod(
+        _handle_delta_pod_connection,
+        [
+            (
+                duckdb_connection,
+                pod,
+                given_args.filename,
+                lock,
+                ("delta_G", "nu_G"),
+            )
+            for pod in given_args.pods
+        ],
+        given_args,
+    )
+    # Execute the IVM query
+    sql_query(
+        query_output_dir,
+        duckdb_connection,
+        "incremental_query.sql",
+    )
+    print("Finished the incremental queries.")
+
+
+def we_are_poc_main(args: Namespace) -> None:
+    pass
+
+
 if __name__ == "__main__":
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
@@ -411,80 +497,19 @@ if __name__ == "__main__":
         help="The query file to run on the pods",
         required=True,
     )
+    arg_parser.add_argument(
+        "-t",
+        "--type",
+        help="Type of multiview to do.",
+        choices=["hop", "we_are"],
+        required=True,
+    )
     args = arg_parser.parse_args()
 
-    og_graph = build_hop_graph(
-        args.edges, args.vertices, args.bottlenecks
-    )
-    split_graphs = split_graph_into_pods(
-        og_graph, len(args.pods)
-    )
-    split_deltas = _deltas_per_pod(
-        split_graphs,
-        args.edges_to_delete,
-        args.bottlenecks,
-        args.edges,
-    )
-    """ custom_graph = _read_ttl_data(args.data_file) """
-
-    # Connect to the DuckDB database
-    duckdb_connection = connect_main_db(args.database)
-    __create_multi_pod_view(
-        duckdb_connection, "G", "delta_G", "nu_G"
-    )
-
-    # Put the data for the non IVM part ready
-    lock = Lock()
-    _thread_per_pod(
-        handle_pod_connection,
-        [
-            (
-                duckdb_connection,
-                pod,
-                args.filename,
-                lock,
-                (split_graphs[i], split_deltas[i]),
-                "G",
-            )
-            for i, pod in enumerate(args.pods)
-        ],
-        args,
-    )
-    print("Finished putting all the data in the database.")
-    query_output_dir = _setup_queries(
-        args.query_file, args.query_dir
-    )
-    # Execute the scratch query
-    sql_query(
-        query_output_dir,
-        duckdb_connection,
-        "scratch_query.sql",
-        drop=True,
-    )
-    print("Run from scratch.")
-
-    # Get the delta values
-    _thread_per_pod(
-        _handle_delta_pod_connection,
-        [
-            (
-                duckdb_connection,
-                pod,
-                args.filename,
-                lock,
-                ("delta_G", "nu_G"),
-            )
-            for pod in args.pods
-        ],
-        args,
-    )
-    # Execute the IVM query
-    sql_query(
-        query_output_dir,
-        duckdb_connection,
-        "incremental_query.sql",
-    )
-    print("Finished the incremental queries.")
+    if args.type == "hop":
+        hops_main(args)
+    elif args.type == "we_are":
+        we_are_poc_main(args)
 
     """ with open(
         args.data_file, encoding="utf-8"

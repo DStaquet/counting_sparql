@@ -1,0 +1,8 @@
+PREFIX : <http://example.org/we_are/>
+
+SELECT ?rating ?hospital
+WHERE {
+    ?pod :hospital_id ?hospital .
+    ?pod :rating ?rating .
+    FILTER (?rating < 5)
+}
