@@ -1,5 +1,5 @@
-PREFIX edge: <http://example.org/edges>
-PREFIX : <http://example.org/node>
+PREFIX edge: <http://example.org/edges/>
+PREFIX : <http://example.org/node/>
 
 SELECT ?x ?y
 WHERE {

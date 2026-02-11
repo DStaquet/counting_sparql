@@ -2,11 +2,12 @@
 Experiments for connecting multiple solid pods to a DuckDB database and storing them as one view.
 """
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from threading import Thread, Lock
 import os
 import sys
 from os.path import join
+from typing import Iterable, Any
 
 from requests import get, RequestException, put
 from duckdb import DuckDBPyConnection, connect
@@ -115,8 +116,8 @@ def __put_pod_data(
     with db_lock:
         for triple in triples:
             conn.execute(
-                f"INSERT INTO {table_name} (pod_id, s, p, o, k_count)"
-                + f" VALUES ('{pod_name}', '{triple[1]}', '{triple[2]}', '{triple[3]}', {ins_or_del});",
+                f"INSERT INTO {table_name} (pod_id, s, p, o, k_count) VALUES "
+                + f"('{pod_name}', '{triple[1]}', '{triple[2]}', '{triple[3]}', {ins_or_del});",
             )
 
 
@@ -146,8 +147,8 @@ def _put_data_in_pod(
 ) -> None:
     if not turtle_to_insert:
         turtle_to_insert = data.graph_to_turtle(
-            "http://example.org/node",
-            "http://example.org/edges",
+            "http://example.org/node/",
+            "http://example.org/edges/",
         )
 
     put(
@@ -177,6 +178,43 @@ def _put_delta_in_pod(
     _put_data_in_pod(nu_graph, pod_url, nu_filename)
 
 
+def _handle_delta_pod_connection(
+    conn: DuckDBPyConnection,
+    pod_url: str,
+    filename: str,
+    db_lock: Lock,
+    table_names: tuple[str, str],
+) -> None:
+    # Get the delta data
+    ins_data = __get_pod_data(
+        join(pod_url, "delta_ins_" + filename)
+    )
+    del_data = __get_pod_data(
+        join(pod_url, "delta_del_" + filename)
+    )
+    ins_triples = __parse_pod_data(ins_data)
+    del_triples = __parse_pod_data(del_data)
+    __put_pod_data(
+        conn, pod_url, ins_triples, db_lock, table_names[0]
+    )
+    __put_pod_data(
+        conn,
+        pod_url,
+        del_triples,
+        db_lock,
+        table_names[0],
+        -1,
+    )
+    # Get the nu data
+    nu_data = __get_pod_data(
+        join(pod_url, "nu_" + filename)
+    )
+    nu_triples = __parse_pod_data(nu_data)
+    __put_pod_data(
+        conn, pod_url, nu_triples, db_lock, table_names[1]
+    )
+
+
 def handle_pod_connection(
     conn: DuckDBPyConnection,
     pod_url: str,
@@ -186,7 +224,7 @@ def handle_pod_connection(
         custom_Graph,
         tuple[custom_Graph, custom_Graph, custom_Graph],
     ],
-    table_names: tuple[str, str, str],
+    table_name: str,
 ) -> None:
     """Handles the connection to a pod and stores its data in the DuckDB database.
 
@@ -206,47 +244,31 @@ def handle_pod_connection(
     pod_data = __get_pod_data(join(pod_url, filename))
     triples = __parse_pod_data(pod_data)
     __put_pod_data(
-        conn, pod_url, triples, db_lock, table_names[0]
-    )
-    # Get the delta data
-    ins_data = __get_pod_data(
-        join(pod_url, "delta_ins_" + filename)
-    )
-    del_data = __get_pod_data(
-        join(pod_url, "delta_del_" + filename)
-    )
-    ins_triples = __parse_pod_data(ins_data)
-    del_triples = __parse_pod_data(del_data)
-    __put_pod_data(
-        conn, pod_url, ins_triples, db_lock, table_names[1]
-    )
-    __put_pod_data(
-        conn,
-        pod_url,
-        del_triples,
-        db_lock,
-        table_names[1],
-        -1,
-    )
-    # Get the nu data
-    nu_data = __get_pod_data(
-        join(pod_url, "nu_" + filename)
-    )
-    nu_triples = __parse_pod_data(nu_data)
-    __put_pod_data(
-        conn, pod_url, nu_triples, db_lock, table_names[2]
+        conn, pod_url, triples, db_lock, table_name
     )
     print(f"Data from pod {pod_url} stored in database.")
 
 
-def _sql_query(
-    query_output_dir: str,
+def sql_query(
+    output_dir: str,
     aggregator_db: DuckDBPyConnection,
     query_to_execute: str,
+    drop: bool = False,
 ) -> None:
+    """Executes a given sql query in the given directory.
+
+    Args:
+        output_dir (str): Directory where the query is located.
+        aggregator_db (DuckDBPyConnection): Connection to the database.
+        query_to_execute (str): Query to execute.
+        drop (bool, optional): Drops all tables if True. Defaults to False.
+    """
+    if drop:
+        _drop_tables(output_dir, aggregator_db)
+        print("Dropping the tables.")
     # Execute the from SQL queries
     with open(
-        join(query_output_dir, query_to_execute),
+        join(output_dir, query_to_execute),
         "r",
         encoding="utf-8",
     ) as handle:
@@ -254,43 +276,26 @@ def _sql_query(
 
 
 def _drop_tables(
-    query_output_dir: str, aggregator_db: DuckDBPyConnection
+    output_dir: str, aggregator_db: DuckDBPyConnection
 ) -> None:
     with open(
-        join(query_output_dir, "drop_tables.sql"),
+        join(output_dir, "drop_tables.sql"),
         encoding="utf-8",
     ) as drop_handle:
         aggregator_db.execute(drop_handle.read())
     with open(
-        join(query_output_dir, "drop_delta_tables.sql"),
+        join(output_dir, "drop_delta_tables.sql"),
         encoding="utf-8",
     ) as drop_handle:
         aggregator_db.execute(drop_handle.read())
 
 
-def ivm(
-    query_file: str,
-    query_dir: str,
-    aggregator_db: DuckDBPyConnection,
-) -> None:
-
+def _setup_queries(query_file: str, query_dir: str) -> str:
     # Put ready the query files
-    query_output_dir = setup_query_files(
-        query_file, query_dir
-    )
+    output_dir = setup_query_files(query_file, query_dir)
     set_entire_query(query_file, query_dir)
 
-    _drop_tables(query_output_dir, aggregator_db)
-    # Execute the scratch query
-    _sql_query(
-        query_output_dir, aggregator_db, "scratch_query.sql"
-    )
-    # Execute the IVM query
-    _sql_query(
-        query_output_dir,
-        aggregator_db,
-        "incremental_query.sql",
-    )
+    return output_dir
 
 
 def _deltas_per_pod(
@@ -311,6 +316,25 @@ def _deltas_per_pod(
         )
         return_list.append(current)
     return return_list
+
+
+def _thread_per_pod(
+    given_function,
+    arguments: list[Iterable[Any]],
+    passed_args: Namespace,
+) -> None:
+    # We will connect to three pods multithreadedly
+    threads = []
+    for i, _ in enumerate(passed_args.pods):
+        thread = Thread(
+            target=given_function,
+            args=arguments[i],
+        )
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
 
 
 if __name__ == "__main__":
@@ -409,30 +433,58 @@ if __name__ == "__main__":
         duckdb_connection, "G", "delta_G", "nu_G"
     )
 
-    # We will connect to three pods multithreadedly
-    threads = []
+    # Put the data for the non IVM part ready
     lock = Lock()
-    hop_filename = args.filename
-    multiview_table_names = ("G", "delta_G", "nu_G")
-    for i, pod in enumerate(args.pods):
-        thread = Thread(
-            target=handle_pod_connection,
-            args=(
+    _thread_per_pod(
+        handle_pod_connection,
+        [
+            (
                 duckdb_connection,
                 pod,
-                hop_filename,
+                args.filename,
                 lock,
                 (split_graphs[i], split_deltas[i]),
-                multiview_table_names,
-            ),
-        )
-        threads.append(thread)
-        thread.start()
+                "G",
+            )
+            for i, pod in enumerate(args.pods)
+        ],
+        args,
+    )
+    print("Finished putting all the data in the database.")
+    query_output_dir = _setup_queries(
+        args.query_file, args.query_dir
+    )
+    # Execute the scratch query
+    sql_query(
+        query_output_dir,
+        duckdb_connection,
+        "scratch_query.sql",
+        drop=True,
+    )
+    print("Run from scratch.")
 
-    for thread in threads:
-        thread.join()
-
-    ivm(args.query_file, args.query_dir, duckdb_connection)
+    # Get the delta values
+    _thread_per_pod(
+        _handle_delta_pod_connection,
+        [
+            (
+                duckdb_connection,
+                pod,
+                args.filename,
+                lock,
+                ("delta_G", "nu_G"),
+            )
+            for pod in args.pods
+        ],
+        args,
+    )
+    # Execute the IVM query
+    sql_query(
+        query_output_dir,
+        duckdb_connection,
+        "incremental_query.sql",
+    )
+    print("Finished the incremental queries.")
 
     """ with open(
         args.data_file, encoding="utf-8"

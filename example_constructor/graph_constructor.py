@@ -630,8 +630,6 @@ def select_delta_edges_hop_graph(
     edges = g.edges
     selected_edges = sample(edges, k_value // 2)
     selected_vertices = [node[0] for node in selected_edges]
-    print(selected_edges)
-
     """ last_vertices = [
         f"{groups}_{i}" for i in range(k_value // 2)
     ]"""
