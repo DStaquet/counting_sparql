@@ -6,6 +6,9 @@ from SQL_Constructor.aggregation_constructor.sum_constructor import (
     sum_join_query,
     delta_sum_join_query,
 )
+from SQL_Constructor.aggregation_constructor.avg_constructor import (
+    avg_join_query,
+)
 
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
@@ -58,8 +61,16 @@ def _get_aggregate_objects(
     # Gets the aggregate and its name
     aggregate_list = part.get("A")
     aggregate_values: list[CompValue] = []
-    for aggregate in range(len(aggregate_list) - 1):
-        aggregate_values.append(aggregate_list[aggregate])
+    if len(aggregate_list) > 1:
+        for aggregate in range(len(aggregate_list) - 1):
+            aggregate_values.append(
+                aggregate_list[aggregate]
+            )
+    else:
+        for aggregate, _ in enumerate(aggregate_list):
+            aggregate_values.append(
+                aggregate_list[aggregate]
+            )
     aggregate_sample: CompValue = aggregate_list[-1]
 
     return aggregate_values, aggregate_sample
@@ -91,6 +102,24 @@ def aggregate_join_query(
             )
             return create_table_w_select(
                 get_table_name(part), sum_query
+            )
+        case "Aggregate_Avg":
+            avg_query, sum_query, count_query = (
+                avg_join_query(
+                    aggregate_values, aggregate_sample, part
+                )
+            )
+            return (
+                create_table_w_select(
+                    get_table_name(part) + "_sum", sum_query
+                )
+                + create_table_w_select(
+                    get_table_name(part) + "_count",
+                    count_query,
+                )
+                + create_table_w_select(
+                    get_table_name(part), avg_query
+                )
             )
         case _:
             raise NotImplementedError(
@@ -127,5 +156,5 @@ def delta_aggregate_join_query(
             )
         case _:
             raise NotImplementedError(
-                f"Aggregate {aggregate_values[0].name} not implemented"
+                f"Delta Aggregate {aggregate_values[0].name} not implemented"
             )

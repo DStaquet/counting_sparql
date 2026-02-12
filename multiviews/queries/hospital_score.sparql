@@ -1,0 +1,9 @@
+PREFIX : <http://example.org/we_are/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT (AVG(?rating) as ?rating) ?hospital
+WHERE {
+    ?pod :hospital_id ?hospital .
+    ?pod :rating ?rating .
+}
+GROUP BY ?hospital
