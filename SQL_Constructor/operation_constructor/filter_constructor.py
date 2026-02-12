@@ -37,12 +37,10 @@ def filter_expr_part(
                 expr.other[i], curr_schema
             )
     else:
-        if (
-            expr.other == Literal
-            and expr.other.datatype
-            == URIRef(
-                "http://www.w3.org/2001/XMLSchema#date"
-            )
+        if isinstance(
+            expr.other, Literal
+        ) and expr.other.datatype == URIRef(
+            "http://www.w3.org/2001/XMLSchema#date"
         ):
             filter_expr += (
                 "CAST("

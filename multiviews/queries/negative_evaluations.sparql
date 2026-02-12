@@ -7,4 +7,5 @@ WHERE {
     ?pod :rating ?rating .
     ?pod :date ?givendate .
     FILTER (?givendate < "2026-01-31"^^xsd:date)
+    FILTER (?rating < 5)
 }
