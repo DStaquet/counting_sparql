@@ -108,7 +108,7 @@ def __parse_pod_data(
     return triples
 
 
-def __put_pod_data(
+def _put_pod_data_in_database(
     conn: DuckDBPyConnection,
     pod_name: str,
     triples: list[tuple[str, str, str, str]],
@@ -163,6 +163,9 @@ def _put_data_in_pod(
         timeout=10,
     )
 
+    print(
+        f"Put data for hospitals in pod {pod_url} in file {filename}."
+    )
     # print(turtle_to_insert)
 
 
@@ -199,10 +202,10 @@ def _handle_delta_pod_connection(
     )
     ins_triples = __parse_pod_data(ins_data)
     del_triples = __parse_pod_data(del_data)
-    __put_pod_data(
+    _put_pod_data_in_database(
         conn, pod_url, ins_triples, db_lock, table_names[0]
     )
-    __put_pod_data(
+    _put_pod_data_in_database(
         conn,
         pod_url,
         del_triples,
@@ -215,7 +218,7 @@ def _handle_delta_pod_connection(
         join(pod_url, "nu_" + filename)
     )
     nu_triples = __parse_pod_data(nu_data)
-    __put_pod_data(
+    _put_pod_data_in_database(
         conn, pod_url, nu_triples, db_lock, table_names[1]
     )
 
@@ -248,7 +251,7 @@ def handle_pod_connection(
     # Get the normal data
     pod_data = __get_pod_data(join(pod_url, filename))
     triples = __parse_pod_data(pod_data)
-    __put_pod_data(
+    _put_pod_data_in_database(
         conn, pod_url, triples, db_lock, table_name
     )
     print(f"Data from pod {pod_url} stored in database.")
@@ -261,6 +264,10 @@ def handle_pod_connection_we_are(
     hospital_amount: int,
     rating_interval: tuple[int, int],
     dates: tuple[date, date],
+    duckdb_conn: DuckDBPyConnection,
+    lock: Lock,
+    table_name: str,
+    delta_amount: int,
 ) -> None:
     """Handles the we are POC connection cases.
 
@@ -272,19 +279,48 @@ def handle_pod_connection_we_are(
         rating_interval (tuple[int, int]): Rating interval.
         dates (tuple[date, date]): Interval of dates to choose.
     """
-    turtle_to_insert = generate_random_ratings(
+    # Put the normal data.
+    (
+        turtle_to_insert,
+        delete_delta,
+        insert_delta,
+        nu_to_insert,
+    ) = generate_random_ratings(
         "http://example.org/we_are/",
         triple_amount,
         hospital_amount,
         rating_interval,
         dates,
+        delta_amount,
     )
 
     _put_data_in_pod(
         pod_url, filename, turtle_to_insert=turtle_to_insert
     )
+    pod_data = __get_pod_data(join(pod_url, filename))
+    triples = __parse_pod_data(pod_data)
+    _put_pod_data_in_database(
+        duckdb_conn, pod_url, triples, lock, table_name
+    )
 
-    print(f"Put data for hospitals in pod {pod_url}.")
+    # Put down delta data
+    _put_data_in_pod(
+        pod_url,
+        "delta_del_" + filename,
+        turtle_to_insert=delete_delta,
+    )
+    _put_data_in_pod(
+        pod_url,
+        "delta_ins_" + filename,
+        turtle_to_insert=insert_delta,
+    )
+
+    # Put down the nu graph
+    _put_data_in_pod(
+        pod_url,
+        "nu_" + filename,
+        turtle_to_insert=nu_to_insert,
+    )
 
 
 def sql_query(
@@ -460,6 +496,8 @@ def we_are_poc_main(
     hospital_amount: int,
     rating_interval: tuple[int, int],
     dates: tuple[date, date],
+    duckdb_conn: DuckDBPyConnection,
+    delta_amount: int,
 ) -> None:
     """Main function for the We Are POC.
 
@@ -470,6 +508,8 @@ def we_are_poc_main(
         rating_interval (tuple[int, int]): Rating interval.
         dates (tuple[date, date]): Dates to choose between.
     """
+    # Generate and put all the different data in the pods.
+    lock = Lock()
     _thread_per_pod(
         handle_pod_connection_we_are,
         [
@@ -480,6 +520,10 @@ def we_are_poc_main(
                 hospital_amount,
                 rating_interval,
                 dates,
+                duckdb_conn,
+                lock,
+                "G",
+                delta_amount,
             )
             for pod in given_args.pods
         ],
@@ -540,7 +584,7 @@ if __name__ == "__main__":
     arg_parser.add_argument(
         "-ed",
         "--edges_to_delete",
-        help="The amount of edges to delete",
+        help="The amount of edges to delete or insert/In the We Are POC, the delta amount.",
         default=1,
         type=int,
     )
@@ -628,6 +672,8 @@ if __name__ == "__main__":
                     )[0:3]
                 ),
             ),
+            duckdb_connection,
+            args.edges_to_delete,
         )
 
     """ with open(
