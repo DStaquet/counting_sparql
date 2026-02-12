@@ -9,6 +9,7 @@ import sys
 from os.path import join
 from typing import Iterable, Any
 from datetime import date
+from time import strptime
 
 from requests import get, RequestException, put
 from duckdb import DuckDBPyConnection, connect
@@ -567,6 +568,35 @@ if __name__ == "__main__":
         choices=["hop", "we_are"],
         required=True,
     )
+    arg_parser.add_argument(
+        "-tr",
+        "--triple_amounts",
+        help="Amount of triples to construct for the we are POC.",
+        default=10,
+        type=int,
+    )
+    arg_parser.add_argument(
+        "-ho",
+        "--hospital_amount",
+        help="Amount of possible hospitals.",
+        default=3,
+        type=int,
+    )
+    arg_parser.add_argument(
+        "-ri",
+        "--rating_interval",
+        help="Interval to put the ratings between.",
+        default=[1, 10],
+        nargs=2,
+        type=int,
+    )
+    arg_parser.add_argument(
+        "-di",
+        "--date_interval",
+        nargs=2,
+        help="Interval of dates to choose between in format: %Y-%m-%d",
+        default=["2025-12-01", "2026-01-31"],
+    )
     args = arg_parser.parse_args()
 
     # Connect to the DuckDB database
@@ -580,10 +610,24 @@ if __name__ == "__main__":
     elif args.type == "we_are":
         we_are_poc_main(
             args,
-            10,
-            3,
-            (1, 10),
-            (date(2025, 12, 1), date(2026, 1, 31)),
+            args.triple_amounts,
+            args.hospital_amount,
+            (
+                args.rating_interval[0],
+                args.rating_interval[1],
+            ),
+            (
+                date(
+                    *strptime(
+                        args.date_interval[0], "%Y-%m-%d"
+                    )[0:3]
+                ),
+                date(
+                    *strptime(
+                        args.date_interval[1], "%Y-%m-%d"
+                    )[0:3]
+                ),
+            ),
         )
 
     """ with open(
