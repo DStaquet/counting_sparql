@@ -8,6 +8,7 @@ from SQL_Constructor.aggregation_constructor.sum_constructor import (
 )
 from SQL_Constructor.aggregation_constructor.avg_constructor import (
     avg_join_query,
+    delta_avg_join_query,
 )
 
 from SQL_Constructor.table_constructor import (
@@ -153,6 +154,30 @@ def delta_aggregate_join_query(
             )
             return create_table_w_select(
                 "delta_" + get_table_name(part), sum_query
+            )
+        case "Aggregate_Avg":
+            count_delta, sum_delta, avg_delta = (
+                delta_avg_join_query(
+                    aggregate_values, aggregate_sample, part
+                )
+            )
+            return (
+                create_table_w_select(
+                    "delta_"
+                    + get_table_name(part)
+                    + "_sum",
+                    sum_delta,
+                )
+                + create_table_w_select(
+                    "delta_"
+                    + get_table_name(part)
+                    + "_count",
+                    count_delta,
+                )
+                + create_table_w_select(
+                    "delta_" + get_table_name(part),
+                    avg_delta,
+                )
             )
         case _:
             raise NotImplementedError(

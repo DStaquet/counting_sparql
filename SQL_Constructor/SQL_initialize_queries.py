@@ -30,6 +30,7 @@ def write_query_to_output_dir(
     filename: str,
     append: bool = False,
     filename_prefix: str = "",
+    no_format: bool = False,
 ) -> None:
     """Writes the query to the output directory
 
@@ -40,9 +41,10 @@ def write_query_to_output_dir(
         append (bool, optional): Whether to append to the file. Defaults to False.
         name (str, optional): The prefix of the file. Defaults to "".
     """
-    query = sqlparse.format(
-        query, reindent=True, keyword_case="upper"
-    )
+    if not no_format:
+        query = sqlparse.format(
+            query, reindent=True, keyword_case="upper"
+        )
     if not append:
         with open(
             f"{output_dir}/{filename_prefix}{filename}.sql",
@@ -284,6 +286,7 @@ def build_increm_queries(
                     part
                 ),
                 filename_prefix="delta_",
+                no_format=True,
             )
             part_schemas = schemas1
     if part_schemas is None:

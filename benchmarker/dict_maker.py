@@ -128,6 +128,8 @@ def constructDictFromTree(
                 prev_dict1, prev_dict2  # type: ignore
             )
 
+    if part.name in ["Group", "Extend"]:
+        return prev_dict
     if not increm:
         curr_dict = __addToDict(
             current_name,

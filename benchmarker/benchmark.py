@@ -100,6 +100,8 @@ def entire_run_query(
         part (CompValue): The given query.
         duckdb_conn (DuckDBPyConnection): Connection to the database.
     """
+    if part.name in ["Group", "Extend"]:
+        return entire_run_query(part.p, queries_dict)
     key = get_table_name(part)
     curr_query = ""
     if isinstance(queries_dict[key], list):

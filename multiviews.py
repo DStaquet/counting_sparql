@@ -367,6 +367,7 @@ def _drop_tables(
 def _setup_queries(query_file: str, query_dir: str) -> str:
     # Put ready the query files
     output_dir = setup_query_files(query_file, query_dir)
+    print("Build files!")
     set_entire_query(query_file, query_dir)
 
     return output_dir

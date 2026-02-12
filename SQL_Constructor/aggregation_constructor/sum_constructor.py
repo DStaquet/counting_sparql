@@ -11,6 +11,7 @@ def sum_join_query(
     aggregate_values: list[CompValue],
     aggregate_sample: CompValue,
     part: CompValue,
+    delta_part: str = "",
 ) -> str:
     """Constructs the SQL query for a SUM aggregation.
 
@@ -34,11 +35,13 @@ def sum_join_query(
     )
 
     # Construct FROM clause
-    from_clause = " FROM " + get_table_name(part.p.p)
+    from_clause = (
+        "\nFROM " + delta_part + get_table_name(part.p.p)
+    )
 
     # Construct GROUP BY clause
     group_by_clause = (
-        " GROUP BY " + aggregate_sample.vars + ";"
+        "\nGROUP BY " + aggregate_sample.vars + ";\n\n"
     )
 
     return select_clause + from_clause + group_by_clause
