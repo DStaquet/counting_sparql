@@ -529,6 +529,39 @@ def we_are_poc_main(
         ],
         given_args,
     )
+    query_output_dir = _setup_queries(
+        given_args.query_file, given_args.query_dir
+    )
+    # Execute the scratch query
+    sql_query(
+        query_output_dir,
+        duckdb_conn,
+        "scratch_query.sql",
+        drop=True,
+    )
+    print("Run from scratch.")
+
+    _thread_per_pod(
+        _handle_delta_pod_connection,
+        [
+            (
+                duckdb_conn,
+                pod,
+                given_args.filename,
+                lock,
+                ("delta_G", "nu_G"),
+            )
+            for pod in given_args.pods
+        ],
+        given_args,
+    )
+    # Execute the IVM query
+    sql_query(
+        query_output_dir,
+        duckdb_conn,
+        "incremental_query.sql",
+    )
+    print("Finished the incremental queries.")
 
 
 if __name__ == "__main__":

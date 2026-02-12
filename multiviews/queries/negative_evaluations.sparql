@@ -1,8 +1,10 @@
 PREFIX : <http://example.org/we_are/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 SELECT ?rating ?hospital
 WHERE {
     ?pod :hospital_id ?hospital .
     ?pod :rating ?rating .
-    FILTER (?rating < 5)
+    ?pod :date ?givendate .
+    FILTER (?givendate < "2026-01-31"^^xsd:date)
 }

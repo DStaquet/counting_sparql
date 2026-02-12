@@ -4,7 +4,7 @@ from rdflib.plugins.sparql.parserutils import (
     CompValue,
     Expr,
 )
-from rdflib.term import Literal
+from rdflib.term import Literal, URIRef
 
 from SQL_Constructor.base_constructor import (
     __encode_schema_name,
@@ -37,20 +37,41 @@ def filter_expr_part(
                 expr.other[i], curr_schema
             )
     else:
-        if expr.op in ["<", ">", "<=", ">="]:
+        if (
+            expr.other == Literal
+            and expr.other.datatype
+            == URIRef(
+                "http://www.w3.org/2001/XMLSchema#date"
+            )
+        ):
             filter_expr += (
                 "CAST("
                 + expr.expr
-                + " AS INT) "
+                + " AS DATE) "
                 + expr.op
-                + " CAST("
+                + " CAST('"
                 + expr.other
-                + " AS INT)"
+                + "' AS DATE)"
             )
         else:
-            filter_expr += (
-                expr.expr + " " + expr.op + " " + expr.other
-            )
+            if expr.op in ["<", ">", "<=", ">="]:
+                filter_expr += (
+                    "CAST("
+                    + expr.expr
+                    + " AS INT) "
+                    + expr.op
+                    + " CAST("
+                    + expr.other
+                    + " AS INT)"
+                )
+            else:
+                filter_expr += (
+                    expr.expr
+                    + " "
+                    + expr.op
+                    + " "
+                    + expr.other
+                )
     return filter_expr
 
 
