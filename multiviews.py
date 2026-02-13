@@ -76,7 +76,7 @@ def _create_reif_table(
     conn: DuckDBPyConnection,
 ) -> None:
     conn.execute(
-        f"CREATE OR REPLACE TABLE {table_name}_reif"
+        f"CREATE OR REPLACE TABLE {table_name}"
         + " (s STRING, p STRING, o STRING, k_count INT);"
     )
 
@@ -86,11 +86,14 @@ def __create_multi_pod_view(
     view_name: str,
     delta_view_name: str,
     nu_view_name: str,
+    reif: bool = False,
 ) -> None:
     """Creates a view in the DuckDB database to combine data from multiple pods."""
     # Create mutex lock for thread safety if needed
-    _create_table(view_name, conn)
-    _create_reif_table(view_name, conn)
+    if not reif:
+        _create_table(view_name, conn)
+    else:
+        _create_reif_table(view_name, conn)
     # Create the delta
     _create_table(delta_view_name, conn)
     # Create the nu_table
@@ -129,19 +132,19 @@ def _put_pod_data_in_database_reif(
     ins_or_del: int = 1,
 ) -> None:
     with db_lock:
-        known_ratings: dict[str, str] = dict()
+        known_ratings: dict[str, str] = {}
         for triple in triples:
             if triple[1] not in known_ratings:
                 triple_id = str(abs(hash(triple)))
                 conn.execute(
-                    f"INSERT INTO {table_name}_reif (s, p, o, k_count) VALUES "
+                    f"INSERT INTO {table_name} (s, p, o, k_count) VALUES "
                     + f"('{pod_name}', '{given_uri}hasRating', 'triple_id_{triple_id}', 1)"
                 )
                 known_ratings[triple[1]] = triple_id
             else:
                 triple_id = known_ratings[triple[1]]
             conn.execute(
-                f"INSERT INTO {table_name}_reif (s, p, o, k_count) VALUES "
+                f"INSERT INTO {table_name} (s, p, o, k_count) VALUES "
                 + f"('triple_id_{triple_id}', '{triple[2]}', '{triple[3]}', {ins_or_del})"
             )
 
@@ -752,9 +755,14 @@ if __name__ == "__main__":
 
     # Connect to the DuckDB database
     duckdb_connection = connect_main_db(args.database)
-    __create_multi_pod_view(
-        duckdb_connection, "G", "delta_G", "nu_G"
-    )
+    if args.type == "reif":
+        __create_multi_pod_view(
+            duckdb_connection, "G", "delta_G", "nu_G", True
+        )
+    else:
+        __create_multi_pod_view(
+            duckdb_connection, "G", "delta_G", "nu_G"
+        )
 
     if args.type == "hop":
         hops_main(args, duckdb_connection)

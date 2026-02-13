@@ -1,0 +1,9 @@
+PREFIX : <http://example.org/we_are/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?h ?rating
+WHERE {
+    ?p :hasRating ?r .
+    ?r :hospital_id ?h .
+    ?r :rating ?v .
+}
