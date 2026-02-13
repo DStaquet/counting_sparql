@@ -32,9 +32,9 @@ def __write_entire_query_to_output_dir(
         query (str): The query to write
         filename (str): The name of the file
     """
-    query = sqlparse.format(
+    """ query = sqlparse.format(
         query, reindent=True, keyword_case="upper"
-    )
+    ) """
     print(
         f"Writing the entire query to {output_dir}/{filename}.sql"
     )

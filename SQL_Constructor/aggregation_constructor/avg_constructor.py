@@ -150,7 +150,7 @@ def delta_avg_join_query(
         + aggregate_sample.vars
         + " = combined_count."
         + aggregate_sample.vars
-        + ";"
+        + ";\n\n"
     )
 
     return (

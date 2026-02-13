@@ -299,9 +299,15 @@ def build_increm_queries(
     elif part.name in ["Group", "Extend"]:
         return part_schemas
     else:
-        nu_query, nu_query_sum = (
-            base_constructor.nu_queries(part, part_schemas)
-        )
+        if part.name == "AggregateJoin":
+            nu_query = ""
+            nu_query_sum = ""
+        else:
+            nu_query, nu_query_sum = (
+                base_constructor.nu_queries(
+                    part, part_schemas
+                )
+            )
     write_query_to_output_dir(
         output_dir,
         nu_query,
