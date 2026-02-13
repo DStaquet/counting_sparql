@@ -3,6 +3,7 @@ PREFIX : <http://example.org/node/>
 
 SELECT ?x ?y
 WHERE {
-    ?x edge:link ?z .
-    ?z edge:link ?y .
+    ?x edge:link ?z1 .
+    ?z1 edge:link ?z2 .
+    ?z2 edge:link ?y .
 }
