@@ -71,6 +71,16 @@ def _create_table(
     )
 
 
+def _create_reif_table(
+    table_name: str,
+    conn: DuckDBPyConnection,
+) -> None:
+    conn.execute(
+        f"CREATE OR REPLACE TABLE {table_name}_reif"
+        + " (s STRING, p STRING, o STRING, k_count INT);"
+    )
+
+
 def __create_multi_pod_view(
     conn: DuckDBPyConnection,
     view_name: str,
@@ -80,6 +90,7 @@ def __create_multi_pod_view(
     """Creates a view in the DuckDB database to combine data from multiple pods."""
     # Create mutex lock for thread safety if needed
     _create_table(view_name, conn)
+    _create_reif_table(view_name, conn)
     # Create the delta
     _create_table(delta_view_name, conn)
     # Create the nu_table
@@ -108,6 +119,33 @@ def __parse_pod_data(
     return triples
 
 
+def _put_pod_data_in_database_reif(
+    conn: DuckDBPyConnection,
+    pod_name: str,
+    triples: list[tuple[str, str, str, str]],
+    db_lock: Lock,
+    table_name: str,
+    given_uri: str,
+    ins_or_del: int = 1,
+) -> None:
+    with db_lock:
+        known_ratings: dict[str, str] = dict()
+        for triple in triples:
+            if triple[1] not in known_ratings:
+                triple_id = str(abs(hash(triple)))
+                conn.execute(
+                    f"INSERT INTO {table_name}_reif (s, p, o, k_count) VALUES "
+                    + f"('{pod_name}', '{given_uri}hasRating', 'triple_id_{triple_id}', 1)"
+                )
+                known_ratings[triple[1]] = triple_id
+            else:
+                triple_id = known_ratings[triple[1]]
+            conn.execute(
+                f"INSERT INTO {table_name}_reif (s, p, o, k_count) VALUES "
+                + f"('triple_id_{triple_id}', '{triple[2]}', '{triple[3]}', {ins_or_del})"
+            )
+
+
 def _put_pod_data_in_database(
     conn: DuckDBPyConnection,
     pod_name: str,
@@ -115,7 +153,7 @@ def _put_pod_data_in_database(
     db_lock: Lock,
     table_name: str,
     ins_or_del: int = 1,
-):
+) -> None:
     """Inserts pod data into the multi-pod view in the DuckDB database."""
     # Create mutex lock for thread safety if needed
     with db_lock:
@@ -268,6 +306,7 @@ def handle_pod_connection_we_are(
     lock: Lock,
     table_name: str,
     delta_amount: int,
+    reification: bool = False,
 ) -> None:
     """Handles the we are POC connection cases.
 
@@ -299,9 +338,20 @@ def handle_pod_connection_we_are(
     )
     pod_data = __get_pod_data(join(pod_url, filename))
     triples = __parse_pod_data(pod_data)
-    _put_pod_data_in_database(
-        duckdb_conn, pod_url, triples, lock, table_name
-    )
+    if not reification:
+        _put_pod_data_in_database(
+            duckdb_conn, pod_url, triples, lock, table_name
+        )
+    else:
+        _put_pod_data_in_database_reif(
+            duckdb_conn,
+            pod_url,
+            triples,
+            lock,
+            table_name,
+            "http://example.org/we_are/",
+        )
+        print("Put down data reified.")
 
     # Put down delta data
     _put_data_in_pod(
@@ -499,6 +549,7 @@ def we_are_poc_main(
     dates: tuple[date, date],
     duckdb_conn: DuckDBPyConnection,
     delta_amount: int,
+    reification: bool = False,
 ) -> None:
     """Main function for the We Are POC.
 
@@ -511,25 +562,47 @@ def we_are_poc_main(
     """
     # Generate and put all the different data in the pods.
     lock = Lock()
-    _thread_per_pod(
-        handle_pod_connection_we_are,
-        [
-            (
-                pod,
-                given_args.filename,
-                triple_amount,
-                hospital_amount,
-                rating_interval,
-                dates,
-                duckdb_conn,
-                lock,
-                "G",
-                delta_amount,
-            )
-            for pod in given_args.pods
-        ],
-        given_args,
-    )
+    if not reification:
+        _thread_per_pod(
+            handle_pod_connection_we_are,
+            [
+                (
+                    pod,
+                    given_args.filename,
+                    triple_amount,
+                    hospital_amount,
+                    rating_interval,
+                    dates,
+                    duckdb_conn,
+                    lock,
+                    "G",
+                    delta_amount,
+                )
+                for pod in given_args.pods
+            ],
+            given_args,
+        )
+    else:
+        _thread_per_pod(
+            handle_pod_connection_we_are,
+            [
+                (
+                    pod,
+                    given_args.filename,
+                    triple_amount,
+                    hospital_amount,
+                    rating_interval,
+                    dates,
+                    duckdb_conn,
+                    lock,
+                    "G",
+                    delta_amount,
+                    True,
+                )
+                for pod in given_args.pods
+            ],
+            given_args,
+        )
     query_output_dir = _setup_queries(
         given_args.query_file, given_args.query_dir
     )
@@ -643,7 +716,7 @@ if __name__ == "__main__":
         "-t",
         "--type",
         help="Type of multiview to do.",
-        choices=["hop", "we_are"],
+        choices=["hop", "we_are", "reif"],
         required=True,
     )
     arg_parser.add_argument(
@@ -708,6 +781,31 @@ if __name__ == "__main__":
             ),
             duckdb_connection,
             args.edges_to_delete,
+        )
+    elif args.type == "reif":
+        we_are_poc_main(
+            args,
+            args.triple_amounts,
+            args.hospital_amount,
+            (
+                args.rating_interval[0],
+                args.rating_interval[1],
+            ),
+            (
+                date(
+                    *strptime(
+                        args.date_interval[0], "%Y-%m-%d"
+                    )[0:3]
+                ),
+                date(
+                    *strptime(
+                        args.date_interval[1], "%Y-%m-%d"
+                    )[0:3]
+                ),
+            ),
+            duckdb_connection,
+            args.edges_to_delete,
+            reification=True,
         )
 
     """ with open(
