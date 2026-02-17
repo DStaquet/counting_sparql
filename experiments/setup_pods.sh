@@ -5,12 +5,11 @@
 # npx @solid/community-server -p 3004
 
 ports=3000
-for i in $(seq 1 14);
+for i in $(seq 1 5);
 do
     port=$((ports+i))
     trap 'kill $BGPID; exit' INT
     npx @solid/community-server -p $port &
 done
-port=$((port+1))
 BPGID=$!
-npx @solid/community-server -p $port
+npx @solid/community-server -p $ports
