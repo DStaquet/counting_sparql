@@ -32,7 +32,9 @@ def get_query_object(query: str) -> Query:
 
 
 def get_query_input(
-    query_file_dir: str, q_query_object: Query
+    query_file_dir: str,
+    q_query_object: Query,
+    temp_dir: bool = False,
 ) -> str:
     query_input_dir: str = join(
         query_file_dir,
@@ -41,7 +43,10 @@ def get_query_input(
             q_query_object.algebra
         ),
     )
-    return query_input_dir
+    if temp_dir:
+        return join(query_input_dir, "temp_tables")
+    else:
+        return query_input_dir
 
 
 def readQueryFile(filename: str) -> str:

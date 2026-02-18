@@ -92,7 +92,9 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
 
 
 def get_query_output_dir(
-    output_dir: str, q_query_object: Query
+    output_dir: str,
+    q_query_object: Query,
+    temp_dir: bool = False,
 ) -> str:
     """Get the query output directory
 
@@ -109,14 +111,23 @@ def get_query_output_dir(
     )
     if not exists(query_output_dir):
         mkdir(query_output_dir)
+    if temp_dir:
+        query_output_dir = join(
+            output_dir,
+            "query_"
+            + get_table_name(q_query_object.algebra),
+            "temp_tables",
+        )
+    if not exists(query_output_dir):
+        mkdir(query_output_dir)
     return query_output_dir
 
 
 def setup_queries(
     query_str: str,
-    data: str,
     output_dir: str,
     increm: bool = False,
+    temp_dir: bool = False,
 ) -> None:
     """Sets up the queries incrementally or non-incrementally
 
@@ -130,12 +141,10 @@ def setup_queries(
     # algebra.pprintAlgebra(q_query_object)
 
     query_output_dir: str = get_query_output_dir(
-        output_dir, q_query_object
+        output_dir, q_query_object, temp_dir
     )
     if not exists(query_output_dir):
         mkdir(query_output_dir)
-
-    setup_tables(q_query_object.algebra, output_dir)
 
     if increm:
         __increm_queries(
@@ -145,6 +154,8 @@ def setup_queries(
         __non_increm_queries(
             q_query_object.algebra, query_output_dir
         )
+
+    # setup_tables(q_query_object.algebra, query_output_dir)
 
 
 if __name__ == "__main__":
@@ -169,5 +180,5 @@ if __name__ == "__main__":
         output_dir: str = sys.argv[3]
 
     query: str = readQueryFile(query_str)
-    setup_queries(query, data_str, output_dir)
-    setup_queries(query, data_str, output_dir, True)
+    setup_queries(query, output_dir)
+    setup_queries(query, output_dir, True)

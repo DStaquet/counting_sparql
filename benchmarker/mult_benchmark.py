@@ -7,11 +7,13 @@ from duckdb import DuckDBPyConnection
 from rdflib import Graph
 from rdflib.plugins.sparql.parserutils import CompValue
 
+from SQL_Constructor.singular_file_constructor import (
+    entire_run_query,
+)
 from benchmarker.benchmark import (
     run_query,
     load_delta_table_in_graph,
     load_table_in_graph,
-    entire_run_query,
 )
 from benchmarker.dict_maker import constructDictFromTree
 from build_data import (
