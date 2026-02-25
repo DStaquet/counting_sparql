@@ -5,9 +5,9 @@ Module to handle the threads and related functions for the multiviews module.
 from argparse import Namespace
 from datetime import date
 from threading import Lock, Thread
-from typing import Any, Iterable
+from typing import Any, Iterable, Callable
 
-from duckdb import DuckDBPyConnection
+from duckdb import DuckDBPyConnection  # pylint: disable=import-error
 from benchmarker.benchmark import set_entire_query
 from build_data import setup_query_files
 from example_constructor.graph_constructor import (
@@ -32,9 +32,7 @@ def _deltas_per_pod(
     bottlenecks: int,
     many_vertices: int,
 ) -> list[tuple[custom_Graph, custom_Graph, custom_Graph]]:
-    return_list: list[
-        tuple[custom_Graph, custom_Graph, custom_Graph]
-    ] = []
+    return_list: list[tuple[custom_Graph, custom_Graph, custom_Graph]] = []
     for _, graph in enumerate(split_g):
         current = select_delta_edges_hop_graph(
             graph,
@@ -47,12 +45,12 @@ def _deltas_per_pod(
 
 
 def _thread_per_pod(
-    given_function,
+    given_function: Callable[..., None],
     arguments: list[Iterable[Any]],
     passed_args: Namespace,
 ) -> None:
     # We will connect to three pods multithreadedly
-    threads = []
+    threads: list[Thread] = []
     for i, _ in enumerate(passed_args.pods):
         thread = Thread(
             target=given_function,
@@ -79,9 +77,7 @@ def hops_main(
         given_args.vertices,
         given_args.bottlenecks,
     )
-    split_graphs = split_graph_into_pods(
-        og_graph, len(given_args.pods)
-    )
+    split_graphs = split_graph_into_pods(og_graph, len(given_args.pods))
     split_deltas = _deltas_per_pod(
         split_graphs,
         given_args.edges_to_delete,
@@ -108,9 +104,7 @@ def hops_main(
         given_args,
     )
     print("Finished putting all the data in the database.")
-    query_output_dir = _setup_queries(
-        given_args.query_file, given_args.query_dir
-    )
+    query_output_dir = _setup_queries(given_args.query_file, given_args.query_dir)
     # Execute the scratch query
     sql_query(
         query_output_dir,
@@ -215,9 +209,7 @@ def we_are_poc_main(
             ],
             given_args,
         )
-    query_output_dir = _setup_queries(
-        given_args.query_file, given_args.query_dir
-    )
+    query_output_dir = _setup_queries(given_args.query_file, given_args.query_dir)
     # Execute the scratch query
     sql_query(
         query_output_dir,

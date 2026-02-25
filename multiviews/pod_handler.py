@@ -7,7 +7,7 @@ from os.path import join
 from threading import Lock
 from requests import RequestException, get, put
 
-from duckdb import DuckDBPyConnection
+from duckdb import DuckDBPyConnection  # pylint: disable=import-error
 
 from example_constructor.graph_constructor import (
     Graph as custom_Graph,
@@ -100,9 +100,7 @@ def _put_data_in_pod(
         timeout=10,
     )
 
-    print(
-        f"Put data for hospitals in pod {pod_url} in file {filename}."
-    )
+    print(f"Put data for hospitals in pod {pod_url} in file {filename}.")
 
 
 def _put_delta_in_pod(
@@ -139,17 +137,11 @@ def handle_delta_pod_connection(
         table_names (tuple[str, str]): Table names to write in the database.
     """
     # Get the delta data
-    ins_data = get_pod_data(
-        join(pod_url, "delta_ins_" + filename)
-    )
-    del_data = get_pod_data(
-        join(pod_url, "delta_del_" + filename)
-    )
+    ins_data = get_pod_data(join(pod_url, "delta_ins_" + filename))
+    del_data = get_pod_data(join(pod_url, "delta_del_" + filename))
     ins_triples = parse_pod_data(ins_data)
     del_triples = parse_pod_data(del_data)
-    _put_pod_data_in_database(
-        conn, pod_url, ins_triples, db_lock, table_names[0]
-    )
+    _put_pod_data_in_database(conn, pod_url, ins_triples, db_lock, table_names[0])
     _put_pod_data_in_database(
         conn,
         pod_url,
@@ -161,9 +153,7 @@ def handle_delta_pod_connection(
     # Get the nu data
     nu_data = get_pod_data(join(pod_url, "nu_" + filename))
     nu_triples = parse_pod_data(nu_data)
-    _put_pod_data_in_database(
-        conn, pod_url, nu_triples, db_lock, table_names[1]
-    )
+    _put_pod_data_in_database(conn, pod_url, nu_triples, db_lock, table_names[1])
 
 
 def handle_pod_connection(
@@ -194,9 +184,7 @@ def handle_pod_connection(
     # Get the normal data
     pod_data = get_pod_data(join(pod_url, filename))
     triples = parse_pod_data(pod_data)
-    _put_pod_data_in_database(
-        conn, pod_url, triples, db_lock, table_name
-    )
+    _put_pod_data_in_database(conn, pod_url, triples, db_lock, table_name)
     print(f"Data from pod {pod_url} stored in database.")
 
 
@@ -238,15 +226,11 @@ def handle_pod_connection_we_are(
         delta_amount,
     )
 
-    _put_data_in_pod(
-        pod_url, filename, turtle_to_insert=turtle_to_insert
-    )
+    _put_data_in_pod(pod_url, filename, turtle_to_insert=turtle_to_insert)
     pod_data = get_pod_data(join(pod_url, filename))
     triples = parse_pod_data(pod_data)
     if not reification:
-        _put_pod_data_in_database(
-            duckdb_conn, pod_url, triples, lock, table_name
-        )
+        _put_pod_data_in_database(duckdb_conn, pod_url, triples, lock, table_name)
     else:
         _put_pod_data_in_database_reif(
             duckdb_conn,

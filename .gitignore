@@ -201,3 +201,9 @@ bsbm_data/output_data/*
 bsbm_data/input_data/*
 diff_testing/*
 singular_files/*
+
+# Virtual environment
+/bin/*
+lib64/*
+pyvenv.cfg
+lib64

@@ -3,7 +3,7 @@ Handles the database logic for the multiviews.
 """
 
 from os.path import join
-from duckdb import DuckDBPyConnection, connect
+from duckdb import DuckDBPyConnection, connect  # type: ignore pylint: disable=all
 
 
 def connect_main_db(db_path: str) -> DuckDBPyConnection:
@@ -24,9 +24,7 @@ def connect_main_db(db_path: str) -> DuckDBPyConnection:
     return conn
 
 
-def create_table(
-    table_name: str, conn: DuckDBPyConnection
-) -> None:
+def create_table(table_name: str, conn: DuckDBPyConnection) -> None:
     """Creates the table to pod all the data in a relation schema.
 
     Args:
@@ -103,9 +101,7 @@ def sql_query(
         aggregator_db.execute(handle.read())
 
 
-def _drop_tables(
-    output_dir: str, aggregator_db: DuckDBPyConnection
-) -> None:
+def _drop_tables(output_dir: str, aggregator_db: DuckDBPyConnection) -> None:
     with open(
         join(output_dir, "drop_tables.sql"),
         encoding="utf-8",
