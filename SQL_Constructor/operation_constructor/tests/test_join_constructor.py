@@ -92,9 +92,6 @@ def test_join_query(
     with open(expected_sql, "r", encoding="utf-8") as f:
         expected_sql_str = f.read()
 
-    print("Generated join query:")
-    print(join_queries)
-
     # Compare the expected SQL query with the generated SQL query
     assert join_queries == expected_sql_str
 
