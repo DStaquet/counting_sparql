@@ -40,34 +40,28 @@ from build_data import readQueryFile, get_query_object
         ),
     ],
 )
-def test_bgp_table_query(
-    query_file: str, expected_sql: str
-):
+def test_bgp_table_query(query_file: str, expected_sql: str):
     """Tests the bgp_table_query function."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only BGP patterns
-    bgp_leaves: list[CompValue] = all_type_leaves(
-        part, "BGP"
-    )
+    bgp_leaves: list[CompValue] = all_type_leaves(part, "BGP")
 
     bgp_queries: str = ""
     for bgp in reversed(bgp_leaves):
         current_query, _ = bgp_table_query(bgp)
 
         bgp_queries += sql_format(
-            create_table_w_select(
-                get_table_name(bgp), current_query
-            ),
+            create_table_w_select(get_table_name(bgp), current_query),
             reindent=True,
         )
 
     with open(expected_sql, encoding="utf-8") as f:
         expected_query = f.read()
+
+    print(bgp_queries)
 
     assert bgp_queries == expected_query
 
@@ -100,21 +94,15 @@ def test_bgp_table_delta_query(
     """Tests the delta_bgp_queries function."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only BGP patterns
-    bgp_leaves: list[CompValue] = all_type_leaves(
-        part, "BGP"
-    )
+    bgp_leaves: list[CompValue] = all_type_leaves(part, "BGP")
 
     bgp_queries: str = ""
     bgp_join_queries: str = ""
     for bgp in reversed(bgp_leaves):
-        current_query, current_join_query = (
-            delta_bgp_queries(bgp)
-        )
+        current_query, current_join_query = delta_bgp_queries(bgp)
 
         bgp_queries += sql_format(
             current_query,
@@ -150,14 +138,10 @@ def _construct_base_graph(
     )
 
 
-def _drop_bgp_tables(
-    bgp_name: str, duckdb_conn: DuckDBPyConnection
-) -> None:
+def _drop_bgp_tables(bgp_name: str, duckdb_conn: DuckDBPyConnection) -> None:
     """Drops the tables created by the BGP query."""
     duckdb_conn.execute(f"DROP TABLE IF EXISTS {bgp_name};")
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS delta_{bgp_name};"
-    )
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_{bgp_name};")
 
 
 def _construct_delta_base_graph(
@@ -200,21 +184,15 @@ def test_bgp_query_output(
     """Checks if the output of a BGP query is as expected."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only BGP patterns
-    bgp_leaves: list[CompValue] = all_type_leaves(
-        part, "BGP"
-    )
+    bgp_leaves: list[CompValue] = all_type_leaves(part, "BGP")
 
     for bgp in bgp_leaves:
         current_query, _ = bgp_table_query(bgp)
         curr_bgp_query = sql_format(
-            create_table_w_select(
-                get_table_name(bgp), current_query
-            ),
+            create_table_w_select(get_table_name(bgp), current_query),
             reindent=True,
         )
 
@@ -224,9 +202,7 @@ def test_bgp_query_output(
             _drop_bgp_tables(get_table_name(bgp), con)
             con.execute(curr_bgp_query)
 
-            result = con.execute(
-                f"SELECT * FROM {get_table_name(bgp)}"
-            ).fetchall()
+            result = con.execute(f"SELECT * FROM {get_table_name(bgp)}").fetchall()
 
         assert result == expected_output
 
@@ -252,14 +228,10 @@ def test_bgp_query_output_delta(
     """Checks if the delta output of a BGP query is as expected."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only BGP patterns
-    bgp_leaves: list[CompValue] = all_type_leaves(
-        part, "BGP"
-    )
+    bgp_leaves: list[CompValue] = all_type_leaves(part, "BGP")
 
     for bgp in bgp_leaves:
         current_query, _ = delta_bgp_queries(bgp)

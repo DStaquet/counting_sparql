@@ -5,7 +5,7 @@
 # npx @solid/community-server -p 3004
 
 ports=3000
-for i in $(seq 1 5);
+for i in $(seq 1 40);
 do
     port=$((ports+i))
     trap 'kill $BGPID; exit' INT

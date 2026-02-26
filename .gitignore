@@ -171,6 +171,7 @@ database/*
 testing_query_folder/*
 temp_tests/*
 temptemp_tests/*
+temp_views/*
 
 # VS code
 .vscode/

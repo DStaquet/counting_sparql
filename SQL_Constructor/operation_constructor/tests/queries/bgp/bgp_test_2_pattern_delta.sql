@@ -1,4 +1,4 @@
-CREATE TEMP TABLE prep_delta_BGP_2691716057464995186 AS
+CREATE TEMP TABLE prep_delta_BGP_7479567498023511432 AS
 SELECT G1.s AS x,
        G2.s AS y,
        G2.o AS z,
@@ -10,7 +10,7 @@ WHERE G1.p = 'http://example.org/edges/link'
   AND G2.p = 'http://example.org/edges/link';
 
 
-INSERT INTO prep_delta_BGP_2691716057464995186 (x, y, z, k_count)
+INSERT INTO prep_delta_BGP_7479567498023511432 (x, y, z, k_count)
 SELECT G1.s AS x,
        G2.s AS y,
        G2.o AS z,
@@ -22,12 +22,12 @@ WHERE G1.p = 'http://example.org/edges/link'
   AND G2.p = 'http://example.org/edges/link';
 
 
-CREATE TABLE delta_BGP_2691716057464995186 AS
+CREATE TABLE delta_BGP_7479567498023511432 AS
 SELECT r1.x,
        r1.y,
        r1.z,
        SUM(r1.k_count) AS k_count
-FROM prep_delta_BGP_2691716057464995186 AS r1
+FROM prep_delta_BGP_7479567498023511432 AS r1
 GROUP BY r1.x,
          r1.y,
          r1.z

@@ -19,12 +19,8 @@ if __name__ == "__main__":
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
         os.environ["PYTHONHASHSEED"] = "0"
-        os.execv(
-            sys.executable, [sys.executable] + sys.argv
-        )
-    arg_parser = ArgumentParser(
-        description="Connect to DuckDB database"
-    )
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    arg_parser = ArgumentParser(description="Connect to DuckDB database")
     arg_parser.add_argument(
         "-db",
         "--database",
@@ -122,7 +118,7 @@ if __name__ == "__main__":
         "-di",
         "--date_interval",
         nargs=2,
-        help="Interval of dates to choose between in format: %Y-%m-%d",
+        help="Interval of dates to choose between in format: YY-MM-DD.",
         default=["2025-12-01", "2026-01-31"],
     )
     args = arg_parser.parse_args()
@@ -130,13 +126,9 @@ if __name__ == "__main__":
     # Connect to the DuckDB database
     duckdb_connection = connect_main_db(args.database)
     if args.type == "reif":
-        create_multi_pod_view(
-            duckdb_connection, "G", "delta_G", "nu_G", True
-        )
+        create_multi_pod_view(duckdb_connection, "G", "delta_G", "nu_G", True)
     else:
-        create_multi_pod_view(
-            duckdb_connection, "G", "delta_G", "nu_G"
-        )
+        create_multi_pod_view(duckdb_connection, "G", "delta_G", "nu_G")
 
     if args.type == "hop":
         hops_main(args, duckdb_connection)
@@ -150,16 +142,8 @@ if __name__ == "__main__":
                 args.rating_interval[1],
             ),
             (
-                date(
-                    *strptime(
-                        args.date_interval[0], "%Y-%m-%d"
-                    )[0:3]
-                ),
-                date(
-                    *strptime(
-                        args.date_interval[1], "%Y-%m-%d"
-                    )[0:3]
-                ),
+                date(*strptime(args.date_interval[0], "%%Y-%%m-%d")[0:3]),
+                date(*strptime(args.date_interval[1], "%%Y-%%m-%d")[0:3]),
             ),
             duckdb_connection,
             args.edges_to_delete,
@@ -174,16 +158,8 @@ if __name__ == "__main__":
                 args.rating_interval[1],
             ),
             (
-                date(
-                    *strptime(
-                        args.date_interval[0], "%Y-%m-%d"
-                    )[0:3]
-                ),
-                date(
-                    *strptime(
-                        args.date_interval[1], "%Y-%m-%d"
-                    )[0:3]
-                ),
+                date(*strptime(args.date_interval[0], "%%Y-%%m-%d")[0:3]),
+                date(*strptime(args.date_interval[1], "%%Y-%%m-%d")[0:3]),
             ),
             duckdb_connection,
             args.edges_to_delete,
