@@ -6,18 +6,14 @@ from rdflib.plugins.sparql.parserutils import (
 )
 from rdflib.term import Literal, URIRef
 
-from SQL_Constructor.base_constructor import (
-    __encode_schema_name,
-)
+from SQL_Constructor.base_constructor import __encode_schema_name  # type: ignore
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
-    __encode_table_name,
+    __encode_table_name,  # type: ignore
 )
 
 
-def filter_expr_part(
-    expr: Expr, curr_schema: set[str]
-) -> str:
+def filter_expr_part(expr: Expr, curr_schema: set[str]) -> str:
     """Recursively construct the filter expression part of the query.
 
     Args:
@@ -28,18 +24,12 @@ def filter_expr_part(
     """
     filter_expr = ""
     if isinstance(expr.expr, Expr):
-        filter_expr += filter_expr_part(
-            expr.expr, curr_schema
-        )
+        filter_expr += filter_expr_part(expr.expr, curr_schema)
         for i, _ in enumerate(expr.other):
             filter_expr += " AND "
-            filter_expr += filter_expr_part(
-                expr.other[i], curr_schema
-            )
+            filter_expr += filter_expr_part(expr.other[i], curr_schema)
     else:
-        if isinstance(
-            expr.other, Literal
-        ) and expr.other.datatype == URIRef(
+        if isinstance(expr.other, Literal) and expr.other.datatype == URIRef(
             "http://www.w3.org/2001/XMLSchema#date"
         ):
             filter_expr += (
@@ -63,19 +53,11 @@ def filter_expr_part(
                     + " AS INT)"
                 )
             else:
-                filter_expr += (
-                    expr.expr
-                    + " "
-                    + expr.op
-                    + " "
-                    + expr.other
-                )
+                filter_expr += expr.expr + " " + expr.op + " " + expr.other
     return filter_expr
 
 
-def at_least_one_overlap(
-    schema: set[str], expr_part: Expr
-) -> bool:  # type: ignore
+def at_least_one_overlap(schema: set[str], expr_part: Expr) -> bool:  # type: ignore
     """Checks if there is at least one schema that overlaps with the entire expression.
 
     Args:
@@ -87,29 +69,18 @@ def at_least_one_overlap(
     """
     if isinstance(expr_part.expr, Expr):
         for i, _ in enumerate(expr_part.other):
-            return False or at_least_one_overlap(
-                schema, expr_part.other[i]
-            )
+            return False or at_least_one_overlap(schema, expr_part.other[i])
     else:
         return (
-            (
-                (expr_part.expr in schema)
-                and (expr_part.other in schema)
-            )
-            or (
-                (expr_part.expr in schema)
-                and (isinstance(expr_part.other, Literal))
-            )
-            or (
-                (expr_part.other in schema)
-                and (isinstance(expr_part.expr, Literal))
-            )
+            ((expr_part.expr in schema) and (expr_part.other in schema))
+            or ((expr_part.expr in schema) and (isinstance(expr_part.other, Literal)))
+            or ((expr_part.other in schema) and (isinstance(expr_part.expr, Literal)))
         )
 
 
 def filter_query(
     part: CompValue,
-    schemas: list[set] | None = None,
+    schemas: list[set[str]] | None = None,
     is_delta: bool = False,
 ) -> str:
     """Generate filter query for the current part of the algebra.
@@ -136,19 +107,12 @@ def filter_query(
     if len(schemas) <= 1:
         filter_str: str = (
             "SELECT "
-            + ", ".join(
-                var
-                for var in sorted(part.get("_vars"))
-                if var != "k_count"
-            )
+            + ", ".join(var for var in sorted(part.get("_vars")) if var != "k_count")  # type: ignore
             + ", k_count\nFROM "
             + from_table
         )
         if at_least_one_overlap(schemas[0], part.expr):
-            filter_str_part = (
-                " \nWHERE "
-                + filter_expr_part(part.expr, schemas[0])
-            )
+            filter_str_part = " \nWHERE " + filter_expr_part(part.expr, schemas[0])
             filter_str += filter_str_part
         filter_str += ";\n"
 
@@ -156,26 +120,17 @@ def filter_query(
     else:
         filter_strs: str = ""
         for schema in schemas:
-            schema_suffix: str = __encode_schema_name(
-                str(sorted(schema))
-            )
+            schema_suffix: str = __encode_schema_name(str(sorted(schema)))
             filter_str: str = (
                 "SELECT "
-                + ", ".join(
-                    var
-                    for var in sorted(schema)
-                    if var != "k_count"
-                )
+                + ", ".join(var for var in sorted(schema) if var != "k_count")
                 + ", k_count\nFROM "
                 + from_table
                 + "_"
                 + schema_suffix
             )
             if at_least_one_overlap(schema, part.expr):
-                filter_str_part = (
-                    " \nWHERE "
-                    + filter_expr_part(part.expr, schema)
-                )
+                filter_str_part = " \nWHERE " + filter_expr_part(part.expr, schema)
                 filter_str += filter_str_part
             filter_str += ";\n"
 

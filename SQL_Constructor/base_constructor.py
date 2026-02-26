@@ -27,9 +27,7 @@ def get_create_vars(variables: set) -> str:
     return __create_vars(variables)
 
 
-def delta_outer_join_long_query(
-    part: CompValue, known_vars: set[str]
-) -> str:
+def delta_outer_join_long_query(part: CompValue, known_vars: set[str]) -> str:
     """Builds up the query to join the delta tables together fully without
         intermediate tables.
 
@@ -42,9 +40,7 @@ def delta_outer_join_long_query(
     index: int = 0
     double_index: str = str(index) + "_" + str(index + 1)
 
-    from_part = " FROM " + __from_clause_long_outer_join(
-        part, index
-    )
+    from_part = " FROM " + __from_clause_long_outer_join(part, index)
 
     select_part = "SELECT "
     select_part += ", ".join(
@@ -93,13 +89,9 @@ def count_k_counts_together(
             f"r1.{var}" for var in sorted(schema)
         )
         if is_delta:
-            curr_count_query += (
-                " HAVING SUM(r1.k_count) != 0"
-            )
+            curr_count_query += " HAVING SUM(r1.k_count) != 0"
         else:
-            curr_count_query += (
-                " HAVING SUM(r1.k_count) > 0"
-            )
+            curr_count_query += " HAVING SUM(r1.k_count) > 0"
     curr_count_query += ";\n"
 
     return create_table_w_select(to_table, curr_count_query)
@@ -116,15 +108,10 @@ def schema_in_key(key: str, schema: set[str]) -> bool:
         bool: True if the schema is in the key, False otherwise.
     """
     split_schema_check = key.split("_schema_")[-1]
-    return (
-        "schema_" + split_schema_check
-        == __encode_schema_name(str(sorted(schema)))
-    )
+    return "schema_" + split_schema_check == __encode_schema_name(str(sorted(schema)))
 
 
-def __get_schema(
-    schemas: list[set[str]], key: str, is_select: bool
-) -> set[str]:
+def __get_schema(schemas: list[set[str]], key: str, is_select: bool) -> set[str]:
     """Gets the schema for the given key.
 
     Args:
@@ -175,19 +162,12 @@ def make_join(
     if (
         len(schemas) == 1
         and len(tables_to_make) == 1
-        and len(
-            tables_to_make[list(tables_to_make.keys())[0]]
-        )
-        == 2
+        and len(tables_to_make[list(tables_to_make.keys())[0]]) == 2
     ):
         if new_table_name is not None:
             return final_outer_join_query(
-                tables_to_make[
-                    list(tables_to_make.keys())[0]
-                ][0],
-                tables_to_make[
-                    list(tables_to_make.keys())[0]
-                ][1],
+                tables_to_make[list(tables_to_make.keys())[0]][0],
+                tables_to_make[list(tables_to_make.keys())[0]][1],
                 schemas[0],
                 new_table_name,
                 is_delta=is_delta,
@@ -224,22 +204,15 @@ def make_join(
                     key + "_" + str(q_index),
                     curr_schema,
                 )
-                last_made_temp_query = (
-                    key + "_temp_" + str(q_index)
-                )
-            elif (
-                q_index > 1
-                and q_index < len(tables_to_make[key]) - 1
-            ):
+                last_made_temp_query = key + "_temp_" + str(q_index)
+            elif q_index > 1 and q_index < len(tables_to_make[key]) - 1:
                 all_queries += outer_join_queries(
                     key + "_temp_" + str(q_index),
                     last_made_temp_query,
                     key + "_" + str(q_index),
                     curr_schema,
                 )
-                last_made_temp_query: str = (
-                    key + "_temp_" + str(q_index)
-                )
+                last_made_temp_query: str = key + "_temp_" + str(q_index)
             elif q_index == len(tables_to_make[key]) - 1:
                 if select_schema:
                     curr_schema = select_schema
@@ -252,9 +225,7 @@ def make_join(
                     is_select=is_select,
                 )
             else:
-                last_made_temp_query = (
-                    key + "_" + str(q_index)
-                )
+                last_made_temp_query = key + "_" + str(q_index)
     return all_queries
 
 
@@ -296,10 +267,7 @@ def make_group_by(
             else:
                 curr_schema = None
                 for schema in schemas:
-                    if (
-                        schema_in_key(key, schema)
-                        or len(schemas) == 1
-                    ):
+                    if schema_in_key(key, schema) or len(schemas) == 1:
                         curr_schema = list(schema)
                 all_queries += insert_into_w_select(
                     prep_prefix + key,
@@ -310,10 +278,7 @@ def make_group_by(
         if len(tables_to_make[key]) == 1:
             continue
         for schema in schemas:
-            if (
-                schema_in_key(key, schema)
-                or len(schemas) == 1
-            ):
+            if schema_in_key(key, schema) or len(schemas) == 1:
                 all_queries += count_k_counts_together(
                     schema, key, prep_prefix + key, is_delta
                 )
@@ -397,20 +362,10 @@ def add_on_conflict_insert_clause(
     count: int = 0
     for var in sorted_variables:
         if not count >= (len(sorted_variables) - 1):
-            update_clause += (
-                var
-                + " = '"
-                + str(solution_mapping[var])
-                + "' AND "
-            )
+            update_clause += var + " = '" + str(solution_mapping[var]) + "' AND "
             count += 1
         else:
-            update_clause += (
-                var
-                + " = '"
-                + str(solution_mapping[var])
-                + "'"
-            )
+            update_clause += var + " = '" + str(solution_mapping[var]) + "'"
 
     return update_clause
 
@@ -428,20 +383,10 @@ def construct_bgp_insert(
     Returns:
         str: Query to insert the filled in triples into the BGP table.
     """
-    insert_str: str = (
-        "INSERT INTO "
-        + __encode_table_name(part)
-        + "\nVALUES\n\t"
-    )
+    insert_str: str = "INSERT INTO " + __encode_table_name(part) + "\nVALUES\n\t"
     for triple in filled_in_triples:
         insert_str += (
-            "('"
-            + triple[0]
-            + "', '"
-            + triple[1]
-            + "', '"
-            + triple[2]
-            + "', 1),\n\t"
+            "('" + triple[0] + "', '" + triple[1] + "', '" + triple[2] + "', 1),\n\t"
         )
     insert_str += "ON CONFLICT DO\nUPDATE SET\n\t"
     insert_str += (
@@ -451,9 +396,7 @@ def construct_bgp_insert(
     return insert_str
 
 
-def delta_prep_sum_query(
-    part: CompValue, use_pv: bool = False
-) -> str:
+def delta_prep_sum_query(part: CompValue, use_pv: bool = False) -> str:
     """Sums the k_count values in the delta_prep table based upon duplicates in the delta table.
 
     Args:
@@ -465,33 +408,23 @@ def delta_prep_sum_query(
     """
     update_query: str = "SELECT "
     if use_pv:
-        update_query += ", ".join(
-            f"{var}" for var in sorted(part.PV)
-        )
+        update_query += ", ".join(f"{var}" for var in sorted(part.PV))
     else:
-        update_query += ", ".join(
-            f"{var}" for var in sorted(part.get("vars"))
-        )
+        update_query += ", ".join(f"{var}" for var in sorted(part.get("vars")))
     update_query += ", SUM(k_count) AS k_count\n"
     update_query += "FROM delta_prep_"
     update_query += __encode_table_name(part)
     update_query += "\nGROUP BY "
     if use_pv:
-        update_query += ", ".join(
-            f"{var}" for var in sorted(part.PV)
-        )
+        update_query += ", ".join(f"{var}" for var in sorted(part.PV))
     else:
-        update_query += ", ".join(
-            f"{var}" for var in sorted(part.get("vars"))
-        )
+        update_query += ", ".join(f"{var}" for var in sorted(part.get("vars")))
     update_query += ";"
 
     return update_query
 
 
-def __from_clause_long_outer_join(
-    part: CompValue, index: int
-) -> str:
+def __from_clause_long_outer_join(part: CompValue, index: int) -> str:
     """Recursive part to build the FROM clause for the long outer join query.
 
     Args:
@@ -502,18 +435,13 @@ def __from_clause_long_outer_join(
         str: From clause for the long outer join query.
     """
     full_outer_join_part_query = (
-        "delta_"
-        + __encode_table_name(part)
-        + "_"
-        + str(index + 1)
+        "delta_" + __encode_table_name(part) + "_" + str(index + 1)
     )
 
     if index == len(part.triples) - 1:
         return full_outer_join_part_query
     else:
-        double_index: str = (
-            str(index) + "_" + str(index + 1)
-        )
+        double_index: str = str(index) + "_" + str(index + 1)
         return (
             "("
             + full_outer_join_part_query
@@ -550,9 +478,7 @@ def final_outer_join_query(
     """
     join_query: str = ""
     if not is_select:
-        join_query += (
-            "CREATE TABLE " + new_table_name + " AS "
-        )
+        join_query += "CREATE TABLE " + new_table_name + " AS "
     join_query += "SELECT "
     if schema:
         join_query += ", ".join(
@@ -570,12 +496,12 @@ def final_outer_join_query(
     if schema:
         join_query += " ON "
         join_query += " AND ".join(
-            f"R1.{var} = R2.{var}"
-            for var in schema
-            if var != "k_count"
+            f"R1.{var} = R2.{var}" for var in schema if var != "k_count"
         )
         if is_delta:
-            join_query += " WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) != 0"
+            join_query += (
+                " WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) != 0"
+            )
         else:
             join_query += " WHERE coalesce(R1.k_count, 0) + coalesce(R2.k_count, 0) > 0"
     join_query += ";\n"
@@ -598,9 +524,7 @@ def outer_join_queries(
     Returns:
         str: String with entire full outer join to add to the SQL file
     """
-    join_query: str = (
-        "CREATE TEMP TABLE " + delta_table_name
-    )
+    join_query: str = "CREATE TEMP TABLE " + delta_table_name
     join_query += " AS SELECT "
     join_query += ", ".join(
         f"(CASE WHEN R1.{var} NOT NULL THEN R1.{var} ELSE R2.{var} END) AS {var}"
@@ -614,9 +538,7 @@ def outer_join_queries(
     )
     join_query += f"FROM {left_query} AS R1 FULL OUTER JOIN {right_query} AS R2 ON "
     join_query += " AND ".join(
-        f"R1.{var} = R2.{var}"
-        for var in known_vars
-        if var != "k_count"
+        f"R1.{var} = R2.{var}" for var in known_vars if var != "k_count"
     )
     join_query += ";"
     return join_query
@@ -638,10 +560,7 @@ def insert_delta_query(
         str: Query string
     """
     insert_str: str = (
-        "INSERT INTO "
-        + increm_table_name_part
-        + __encode_table_name(part)
-        + " ("
+        "INSERT INTO " + increm_table_name_part + __encode_table_name(part) + " ("
     )
     first: bool = True
     for key in sorted(results.keys()):
@@ -700,10 +619,7 @@ def insert_query(
         str: Query string
     """
     insert_str: str = (
-        "INSERT INTO "
-        + increm_table_name_part
-        + __encode_table_name(part)
-        + " ("
+        "INSERT INTO " + increm_table_name_part + __encode_table_name(part) + " ("
     )
     first: bool = True
     for key in sorted(results.keys()):
@@ -746,9 +662,7 @@ def insert_query(
     return insert_str
 
 
-def bgp_insert_query(
-    part: CompValue, results: DataFrame
-) -> str:
+def bgp_insert_query(part: CompValue, results: DataFrame) -> str:
     """Insert BGP results into the table.
 
     Args:
@@ -758,9 +672,7 @@ def bgp_insert_query(
     Returns:
         str: Query string to insert the results into the BGP table.
     """
-    insert_str: str = (
-        "INSERT INTO " + __encode_table_name(part) + " ("
-    )
+    insert_str: str = "INSERT INTO " + __encode_table_name(part) + " ("
     first: bool = True
     for key in sorted(results.keys()):
         if first:
@@ -773,11 +685,7 @@ def bgp_insert_query(
     for row_index in range(len(results)):
         insert_str += "\t("
         for key in sorted(results.keys()):
-            insert_str += (
-                "'"
-                + str(results[key].loc[row_index])
-                + "', "
-            )
+            insert_str += "'" + str(results[key].loc[row_index]) + "', "
         insert_str += "1),\n"
     insert_str += "ON CONFLICT DO\nUPDATE SET\n\t"
     insert_str += "k_count = k_count + 1\n"
@@ -848,9 +756,7 @@ def __construct_select_query_mult_schemas(
         if var in schema:
             select_str += var + ", "
         else:
-            select_str += (
-                "CAST(NULL AS VARCHAR) AS " + var + ", "
-            )
+            select_str += "CAST(NULL AS VARCHAR) AS " + var + ", "
     select_str += "k_count FROM "
     select_str += table_name + ";"
     return select_str
@@ -885,9 +791,7 @@ def select_query(
         select_dict: dict[str, list[str]] = dict()
         for schema in schemas:
             new_table_name: str = (
-                table_name
-                + "_"
-                + __encode_schema_name(str(sorted(schema)))
+                table_name + "_" + __encode_schema_name(str(sorted(schema)))
             )
             if select_table_name not in select_dict:
                 select_dict[select_table_name] = [
@@ -927,9 +831,7 @@ def delta_select_query(
     return select_query(part, schemas, "delta_")
 
 
-def nu_queries(
-    part: CompValue, schemas: list[set[str]]
-) -> tuple[str, str]:
+def nu_queries(part: CompValue, schemas: list[set[str]]) -> tuple[str, str]:
     """Constructs a query for the nu table.
 
     Args:
@@ -954,14 +856,8 @@ def nu_queries(
         )
     else:
         for schema in schemas:
-            schemas_suffix: str = __encode_schema_name(
-                str(sorted(schema))
-            )
-            curr_table_name = (
-                __encode_table_name(part)
-                + "_"
-                + schemas_suffix
-            )
+            schemas_suffix: str = __encode_schema_name(str(sorted(schema)))
+            curr_table_name = __encode_table_name(part) + "_" + schemas_suffix
             dict_nu_queries = add_table_to_dict(
                 "nu_" + curr_table_name,
                 f"SELECT * FROM {curr_table_name};",

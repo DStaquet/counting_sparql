@@ -2,8 +2,8 @@
 
 from rdflib.term import Variable
 from pytest import mark
-from sqlparse import format as sql_format
-from duckdb import DuckDBPyConnection, connect
+from sqlparse import format as sql_format  # type: ignore
+from duckdb import DuckDBPyConnection, connect  # type: ignore
 
 from SQL_Constructor.operation_constructor.filter_constructor import (
     filter_query,
@@ -137,8 +137,8 @@ def _construct_delta_bgps(
 )
 def test_filter_query_output(
     query_file: str,
-    expected_output,
-    expected_delta_output,
+    expected_output: list[tuple[str, str, int]],
+    expected_delta_output: list[tuple[str, str, int]],
     schemas: list[set[str]],
     bgp_name: str,
     filter_name: str,

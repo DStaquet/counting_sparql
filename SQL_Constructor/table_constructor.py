@@ -17,17 +17,9 @@ def values_var(res: list) -> str:
     for elem in res:
         for assignment in elem:
             if assignment not in known_vars:
-                var_str += (
-                    "\t"
-                    + assignment
-                    + " VARCHAR(255),\n\tvalue VARCHAR(255),\n"
-                )
+                var_str += "\t" + assignment + " VARCHAR(255),\n\tvalue VARCHAR(255),\n"
                 known_vars.add(assignment)
-    var_str += (
-        "\tPRIMARY KEY("
-        + "".join(x for x in known_vars)
-        + ")\n"
-    )
+    var_str += "\tPRIMARY KEY(" + "".join(x for x in known_vars) + ")\n"
     return var_str
 
 
@@ -50,65 +42,27 @@ def __encode_table_name(part: CompValue) -> str:
         return (
             part.name
             + "_"
-            + str(
-                abs(
-                    hash(
-                        (
-                            "".join(
-                                ltr
-                                for ltr in return_str
-                                if ltr.isalnum()
-                            )
-                        )
-                    )
-                )
-            )
+            + str(abs(hash(("".join(ltr for ltr in return_str if ltr.isalnum())))))
         )
     elif part.name == "values":
         return (
             part.name
             + "_"
-            + str(
-                abs(
-                    hash(
-                        (
-                            "".join(
-                                x
-                                for x in str(part)
-                                if x.isalnum()
-                            )
-                        )
-                    )
-                )
-            )
+            + str(abs(hash(("".join(x for x in str(part) if x.isalnum())))))
         )
     elif "PV" in part:
         for var in sorted(part.PV):
             return_str += str(type(var)) + str(var)
-        return_str = "".join(
-            x for x in return_str if x.isalnum()
-        )
+        return_str = "".join(x for x in return_str if x.isalnum())
     else:
         for var in sorted(part.get("_vars")):
             return_str += str(type(var)) + str(var)
-        return_str = "".join(
-            x for x in return_str if x.isalnum()
-        )
+        return_str = "".join(x for x in return_str if x.isalnum())
     if "p" in part:
         return (
             part.name
             + "_"
-            + str(
-                abs(
-                    hash(
-                        (
-                            return_str
-                            + "__"
-                            + __encode_table_name(part.p)
-                        )
-                    )
-                )
-            )
+            + str(abs(hash((return_str + "__" + __encode_table_name(part.p)))))
         )
     else:
         return (
@@ -141,22 +95,10 @@ def delete_all_tables(
     Returns:
         str: Returns the SQL query to delete all rows from the table.
     """
-    delete_query: str = (
-        "DELETE FROM " + __encode_table_name(part) + ";"
-    )
-    delete_delta_query: str = (
-        "DELETE FROM delta_"
-        + __encode_table_name(part)
-        + ";"
-    )
-    delete_nu_query: str = (
-        "DELETE FROM nu_" + __encode_table_name(part) + ";"
-    )
-    delete_nu_prep_query: str = (
-        "DELETE FROM nu_prep_"
-        + __encode_table_name(part)
-        + ";"
-    )
+    delete_query: str = "DELETE FROM " + __encode_table_name(part) + ";"
+    delete_delta_query: str = "DELETE FROM delta_" + __encode_table_name(part) + ";"
+    delete_nu_query: str = "DELETE FROM nu_" + __encode_table_name(part) + ";"
+    delete_nu_prep_query: str = "DELETE FROM nu_prep_" + __encode_table_name(part) + ";"
 
     return (
         delete_query,
@@ -188,9 +130,7 @@ def __create_vars(variables: set) -> str:
     return var_str
 
 
-def make_tables(
-    part, variables: set
-) -> tuple[str, str, str, str, str]:
+def make_tables(part, variables: set) -> tuple[str, str, str, str, str]:
     """Makes the SQL tables.
 
     Args:
@@ -203,10 +143,7 @@ def make_tables(
     if part.name == "BGP":
         # BGP old table
         create_table_str: str = (
-            "CREATE TABLE IF NOT EXISTS "
-            + __encode_table_name(part)
-            + " (\n"
-            + "\t"
+            "CREATE TABLE IF NOT EXISTS " + __encode_table_name(part) + " (\n" + "\t"
         )
         for var in variables:
             create_table_str += var + " VARCHAR(255),\n\t"
@@ -220,9 +157,7 @@ def make_tables(
             + "\t"
         )
         for var in variables:
-            create_table_delta_bgp += (
-                var + " VARCHAR(255),\n\t"
-            )
+            create_table_delta_bgp += var + " VARCHAR(255),\n\t"
         create_table_delta_bgp += "k_count INT);\n"
         create_table_delta_prep: str = (
             "CREATE TABLE IF NOT EXISTS delta_prep_"
@@ -231,9 +166,7 @@ def make_tables(
             + "\t"
         )
         for var in variables:
-            create_table_delta_prep += (
-                var + " VARCHAR(255),\n\t"
-            )
+            create_table_delta_prep += var + " VARCHAR(255),\n\t"
         create_table_delta_prep += "k_count INT);\n"
         create_table_nu_prep: str = (
             "CREATE TABLE IF NOT EXISTS nu_prep_"
@@ -242,28 +175,19 @@ def make_tables(
             + "\t"
         )
         for var in variables:
-            create_table_nu_prep += (
-                var + " VARCHAR(255),\n\t"
-            )
+            create_table_nu_prep += var + " VARCHAR(255),\n\t"
         create_table_nu_prep += "k_count INT);\n"
 
         # BGP nu table
         create_table_bgp_nu: str = (
-            "CREATE TABLE IF NOT EXISTS nu_"
-            + __encode_table_name(part)
-            + " (\n"
-            + "\t"
+            "CREATE TABLE IF NOT EXISTS nu_" + __encode_table_name(part) + " (\n" + "\t"
         )
         for var in variables:
-            create_table_bgp_nu += (
-                var + " VARCHAR(255),\n\t"
-            )
+            create_table_bgp_nu += var + " VARCHAR(255),\n\t"
         create_table_bgp_nu += "k_count INT);\n"
 
     elif part.name == "values" or (
-        part.name == "ToMultiSet"
-        and "p" in part
-        and part.p.name == "values"
+        part.name == "ToMultiSet" and "p" in part and part.p.name == "values"
     ):
         if part.name == "ToMultiSet":
             res: list = part.p.res
@@ -293,9 +217,7 @@ def make_tables(
             + ");"
         )
 
-    elif "PV" in part or (
-        part.name == "Distinct" and "PV" in part.p
-    ):
+    elif "PV" in part or (part.name == "Distinct" and "PV" in part.p):
         if part.name == "Distinct":
             variables = part.p.PV
         else:
@@ -436,13 +358,8 @@ def create_table_w_select(
     if columns is None:
         return f"CREATE {temp_prefix} TABLE {given_table} AS\n{select_query}"
     else:
-        create_str: str = (
-            f"CREATE {temp_prefix} TABLE {given_table} ("
-            + ", ".join(
-                key
-                for key in sorted(columns)
-                if key != "k_count"
-            )
+        create_str: str = f"CREATE {temp_prefix} TABLE {given_table} (" + ", ".join(
+            key for key in sorted(columns) if key != "k_count"
         )
         create_str += ", k_count) AS\n" + select_query
         return create_str
@@ -472,13 +389,8 @@ def insert_into_w_select(
             sorted_columns: list[str] = sorted(columns)
         else:
             sorted_columns: list[str] = columns
-        insert_str: str = (
-            f"INSERT INTO {given_table} ("
-            + ", ".join(
-                key
-                for key in sorted_columns
-                if key != "k_count"
-            )
+        insert_str: str = f"INSERT INTO {given_table} (" + ", ".join(
+            key for key in sorted_columns if key != "k_count"
         )
         insert_str += ", k_count)\n" + select_query
         return insert_str
@@ -537,9 +449,7 @@ def delta_union_table_query(
     Returns:
         str: The SQL query to union the two tables together.
     """
-    part1_table_name1: str = "delta_" + __encode_table_name(
-        part.p1
-    )
+    part1_table_name1: str = "delta_" + __encode_table_name(part.p1)
     part1_table_name2: str = __encode_table_name(part.p2)
 
     # First FROM clause
@@ -551,12 +461,8 @@ def delta_union_table_query(
     )
 
     # Second FROM clause
-    part2_table_name1: str = "nu_" + __encode_table_name(
-        part.p1
-    )
-    part2_table_name2: str = "delta_" + __encode_table_name(
-        part.p2
-    )
+    part2_table_name1: str = "nu_" + __encode_table_name(part.p1)
+    part2_table_name2: str = "delta_" + __encode_table_name(part.p2)
     part2_from_clause: str = build_delta_union_from_clause(
         part2_table_name1,
         part2_table_name2,
@@ -567,9 +473,7 @@ def delta_union_table_query(
     # SELECT clause
     select_clause: str = "SELECT "
     # for _var in part.p1._vars.intersection(part.p2._vars):
-    for _var in part.p1.get("_vars").intersection(
-        part.p2.get("_vars")
-    ):
+    for _var in part.p1.get("_vars").intersection(part.p2.get("_vars")):
         select_clause += (
             "(CASE WHEN r1."
             + _var
@@ -581,29 +485,19 @@ def delta_union_table_query(
             + _var
             + ", "
         )
-    for _var in part.p1.get("_vars").difference(
-        part.p2.get("_vars")
-    ):
+    for _var in part.p1.get("_vars").difference(part.p2.get("_vars")):
         select_clause += "r1." + _var + " AS " + _var + ", "
-    for _var in part.p2.get("_vars").difference(
-        part.p1.get("_vars")
-    ):
+    for _var in part.p2.get("_vars").difference(part.p1.get("_vars")):
         select_clause += "r2." + _var + " AS " + _var + ", "
     select_clause += " coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count"
 
-    first_query: str = (
-        select_clause + "\n" + part1_from_clause + ";\n"
-    )
-    second_query: str = (
-        select_clause + "\n" + part2_from_clause + ";\n"
-    )
+    first_query: str = select_clause + "\n" + part1_from_clause + ";\n"
+    second_query: str = select_clause + "\n" + part2_from_clause + ";\n"
 
     return (first_query, second_query)
 
 
-def union_table_query(
-    part: CompValue, r1_vars: set[str], r2_vars: set[str]
-) -> str:
+def union_table_query(part: CompValue, r1_vars: set[str], r2_vars: set[str]) -> str:
     """Constructs an SQL query to union two tables together with their k counts.
 
     Args:
@@ -639,9 +533,7 @@ def union_table_query(
 
     # SELECT clause
     select_clause: str = "SELECT "
-    for _var in part.p1.get("_vars").intersection(
-        part.p2.get("_vars")
-    ):
+    for _var in part.p1.get("_vars").intersection(part.p2.get("_vars")):
         select_clause += (
             "(CASE WHEN r1."
             + _var
@@ -653,13 +545,9 @@ def union_table_query(
             + _var
             + ", "
         )
-    for _var in part.p1.get("_vars").difference(
-        part.p2.get("_vars")
-    ):
+    for _var in part.p1.get("_vars").difference(part.p2.get("_vars")):
         select_clause += "r1." + _var + " AS " + _var + ", "
-    for _var in part.p2.get("_vars").difference(
-        part.p1.get("_vars")
-    ):
+    for _var in part.p2.get("_vars").difference(part.p1.get("_vars")):
         select_clause += "r2." + _var + " AS " + _var + ", "
     select_clause += " coalesce(r1.k_count, 0) + coalesce(r2.k_count, 0) as k_count"
 

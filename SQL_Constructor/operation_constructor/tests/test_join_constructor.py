@@ -59,9 +59,7 @@ def test_join_query(
     reset_seed()
 
     # Read the query file
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     join_leaves = all_type_leaves(part, "Join")
 
@@ -93,6 +91,9 @@ def test_join_query(
     # Read the expected SQL query
     with open(expected_sql, "r", encoding="utf-8") as f:
         expected_sql_str = f.read()
+
+    print("Generated join query:")
+    print(join_queries)
 
     # Compare the expected SQL query with the generated SQL query
     assert join_queries == expected_sql_str
@@ -137,9 +138,7 @@ def test_delta_join_query(
     reset_seed()
 
     # Read the query file
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     join_leaves = all_type_leaves(part, "Join")
 
@@ -191,12 +190,8 @@ def _drop_join_tables(
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Drops the join table."""
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS {join_table_name};"
-    )
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS delta_{join_table_name};"
-    )
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS {join_table_name};")
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_{join_table_name};")
 
 
 @mark.parametrize(
@@ -208,9 +203,9 @@ def _drop_join_tables(
             [{Variable("y"), Variable("w")}],
             [{Variable("x"), Variable("y")}],
             ":memory:",
-            "BGP_5127379026335911785",
-            "BGP_4313253051102226119",
-            "Join_1233181518159936422",
+            "BGP_4828852104882819343",
+            "BGP_8639977824181032562",
+            "Join_8668205654064478100",
         )
     ],
 )
@@ -228,9 +223,7 @@ def test_join_query_output(
     reset_seed()
 
     # Read the query file
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     join_leaves = all_type_leaves(part, "Join")
 
@@ -272,9 +265,7 @@ def test_join_query_output(
     duckdb_conn.execute(join_queries)
 
     # Check the output of the join query
-    result = duckdb_conn.execute(
-        f"SELECT * FROM {join_name};"
-    ).fetchall()
+    result = duckdb_conn.execute(f"SELECT * FROM {join_name};").fetchall()
     assert result == expected_output
 
 
@@ -323,9 +314,9 @@ def _construct_delta_bgps(
             [{Variable("y"), Variable("w")}],
             [{Variable("x"), Variable("y")}],
             ":memory:",
-            "BGP_5127379026335911785",
-            "BGP_4313253051102226119",
-            "Join_1233181518159936422",
+            "BGP_4828852104882819343",
+            "BGP_8639977824181032562",
+            "Join_8668205654064478100",
         )
     ],
 )
@@ -343,9 +334,7 @@ def test_join_query_delta(
     reset_seed()
 
     # Read the query file
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     join_leaves = all_type_leaves(part, "Join")
 
@@ -377,7 +366,5 @@ def test_join_query_delta(
     duckdb_conn.execute(join_queries)
 
     # Check the output of the join query
-    result = duckdb_conn.execute(
-        f"SELECT * FROM delta_{join_name};"
-    ).fetchall()
+    result = duckdb_conn.execute(f"SELECT * FROM delta_{join_name};").fetchall()
     assert result == expected_output
