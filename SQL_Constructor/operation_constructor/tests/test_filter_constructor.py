@@ -58,9 +58,7 @@ def test_filter_query(
     """
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only Filter patterns
     filter_leaves = all_type_leaves(part, "Filter")
@@ -74,9 +72,7 @@ def test_filter_query(
             uppercase=True,
         )
         delta_filter_queries += sql_format(
-            filter_query(
-                filter_leaf, schemas, is_delta=True
-            ),
+            filter_query(filter_leaf, schemas, is_delta=True),
             reindent=True,
             uppercase=True,
         )
@@ -108,12 +104,8 @@ def _drop_filter_tables(
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Drops the filter tables."""
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS {filter_name};"
-    )
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS delta_{filter_name};"
-    )
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS {filter_name};")
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_{filter_name};")
 
 
 def _construct_delta_bgps(
@@ -137,8 +129,8 @@ def _construct_delta_bgps(
             [("a", "b", 1), ("c", "b", 1)],
             [("b", "c", 1), ("c", "b", -1)],
             [{Variable("x"), Variable("y")}],
-            "BGP_4313253051102226119",
-            "Filter_5867829970618114298",
+            "BGP_8639977824181032562",
+            "Filter_6018216353299758137",
             ":memory:",
         )
     ],
@@ -155,9 +147,7 @@ def test_filter_query_output(
     """Tests if the filter_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only Filter patterns
     filter_leaves = all_type_leaves(part, "Filter")
@@ -171,9 +161,7 @@ def test_filter_query_output(
             uppercase=True,
         )
         delta_filter_queries += sql_format(
-            filter_query(
-                filter_leaf, schemas, is_delta=True
-            ),
+            filter_query(filter_leaf, schemas, is_delta=True),
             reindent=True,
             uppercase=True,
         )
@@ -193,12 +181,8 @@ def test_filter_query_output(
     duckdb_conn.execute(delta_filter_queries)
 
     # Check if the output is correct
-    result = duckdb_conn.execute(
-        f"SELECT * FROM {filter_name};"
-    ).fetchall()
+    result = duckdb_conn.execute(f"SELECT * FROM {filter_name};").fetchall()
     assert result == expected_output
 
-    result = duckdb_conn.execute(
-        f"SELECT * FROM delta_{filter_name};"
-    ).fetchall()
+    result = duckdb_conn.execute(f"SELECT * FROM delta_{filter_name};").fetchall()
     assert result == expected_delta_output
