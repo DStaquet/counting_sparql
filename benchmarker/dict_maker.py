@@ -37,7 +37,7 @@ def __addToDict(
         part (CompValue): The part to add.
         dictionary (dict): The dictionary to add the part to.
     """
-    dictionary[curr_name] = query
+    dictionary[curr_name] = query + "\n\n"
     return dictionary
 
 
@@ -63,9 +63,7 @@ def __combinDeltaAndNuDicts(
     return new_dict
 
 
-def __combineTwoDicts(
-    dict1: dict[str, str], dict2: dict[str, str]
-) -> dict[str, str]:
+def __combineTwoDicts(dict1: dict[str, str], dict2: dict[str, str]) -> dict[str, str]:
     """Combines two dictionaries.
 
     Args:
@@ -93,9 +91,7 @@ def constructDictFromTree(
     """
     current_name = get_table_name(part)
     if not increm:
-        current_file_name = (
-            join(query_input_dir, current_name) + ".sql"
-        )
+        current_file_name = join(query_input_dir, current_name) + ".sql"
     else:
         current_delta_file_name = getJoinOrNormalFile(
             join(query_input_dir, "delta_" + current_name)
@@ -105,28 +101,16 @@ def constructDictFromTree(
         )
 
     if part.name == "BGP":
-        prev_dict: dict[str, str] | dict[str, list[str]] = (
-            dict()
-        )
+        prev_dict: dict[str, str] | dict[str, list[str]] = dict()
     if "p" in part:
-        prev_dict = constructDictFromTree(
-            part.p, query_input_dir, increm
-        )
+        prev_dict = constructDictFromTree(part.p, query_input_dir, increm)
     elif "p1" in part and "p2" in part:
-        prev_dict1 = constructDictFromTree(
-            part.p1, query_input_dir, increm
-        )
-        prev_dict2 = constructDictFromTree(
-            part.p2, query_input_dir, increm
-        )
+        prev_dict1 = constructDictFromTree(part.p1, query_input_dir, increm)
+        prev_dict2 = constructDictFromTree(part.p2, query_input_dir, increm)
         if not increm:
-            prev_dict = __combineTwoDicts(
-                prev_dict1, prev_dict2  # type: ignore
-            )
+            prev_dict = __combineTwoDicts(prev_dict1, prev_dict2)  # type: ignore
         else:
-            prev_dict = __combinDeltaAndNuDicts(
-                prev_dict1, prev_dict2  # type: ignore
-            )
+            prev_dict = __combinDeltaAndNuDicts(prev_dict1, prev_dict2)  # type: ignore
 
     if part.name in ["Group", "Extend"]:
         return prev_dict

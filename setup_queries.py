@@ -18,6 +18,7 @@ from os import mkdir
 def __non_increm_queries(
     part: CompValue,
     output_dir: str,
+    og_table_name: str = "G",
 ) -> None:
     """Constructs the non_incremental queries
 
@@ -25,12 +26,13 @@ def __non_increm_queries(
         part (CompValue): Current part of the query
         output_dir (str): Where to write the SQL queries
     """
-    SQL_initialize_queries.build_queries(part, output_dir)
+    SQL_initialize_queries.build_queries(part, output_dir, og_table_name)
 
 
 def __increm_queries(
     part: CompValue,
     output_dir: str,
+    table_name: str = "G",
 ) -> None:
     """Builds up the incremental queries
 
@@ -38,9 +40,7 @@ def __increm_queries(
         part (CompValue): The algebra of the query
         output_dir (str): Directory to write the output to
     """
-    SQL_initialize_queries.build_increm_queries(
-        part, output_dir
-    )
+    SQL_initialize_queries.build_increm_queries(part, output_dir, table_name=table_name)
 
 
 def setup_tables(query: CompValue, output_dir: str) -> None:
@@ -60,9 +60,7 @@ def setup_tables(query: CompValue, output_dir: str) -> None:
     handle.close()
 
     # Drop all the tables before the setup
-    drop_queries, drop_delta_queries, _ = dropTablesRec(
-        query, output_dir
-    )
+    drop_queries, drop_delta_queries, _ = dropTablesRec(query, output_dir)
     # Delete all the tables before the setup
     delete_queries: str = deleteTablesRec(query)
     # Construct the tables
@@ -114,8 +112,7 @@ def get_query_output_dir(
     if temp_dir:
         query_output_dir = join(
             output_dir,
-            "query_"
-            + get_table_name(q_query_object.algebra),
+            "query_" + get_table_name(q_query_object.algebra),
             "temp_tables",
         )
     if not exists(query_output_dir):
@@ -128,6 +125,7 @@ def setup_queries(
     output_dir: str,
     increm: bool = False,
     temp_dir: bool = False,
+    og_table_name: str = "G",
 ) -> None:
     """Sets up the queries incrementally or non-incrementally
 
@@ -140,20 +138,14 @@ def setup_queries(
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
 
-    query_output_dir: str = get_query_output_dir(
-        output_dir, q_query_object, temp_dir
-    )
+    query_output_dir: str = get_query_output_dir(output_dir, q_query_object, temp_dir)
     if not exists(query_output_dir):
         mkdir(query_output_dir)
 
     if increm:
-        __increm_queries(
-            q_query_object.algebra, query_output_dir
-        )
+        __increm_queries(q_query_object.algebra, query_output_dir, og_table_name)
     else:
-        __non_increm_queries(
-            q_query_object.algebra, query_output_dir
-        )
+        __non_increm_queries(q_query_object.algebra, query_output_dir, og_table_name)
 
     # setup_tables(q_query_object.algebra, query_output_dir)
 
@@ -165,14 +157,10 @@ if __name__ == "__main__":
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
         os.environ["PYTHONHASHSEED"] = "0"
-        os.execv(
-            sys.executable, [sys.executable] + sys.argv
-        )
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
     if len(sys.argv) < 4:
-        print(
-            "Usage: python query_parser.py <query> <data> <output_dir>"
-        )
+        print("Usage: python query_parser.py <query> <data> <output_dir>")
         exit(1)
     else:
         query_str: str = sys.argv[1]
