@@ -89,20 +89,14 @@ def test_minus_query(
     """Tests the minus_query function."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only Minus patterns
-    minus_leaves: list[CompValue] = all_type_leaves(
-        part, "Minus"
-    )
+    minus_leaves: list[CompValue] = all_type_leaves(part, "Minus")
 
     minus_queries: str = ""
     for minus in reversed(minus_leaves):
-        current_query = minus_query(
-            minus, schemas1, schemas2
-        )
+        current_query = minus_query(minus, schemas1, schemas2)
 
         minus_queries += sql_format(
             current_query,
@@ -163,21 +157,15 @@ def test_delta_minus_query(
     """Tests the delta_minus_query function."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only Minus patterns
-    minus_leaves: list[CompValue] = all_type_leaves(
-        part, "Minus"
-    )
+    minus_leaves: list[CompValue] = all_type_leaves(part, "Minus")
 
     minus_queries: str = ""
     minus_queries_join: str = ""
     for minus in reversed(minus_leaves):
-        current_query, current_join_query = (
-            delta_minus_query(minus, schemas1, schemas2)
-        )
+        current_query, current_join_query = delta_minus_query(minus, schemas1, schemas2)
 
         minus_queries += sql_format(
             current_query,
@@ -209,15 +197,11 @@ def _build_bgps(
     """Builds up the BGPs for the query."""
     # Drop tables if they exist
     for table in [bgp_name_one, bgp_name_two]:
-        duckdb_conn.execute(
-            "DROP TABLE IF EXISTS " + table + ";"
-        )
+        duckdb_conn.execute("DROP TABLE IF EXISTS " + table + ";")
 
     # Build first BGP
     duckdb_conn.execute(
-        "CREATE TABLE IF NOT EXISTS "
-        + bgp_name_one
-        + " (x TEXT, y TEXT, k_count INT);"
+        "CREATE TABLE IF NOT EXISTS " + bgp_name_one + " (x TEXT, y TEXT, k_count INT);"
     )
     duckdb_conn.execute(
         "INSERT INTO "
@@ -227,14 +211,10 @@ def _build_bgps(
 
     # Build second BGP
     duckdb_conn.execute(
-        "CREATE TABLE IF NOT EXISTS "
-        + bgp_name_two
-        + " (y TEXT, k_count INT);"
+        "CREATE TABLE IF NOT EXISTS " + bgp_name_two + " (y TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO "
-        + bgp_name_two
-        + " (y, k_count) VALUES ('b', 1);"
+        "INSERT INTO " + bgp_name_two + " (y, k_count) VALUES ('b', 1);"
     )
 
 
@@ -244,14 +224,10 @@ def _build_2_schema_extra_bgps(
 ) -> None:
     """Constructs the second schema BGP for the minus query."""
     duckdb_conn.execute(
-        "CREATE OR REPLACE TABLE "
-        + bgp_name_two
-        + " (x TEXT, k_count INT);"
+        "CREATE OR REPLACE TABLE " + bgp_name_two + " (x TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO "
-        + bgp_name_two
-        + " (x, k_count) VALUES ('b', 1), ('d', 1);"
+        "INSERT INTO " + bgp_name_two + " (x, k_count) VALUES ('b', 1), ('d', 1);"
     )
 
 
@@ -264,9 +240,9 @@ def _build_2_schema_extra_bgps(
             ":memory:",
             [{Variable("x"), Variable("y")}],
             [{Variable("y")}],
-            "BGP_2112036525527516625",
-            "BGP_1699582530383365185",
-            "Minus_6413830616648920484",
+            "BGP_6083253587653427336",
+            "BGP_3724395669522942022",
+            "Minus_6197316902499845733",
         ),
         (
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_output_test_2_schemas.sparql",
@@ -274,18 +250,18 @@ def _build_2_schema_extra_bgps(
             ":memory:",
             [{Variable("x"), Variable("y")}],
             [{Variable("y")}, {Variable("x")}],
-            "BGP_2112036525527516625",
+            "BGP_6083253587653427336",
             [
-                "Union_5876689305829364457_schema_6925710393041315400",
-                "Union_5876689305829364457_schema_5974201903695169563",
+                "Union_5509779417371950490_schema_1432398095755278489",
+                "Union_5509779417371950490_schema_8057865995004935963",
             ],
-            "Minus_1904994787727423016",
+            "Minus_4278540590406063633",
         ),
-    ],
+    ],  # type: ignore
 )
 def test_minus_output(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, str, int]],
     database: str,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
@@ -296,20 +272,14 @@ def test_minus_output(
     """Tests the output of the minus query."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only Minus patterns
-    minus_leaves: list[CompValue] = all_type_leaves(
-        part, "Minus"
-    )
+    minus_leaves: list[CompValue] = all_type_leaves(part, "Minus")
 
     minus_queries: str = ""
     for minus in reversed(minus_leaves):
-        current_query = minus_query(
-            minus, schemas1, schemas2
-        )
+        current_query = minus_query(minus, schemas1, schemas2)
 
         minus_queries += sql_format(
             current_query,
@@ -324,12 +294,8 @@ def test_minus_output(
     if isinstance(bgp_name_two, str):
         _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
     else:
-        _build_bgps(
-            bgp_name_one, bgp_name_two[0], duckdb_conn
-        )
-        _build_2_schema_extra_bgps(
-            bgp_name_two[1], duckdb_conn
-        )
+        _build_bgps(bgp_name_one, bgp_name_two[0], duckdb_conn)
+        _build_2_schema_extra_bgps(bgp_name_two[1], duckdb_conn)
 
     # Drop the minus table
     _drop_minus_tables(minus_table, duckdb_conn)
@@ -337,9 +303,7 @@ def test_minus_output(
     # Execute the query
     duckdb_conn.execute(minus_queries)
 
-    output_df = duckdb_conn.sql(
-        "SELECT * FROM " + minus_table + ";"
-    ).df()
+    output_df = duckdb_conn.sql("SELECT * FROM " + minus_table + ";").df()  # type: ignore
 
     values = output_df.values.tolist()
 
@@ -353,16 +317,12 @@ def _build_delta_bgps(
 ) -> None:
     """Builds up the BGPs for the query."""
     all_tables = [bgp_name_one, bgp_name_two]
-    delta_tables = [
-        "delta_" + table for table in all_tables
-    ]
+    delta_tables = ["delta_" + table for table in all_tables]
     nu_tables = ["nu_" + table for table in all_tables]
 
     # Drop delta tables if they exist
     for table in delta_tables + nu_tables:
-        duckdb_conn.execute(
-            "DROP TABLE IF EXISTS " + table + ";"
-        )
+        duckdb_conn.execute("DROP TABLE IF EXISTS " + table + ";")
 
     # Create delta tables
     duckdb_conn.execute(
@@ -371,9 +331,7 @@ def _build_delta_bgps(
         + " (x TEXT, y TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "CREATE TABLE IF NOT EXISTS "
-        + delta_tables[1]
-        + " (y TEXT, k_count INT);"
+        "CREATE TABLE IF NOT EXISTS " + delta_tables[1] + " (y TEXT, k_count INT);"
     )
     # Insert values into delta tables
     duckdb_conn.execute(
@@ -382,21 +340,15 @@ def _build_delta_bgps(
         + " (x, y, k_count) VALUES ('a', 'b', -1), ('d', 'b', 1);"
     )
     duckdb_conn.execute(
-        "INSERT INTO "
-        + delta_tables[1]
-        + " (y, k_count) VALUES ('b', -1), ('d', 1);"
+        "INSERT INTO " + delta_tables[1] + " (y, k_count) VALUES ('b', -1), ('d', 1);"
     )
 
     # Create nu tables
     duckdb_conn.execute(
-        "CREATE TABLE IF NOT EXISTS "
-        + nu_tables[0]
-        + " (x TEXT, y TEXT, k_count INT);"
+        "CREATE TABLE IF NOT EXISTS " + nu_tables[0] + " (x TEXT, y TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "CREATE TABLE IF NOT EXISTS "
-        + nu_tables[1]
-        + " (y TEXT, k_count INT);"
+        "CREATE TABLE IF NOT EXISTS " + nu_tables[1] + " (y TEXT, k_count INT);"
     )
     # Insert values into nu tables
     duckdb_conn.execute(
@@ -405,9 +357,7 @@ def _build_delta_bgps(
         + " (x, y, k_count) VALUES ('a', 'd', 1), ('d', 'b', 1);"
     )
     duckdb_conn.execute(
-        "INSERT INTO "
-        + nu_tables[1]
-        + " (y, k_count) VALUES ('d', 1);"
+        "INSERT INTO " + nu_tables[1] + " (y, k_count) VALUES ('d', 1);"
     )
 
 
@@ -419,23 +369,17 @@ def _build_2_schema_extra_delta_bgps(
     delta_table = "delta_" + bgp_name_two
 
     duckdb_conn.execute(
-        "CREATE OR REPLACE TABLE "
-        + delta_table
-        + " (x TEXT, k_count INT);"
+        "CREATE OR REPLACE TABLE " + delta_table + " (x TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO "
-        + delta_table
-        + " (x, k_count) VALUES ('b', -1), ('b', 1);"
+        "INSERT INTO " + delta_table + " (x, k_count) VALUES ('b', -1), ('b', 1);"
     )
 
     duckdb_conn.execute(
         f"CREATE OR REPLACE TABLE nu_{bgp_name_two} (x TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO nu_"
-        + bgp_name_two
-        + " (x, k_count) VALUES ('b', 1), ('d', 1);"
+        "INSERT INTO nu_" + bgp_name_two + " (x, k_count) VALUES ('b', 1), ('d', 1);"
     )
 
 
@@ -444,12 +388,8 @@ def _drop_minus_tables(
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Drops the minus tables."""
-    duckdb_conn.execute(
-        "DROP TABLE IF EXISTS " + minus_table + ";"
-    )
-    duckdb_conn.execute(
-        "DROP TABLE IF EXISTS delta_" + minus_table + ";"
-    )
+    duckdb_conn.execute("DROP TABLE IF EXISTS " + minus_table + ";")
+    duckdb_conn.execute("DROP TABLE IF EXISTS delta_" + minus_table + ";")
 
 
 @mark.parametrize(
@@ -461,9 +401,9 @@ def _drop_minus_tables(
             ":memory:",
             [{Variable("x"), Variable("y")}],
             [{Variable("y")}],
-            "BGP_2112036525527516625",
-            "BGP_1699582530383365185",
-            "Minus_6413830616648920484",
+            "BGP_6083253587653427336",
+            "BGP_3724395669522942022",
+            "Minus_6197316902499845733",
         ),
         (
             "SQL_Constructor/operation_constructor/tests/queries/minus/minus_output_test_2_schemas.sparql",
@@ -471,18 +411,18 @@ def _drop_minus_tables(
             "database/minus_test.db",
             [{Variable("x"), Variable("y")}],
             [{Variable("y")}, {Variable("x")}],
-            "BGP_2112036525527516625",
+            "BGP_6083253587653427336",
             [
-                "Union_5876689305829364457_schema_6925710393041315400",
-                "Union_5876689305829364457_schema_5974201903695169563",
+                "Union_5509779417371950490_schema_1432398095755278489",
+                "Union_5509779417371950490_schema_8057865995004935963",
             ],
-            "Minus_1904994787727423016",
+            "Minus_4278540590406063633",
         ),
-    ],
+    ],  # type: ignore
 )
 def test_minus_delta_output(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, str, int]],
     database: str,
     schemas1: list[set[str]],
     schemas2: list[set[str]],
@@ -493,21 +433,15 @@ def test_minus_delta_output(
     """Tests if the delta output of the minus query is correct."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     # Find only Minus patterns
-    minus_leaves: list[CompValue] = all_type_leaves(
-        part, "Minus"
-    )
+    minus_leaves: list[CompValue] = all_type_leaves(part, "Minus")
 
     minus_queries: str = ""
     minus_queries_join: str = ""
     for minus in reversed(minus_leaves):
-        current_query, current_join_query = (
-            delta_minus_query(minus, schemas1, schemas2)
-        )
+        current_query, current_join_query = delta_minus_query(minus, schemas1, schemas2)
 
         minus_queries += sql_format(
             current_query,
@@ -528,24 +462,14 @@ def test_minus_delta_output(
         # Build the BGPs
         _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
         # Build the delta BGPs
-        _build_delta_bgps(
-            bgp_name_one, bgp_name_two, duckdb_conn
-        )
+        _build_delta_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
     else:
         # Build the BGPs
-        _build_bgps(
-            bgp_name_one, bgp_name_two[0], duckdb_conn
-        )
-        _build_2_schema_extra_bgps(
-            bgp_name_two[1], duckdb_conn
-        )
+        _build_bgps(bgp_name_one, bgp_name_two[0], duckdb_conn)
+        _build_2_schema_extra_bgps(bgp_name_two[1], duckdb_conn)
         # Build the delta BGPs
-        _build_delta_bgps(
-            bgp_name_one, bgp_name_two[0], duckdb_conn
-        )
-        _build_2_schema_extra_delta_bgps(
-            bgp_name_two[1], duckdb_conn
-        )
+        _build_delta_bgps(bgp_name_one, bgp_name_two[0], duckdb_conn)
+        _build_2_schema_extra_delta_bgps(bgp_name_two[1], duckdb_conn)
 
     # Drop the minus tables
     _drop_minus_tables(minus_table, duckdb_conn)
