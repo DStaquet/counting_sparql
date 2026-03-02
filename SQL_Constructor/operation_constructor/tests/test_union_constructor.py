@@ -492,7 +492,7 @@ def _build_overlap_delta_bgps(
 )
 def test_union_query_output_overlap_delta(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, str, int]],
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     bgp_name_one: str,

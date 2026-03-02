@@ -45,17 +45,13 @@ def test_project_query(
     """Test if the project_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     project_leaves = all_type_leaves(part, "Project")
 
     project_queries: str = ""
     for project in reversed(project_leaves):
-        project_query_tuple = project_query(
-            project, schemas
-        )
+        project_query_tuple = project_query(project, schemas)
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
             project_queries_formatted: str = sql_format(
@@ -103,17 +99,13 @@ def test_delta_project_query(
     """Test if the project_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     project_leaves = all_type_leaves(part, "Project")
 
     project_queries: str = ""
     for project in reversed(project_leaves):
-        project_query_tuple = delta_project_query(
-            project, schemas
-        )
+        project_query_tuple = delta_project_query(project, schemas)
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
             project_queries_formatted: str = sql_format(
@@ -140,12 +132,8 @@ def _drop_project_tables(
     duckdb_conn: DuckDBPyConnection,
 ) -> None:
     """Drops the project tables."""
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS {project_name};"
-    )
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS delta_{project_name};"
-    )
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS {project_name};")
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_{project_name};")
 
 
 def _construct_delta_bgp(
@@ -169,9 +157,7 @@ def _construct_bgp(
     duckdb_conn.execute(
         f"CREATE OR REPLACE TABLE {bgp_name} (x TEXT, y TEXT, k_count INT);"
     )
-    duckdb_conn.execute(
-        f"INSERT INTO {bgp_name} VALUES ('a', 'b', 1), ('a', 'c', 1);"
-    )
+    duckdb_conn.execute(f"INSERT INTO {bgp_name} VALUES ('a', 'b', 1), ('a', 'c', 1);")
 
 
 @mark.parametrize(
@@ -181,15 +167,15 @@ def _construct_bgp(
             "SQL_Constructor/operation_constructor/tests/queries/projection/project_1_schema.sparql",
             [("a", 2)],
             [{Variable("x"), Variable("y")}],
-            "BGP_4313253051102226119",
-            "Project_2538293893191694556",
+            "BGP_8639977824181032562",
+            "Project_8901432516401992982",
             ":memory:",
         )
     ],
 )
 def test_project_query_output(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, int]],
     schemas: list[set[str]],
     bgp_name: str,
     project_name: str,
@@ -198,17 +184,13 @@ def test_project_query_output(
     """Check if the output of the project_query function is correct."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     project_leaves = all_type_leaves(part, "Project")
 
     project_queries: str = ""
     for project in reversed(project_leaves):
-        project_query_tuple = project_query(
-            project, schemas
-        )
+        project_query_tuple = project_query(project, schemas)
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
             project_queries_formatted: str = sql_format(
@@ -237,9 +219,7 @@ def test_project_query_output(
     duckb_conn.execute(project_queries)
 
     # Check if the output is correct
-    result = duckb_conn.execute(
-        f"SELECT * FROM {project_name};"
-    ).fetchall()
+    result = duckb_conn.execute(f"SELECT * FROM {project_name};").fetchall()
     assert result == expected_output
 
 
@@ -250,15 +230,15 @@ def test_project_query_output(
             "SQL_Constructor/operation_constructor/tests/queries/projection/project_1_schema.sparql",
             [("a", -1), ("b", 1)],
             [{Variable("x"), Variable("y")}],
-            "BGP_4313253051102226119",
-            "Project_2538293893191694556",
+            "BGP_8639977824181032562",
+            "Project_8901432516401992982",
             ":memory:",
         )
     ],
 )
 def test_project_query_delta_output(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, int]],
     schemas: list[set[str]],
     bgp_name: str,
     project_name: str,
@@ -267,17 +247,13 @@ def test_project_query_delta_output(
     """Check if the output of the project_query function is correct."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     project_leaves = all_type_leaves(part, "Project")
 
     delta_project_queries: str = ""
     for project in reversed(project_leaves):
-        project_query_tuple = delta_project_query(
-            project, schemas
-        )
+        project_query_tuple = delta_project_query(project, schemas)
         if isinstance(project_query_tuple, tuple):
             project_query_curr: str = project_query_tuple[0]
             project_queries_formatted: str = sql_format(
@@ -285,9 +261,7 @@ def test_project_query_delta_output(
                 reindent=True,
                 keyword_case="upper",
             )
-            delta_project_queries += (
-                project_queries_formatted
-            )
+            delta_project_queries += project_queries_formatted
         else:
             delta_project_queries += sql_format(
                 project_query_tuple,
@@ -309,7 +283,5 @@ def test_project_query_delta_output(
     duckb_conn.execute(delta_project_queries)
 
     # Check if the output is correct
-    result = duckb_conn.execute(
-        f"SELECT * FROM delta_{project_name};"
-    ).fetchall()
+    result = duckb_conn.execute(f"SELECT * FROM delta_{project_name};").fetchall()
     assert result == expected_output
