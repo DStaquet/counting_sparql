@@ -53,17 +53,13 @@ def test_union_query(
     """Test if the union_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     union_leaves = all_type_leaves(part, "Union")
 
     union_queries: str = ""
     for union in reversed(union_leaves):
-        union_query_str = union_query(
-            union, schemas1, schemas2
-        )
+        union_query_str = union_query(union, schemas1, schemas2)
         union_queries = sql_format(
             union_query_str,
             reindent=True,
@@ -111,17 +107,13 @@ def test_delta_union_query(
     """Test if the delta_union_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     union_leaves = all_type_leaves(part, "Union")
 
     union_queries: str = ""
     for union in reversed(union_leaves):
-        union_query_str = delta_union_query(
-            union, schemas1, schemas2
-        )
+        union_query_str = delta_union_query(union, schemas1, schemas2)
         union_queries = sql_format(
             union_query_str,
             reindent=True,
@@ -140,19 +132,11 @@ def _drop_union_tables(
     union_name_second: str = "",
 ) -> None:
     """Drops the union tables."""
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS {union_name_first};"
-    )
-    duckdb_conn.execute(
-        f"DROP TABLE IF EXISTS delta_{union_name_first};"
-    )
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS {union_name_first};")
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_{union_name_first};")
     if union_name_second != "":
-        duckdb_conn.execute(
-            f"DROP TABLE IF EXISTS {union_name_second};"
-        )
-        duckdb_conn.execute(
-            f"DROP TABLE IF EXISTS delta_{union_name_second};"
-        )
+        duckdb_conn.execute(f"DROP TABLE IF EXISTS {union_name_second};")
+        duckdb_conn.execute(f"DROP TABLE IF EXISTS delta_{union_name_second};")
 
 
 def _build_bgps(
@@ -210,10 +194,10 @@ def _build_overlap_bgps(
             [
                 {Variable("y"), Variable("z")},
             ],
-            "BGP_4313253051102226119",
-            "BGP_5439676414810165533",
-            "Union_5968519747945714539_schema_5536938746033674259",
-            "Union_5968519747945714539_schema_7808164217916843974",
+            "BGP_8639977824181032562",
+            "BGP_2618228559727801994",
+            "Union_2528614756135159102_schema_4427885478980723971",
+            "Union_2528614756135159102_schema_3025895693912107038",
             "database/union_test_output.db",
         )
     ],
@@ -233,17 +217,13 @@ def test_union_query_output_no_overlap(
     """Test if the union_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     union_leaves = all_type_leaves(part, "Union")
 
     union_queries: str = ""
     for union in reversed(union_leaves):
-        union_query_str = union_query(
-            union, schemas1, schemas2
-        )
+        union_query_str = union_query(union, schemas1, schemas2)
         union_queries = sql_format(
             union_query_str,
             reindent=True,
@@ -257,17 +237,13 @@ def test_union_query_output_no_overlap(
     _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
 
     # Drop the union tables
-    _drop_union_tables(
-        duckdb_conn, union_name_first, union_name_second
-    )
+    _drop_union_tables(duckdb_conn, union_name_first, union_name_second)
 
     # Execute the query
     duckdb_conn.execute(union_queries)
 
     # Get the result
-    result_first = duckdb_conn.execute(
-        f"SELECT * FROM {union_name_first};"
-    ).fetchall()
+    result_first = duckdb_conn.execute(f"SELECT * FROM {union_name_first};").fetchall()
 
     # Get the second result
     result_second = duckdb_conn.execute(
@@ -295,16 +271,16 @@ def test_union_query_output_no_overlap(
             [
                 {Variable("y"), Variable("x")},
             ],
-            "BGP_4313253051102226119",
-            "BGP_6645479908510283233",
-            "Union_7307959202823151433",
+            "BGP_8639977824181032562",
+            "BGP_6687709572126218303",
+            "Union_1205960165662540522",
             "database/union_test_output_overlap.db",
         )
     ],
 )
 def test_union_query_output_overlap(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, str, int]],
     schemas1: list[set[str]],
     schemas2: list[set[str]],
     bgp_name_one: str,
@@ -315,17 +291,13 @@ def test_union_query_output_overlap(
     """Test if the union_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     union_leaves = all_type_leaves(part, "Union")
 
     union_queries: str = ""
     for union in reversed(union_leaves):
-        union_query_str = union_query(
-            union, schemas1, schemas2
-        )
+        union_query_str = union_query(union, schemas1, schemas2)
         union_queries = sql_format(
             union_query_str,
             reindent=True,
@@ -336,9 +308,7 @@ def test_union_query_output_overlap(
     duckdb_conn = connect(database_name)
 
     # Build the BGPs
-    _build_overlap_bgps(
-        bgp_name_one, bgp_name_two, duckdb_conn
-    )
+    _build_overlap_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
 
     # Drop the union tables
     _drop_union_tables(duckdb_conn, union_name)
@@ -347,9 +317,7 @@ def test_union_query_output_overlap(
     duckdb_conn.execute(union_queries)
 
     # Get the result
-    result = duckdb_conn.execute(
-        f"SELECT * FROM {union_name};"
-    ).fetchall()
+    result = duckdb_conn.execute(f"SELECT * FROM {union_name};").fetchall()
 
     assert sorted(result) == sorted(expected_output)
 
@@ -401,10 +369,10 @@ def _build_delta_bgps(
             [
                 {Variable("y"), Variable("z")},
             ],
-            "BGP_4313253051102226119",
-            "BGP_5439676414810165533",
-            "Union_5968519747945714539_schema_5536938746033674259",
-            "Union_5968519747945714539_schema_7808164217916843974",
+            "BGP_8639977824181032562",
+            "BGP_2618228559727801994",
+            "Union_2528614756135159102_schema_4427885478980723971",
+            "Union_2528614756135159102_schema_3025895693912107038",
             "database/union_test_output.db",
         )
     ],
@@ -424,17 +392,13 @@ def test_union_query_output_delta(
     """Test if the union_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     union_leaves = all_type_leaves(part, "Union")
 
     union_queries: str = ""
     for union in reversed(union_leaves):
-        union_query_str = delta_union_query(
-            union, schemas1, schemas2
-        )
+        union_query_str = delta_union_query(union, schemas1, schemas2)
         union_queries = sql_format(
             union_query_str,
             reindent=True,
@@ -446,14 +410,10 @@ def test_union_query_output_delta(
 
     # Build the BGPs
     _build_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
-    _build_delta_bgps(
-        bgp_name_one, bgp_name_two, duckdb_conn
-    )
+    _build_delta_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
 
     # Drop the union tables
-    _drop_union_tables(
-        duckdb_conn, union_name_first, union_name_second
-    )
+    _drop_union_tables(duckdb_conn, union_name_first, union_name_second)
 
     # Execute the query
     duckdb_conn.execute(union_queries)
@@ -468,12 +428,8 @@ def test_union_query_output_delta(
         f"SELECT * FROM delta_{union_name_second};"
     ).fetchall()
 
-    assert sorted(result_first) == sorted(
-        expected_output_first
-    )
-    assert sorted(result_second) == sorted(
-        expected_output_second
-    )
+    assert sorted(result_first) == sorted(expected_output_first)
+    assert sorted(result_second) == sorted(expected_output_second)
 
 
 def _build_overlap_delta_bgps(
@@ -527,9 +483,9 @@ def _build_overlap_delta_bgps(
             [
                 {Variable("y"), Variable("x")},
             ],
-            "BGP_4313253051102226119",
-            "BGP_6645479908510283233",
-            "Union_7307959202823151433",
+            "BGP_8639977824181032562",
+            "BGP_6687709572126218303",
+            "Union_1205960165662540522",
             "database/union_test_output_overlap.db",
         )
     ],
@@ -547,17 +503,13 @@ def test_union_query_output_overlap_delta(
     """Test if the union_query function works correctly."""
     reset_seed()
 
-    part = get_query_object(
-        readQueryFile(query_file)
-    ).algebra
+    part = get_query_object(readQueryFile(query_file)).algebra
 
     union_leaves = all_type_leaves(part, "Union")
 
     union_queries: str = ""
     for union in reversed(union_leaves):
-        union_query_str = delta_union_query(
-            union, schemas1, schemas2
-        )
+        union_query_str = delta_union_query(union, schemas1, schemas2)
         union_queries = sql_format(
             union_query_str,
             reindent=True,
@@ -568,12 +520,8 @@ def test_union_query_output_overlap_delta(
     duckdb_conn = connect(database_name)
 
     # Build the BGPs
-    _build_overlap_bgps(
-        bgp_name_one, bgp_name_two, duckdb_conn
-    )
-    _build_overlap_delta_bgps(
-        bgp_name_one, bgp_name_two, duckdb_conn
-    )
+    _build_overlap_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
+    _build_overlap_delta_bgps(bgp_name_one, bgp_name_two, duckdb_conn)
 
     # Drop the union tables
     _drop_union_tables(duckdb_conn, union_name)
@@ -582,8 +530,6 @@ def test_union_query_output_overlap_delta(
     duckdb_conn.execute(union_queries)
 
     # Get the result
-    result = duckdb_conn.execute(
-        f"SELECT * FROM delta_{union_name};"
-    ).fetchall()
+    result = duckdb_conn.execute(f"SELECT * FROM delta_{union_name};").fetchall()
 
     assert sorted(result) == sorted(expected_output)
