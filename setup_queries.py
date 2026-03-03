@@ -32,7 +32,7 @@ def __non_increm_queries(
 def __increm_queries(
     part: CompValue,
     output_dir: str,
-    table_name: str = "G",
+    delta_table_name: str = "G",
 ) -> None:
     """Builds up the incremental queries
 
@@ -40,7 +40,9 @@ def __increm_queries(
         part (CompValue): The algebra of the query
         output_dir (str): Directory to write the output to
     """
-    SQL_initialize_queries.build_increm_queries(part, output_dir, table_name=table_name)
+    SQL_initialize_queries.build_increm_queries(
+        part, output_dir, delta_table_name=delta_table_name
+    )
 
 
 def setup_tables(query: CompValue, output_dir: str) -> None:
@@ -126,6 +128,7 @@ def setup_queries(
     increm: bool = False,
     temp_dir: bool = False,
     og_table_name: str = "G",
+    delta_table_name: str = "G",
 ) -> None:
     """Sets up the queries incrementally or non-incrementally
 
@@ -143,9 +146,13 @@ def setup_queries(
         mkdir(query_output_dir)
 
     if increm:
-        __increm_queries(q_query_object.algebra, query_output_dir, og_table_name)
+        __increm_queries(
+            q_query_object.algebra, query_output_dir, delta_table_name=delta_table_name
+        )
     else:
-        __non_increm_queries(q_query_object.algebra, query_output_dir, og_table_name)
+        __non_increm_queries(
+            q_query_object.algebra, query_output_dir, og_table_name=og_table_name
+        )
 
     # setup_tables(q_query_object.algebra, query_output_dir)
 

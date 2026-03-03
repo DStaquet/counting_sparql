@@ -303,7 +303,7 @@ def bgp_delta_table_query(
 
 def delta_bgp_queries(
     part: CompValue,
-    table_name: str = "G",
+    delta_table_name: str = "G",
 ) -> tuple[str, str]:
     """Builds up the different delta BGP queries for the incremental query.
 
@@ -322,11 +322,13 @@ def delta_bgp_queries(
     for triple_index in range(len(part.triples)):
         if bgp_name not in dict_with_bgps:
             dict_with_bgps[bgp_name] = [
-                bgp_delta_table_query(part, triple_index + 1, table_name)[0] + ";\n"
+                bgp_delta_table_query(part, triple_index + 1, delta_table_name)[0]
+                + ";\n"
             ]
         else:
             dict_with_bgps[bgp_name].append(
-                bgp_delta_table_query(part, triple_index + 1, table_name)[0] + ";\n"
+                bgp_delta_table_query(part, triple_index + 1, delta_table_name)[0]
+                + ";\n"
             )
 
     delta_join_queries = make_join(dict_with_bgps, [part.get("_vars")], True)

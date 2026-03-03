@@ -64,7 +64,7 @@ def build_increm_queries(
     output_dir: str,
     schemas1: list[set[str]] | None = None,
     schemas2: list[set[str]] | None = None,
-    table_name: str = "G",
+    delta_table_name: str = "G",
 ) -> list[set[str]]:
     """Builds the incremental queries
 
@@ -84,13 +84,17 @@ def build_increm_queries(
 
     if "p" in part:
         schemas1 = build_increm_queries(
-            part.p, output_dir, schemas1, schemas2, table_name
+            part.p, output_dir, schemas1, schemas2, delta_table_name
         )
     elif "p1" in part and "p2" in part:
         schemas1 = build_increm_queries(
-            part.p1, output_dir, schemas1, schemas2, table_name
+            part.p1, output_dir, schemas1, schemas2, delta_table_name
         )
-        schemas2 = build_increm_queries(part.p2, output_dir, table_name=table_name)
+        schemas2 = build_increm_queries(
+            part.p2,
+            output_dir,
+            delta_table_name=delta_table_name,
+        )
     part_schemas: Union[list[set[str]], None] = None
     # Construct the SQL query
     match part.name:
@@ -98,7 +102,7 @@ def build_increm_queries(
             (
                 delta_queries,
                 delta_join_queries,
-            ) = SQL_bgp.delta_bgp_queries(part, table_name)
+            ) = SQL_bgp.delta_bgp_queries(part, delta_table_name)
             write_query_to_output_dir(
                 output_dir,
                 delta_queries,

@@ -80,6 +80,7 @@ def _main(arguments: Namespace) -> None:
         increm=False,
         temp_dir=True,
         og_table_name=arguments.table_name,
+        delta_table_name=arguments.delta_table_name,
     )
     setup_queries(
         query,
@@ -87,6 +88,7 @@ def _main(arguments: Namespace) -> None:
         increm=True,
         temp_dir=True,
         og_table_name=arguments.table_name,
+        delta_table_name=arguments.delta_table_name,
     )
     _setup_tables(arguments.query, arguments.dir)
     _setup_one_file(arguments.query, arguments.dir)
@@ -115,6 +117,12 @@ if __name__ == "__main__":
         "--table_name",
         help="The name of the original table to use in the SQL queries.",
         default="G",
+    )
+    parser.add_argument(
+        "-dtn",
+        "--delta_table_name",
+        help="The name of the delta table to use in the SQL queries.",
+        default="delta_G",
     )
     args = parser.parse_args()
 
