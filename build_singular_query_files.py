@@ -9,9 +9,7 @@ from argparse import ArgumentParser, Namespace
 
 from rdflib.plugins.sparql.sparql import Query
 
-from SQL_Constructor.singular_file_constructor import (
-    entire_run_query,
-)
+from SQL_Constructor.singular_file_constructor import entire_run_query, TableNames
 from setup_queries import (
     setup_queries,
     setup_tables,
@@ -41,7 +39,8 @@ def _setup_tables(query: str, output_dir: str) -> None:
     setup_tables(q_query_object.algebra, query_output_dir)
 
 
-def _setup_one_file(query: str, query_dir: str) -> None:
+def _setup_one_file(query: str, query_dir: str, table_names: TableNames) -> None:
+
     q_query_object: Query = get_query_object(readQueryFile(query))
 
     # Builds the query directories and finds the query input directory
@@ -63,7 +62,9 @@ def _setup_one_file(query: str, query_dir: str) -> None:
         encoding="utf-8",
     ) as handle:
         handle.write(entire_query)
-    entire_increm_query = entire_run_query(q_query_object.algebra, sql_delta_queries)
+    entire_increm_query = table_names.join_query + entire_run_query(
+        q_query_object.algebra, sql_delta_queries
+    )
     with open(
         join(query_output_dir, "increm_query.sql"),
         "w",
@@ -74,24 +75,24 @@ def _setup_one_file(query: str, query_dir: str) -> None:
 
 def _main(arguments: Namespace) -> None:
     query = readQueryFile(arguments.query)
+    table_names = TableNames(arguments.table_name, arguments.delta_table_name)
+
     setup_queries(
         query,
         arguments.dir,
+        table_names=table_names,
         increm=False,
         temp_dir=True,
-        og_table_name=arguments.table_name,
-        delta_table_name=arguments.delta_table_name,
     )
     setup_queries(
         query,
         arguments.dir,
+        table_names=table_names,
         increm=True,
         temp_dir=True,
-        og_table_name=arguments.table_name,
-        delta_table_name=arguments.delta_table_name,
     )
     _setup_tables(arguments.query, arguments.dir)
-    _setup_one_file(arguments.query, arguments.dir)
+    _setup_one_file(arguments.query, arguments.dir, table_names)
     _delete_temp_dir(arguments.dir, get_query_object(query))
 
 

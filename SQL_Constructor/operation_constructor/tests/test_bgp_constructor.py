@@ -20,6 +20,7 @@ from SQL_Constructor.table_constructor import (
     get_table_name,
     create_table_w_select,
 )
+from SQL_Constructor.singular_file_constructor import TableNames
 from build_data import readQueryFile, get_query_object
 
 
@@ -51,7 +52,7 @@ def test_bgp_table_query(query_file: str, expected_sql: str):
 
     bgp_queries: str = ""
     for bgp in reversed(bgp_leaves):
-        current_query, _ = bgp_table_query(bgp)
+        current_query, _ = bgp_table_query(bgp, "G")
 
         bgp_queries += sql_format(
             create_table_w_select(get_table_name(bgp), current_query),
@@ -102,7 +103,9 @@ def test_bgp_table_delta_query(
     bgp_queries: str = ""
     bgp_join_queries: str = ""
     for bgp in reversed(bgp_leaves):
-        current_query, current_join_query = delta_bgp_queries(bgp)
+        current_query, current_join_query = delta_bgp_queries(
+            bgp, TableNames("G", "delta_G")
+        )
 
         bgp_queries += sql_format(
             current_query,
@@ -190,7 +193,7 @@ def test_bgp_query_output(
     bgp_leaves: list[CompValue] = all_type_leaves(part, "BGP")
 
     for bgp in bgp_leaves:
-        current_query, _ = bgp_table_query(bgp)
+        current_query, _ = bgp_table_query(bgp, "G")
         curr_bgp_query = sql_format(
             create_table_w_select(get_table_name(bgp), current_query),
             reindent=True,
@@ -222,7 +225,7 @@ def test_bgp_query_output(
 )
 def test_bgp_query_output_delta(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, str, str, str, int]],
     database: str,
 ) -> None:
     """Checks if the delta output of a BGP query is as expected."""
@@ -234,7 +237,7 @@ def test_bgp_query_output_delta(
     bgp_leaves: list[CompValue] = all_type_leaves(part, "BGP")
 
     for bgp in bgp_leaves:
-        current_query, _ = delta_bgp_queries(bgp)
+        current_query, _ = delta_bgp_queries(bgp, TableNames("G", "delta_G"))
 
         with connect(database) as con:
             _construct_base_graph(con)

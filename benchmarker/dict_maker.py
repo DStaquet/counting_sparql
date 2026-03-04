@@ -20,9 +20,9 @@ def __addToDictList(
         dictionary (dict): The dictionary to add the part to.
     """
     if curr_name in dictionary:
-        dictionary[curr_name].append(query)
+        dictionary[curr_name].append(query + "\n\n")
     else:
-        dictionary[curr_name] = [query]
+        dictionary[curr_name] = [query + "\n\n"]
     return dictionary
 
 

@@ -1,4 +1,5 @@
 from SQL_Constructor.hash_writer import setup_hash_values
+from SQL_Constructor.singular_file_constructor import TableNames
 from build_data import dropTablesRec, readQueryFile
 from eval_incremental.eval_incremental import (
     constructTablesRec,
@@ -18,7 +19,7 @@ from os import mkdir
 def __non_increm_queries(
     part: CompValue,
     output_dir: str,
-    og_table_name: str = "G",
+    table_names: TableNames,
 ) -> None:
     """Constructs the non_incremental queries
 
@@ -26,13 +27,13 @@ def __non_increm_queries(
         part (CompValue): Current part of the query
         output_dir (str): Where to write the SQL queries
     """
-    SQL_initialize_queries.build_queries(part, output_dir, og_table_name)
+    SQL_initialize_queries.build_queries(part, output_dir, table_names.og_table_name)
 
 
 def __increm_queries(
     part: CompValue,
-    output_dir: str,
-    delta_table_name: str = "G",
+    given_output_dir: str,
+    table_names: TableNames,
 ) -> None:
     """Builds up the incremental queries
 
@@ -40,9 +41,7 @@ def __increm_queries(
         part (CompValue): The algebra of the query
         output_dir (str): Directory to write the output to
     """
-    SQL_initialize_queries.build_increm_queries(
-        part, output_dir, delta_table_name=delta_table_name
-    )
+    SQL_initialize_queries.build_increm_queries(part, given_output_dir, table_names)
 
 
 def setup_tables(query: CompValue, output_dir: str) -> None:
@@ -123,12 +122,11 @@ def get_query_output_dir(
 
 
 def setup_queries(
-    query_str: str,
-    output_dir: str,
+    given_query: str,
+    given_output_dir: str,
+    table_names: TableNames,
     increm: bool = False,
     temp_dir: bool = False,
-    og_table_name: str = "G",
-    delta_table_name: str = "G",
 ) -> None:
     """Sets up the queries incrementally or non-incrementally
 
@@ -137,21 +135,23 @@ def setup_queries(
         data (str): The given data
         output_file (str): Output file to write the results
     """
-    query_tree = parser.parseQuery(str(query_str))
+    query_tree = parser.parseQuery(str(given_query))
     q_query_object = algebra.translateQuery(query_tree)
     # algebra.pprintAlgebra(q_query_object)
 
-    query_output_dir: str = get_query_output_dir(output_dir, q_query_object, temp_dir)
+    query_output_dir: str = get_query_output_dir(
+        given_output_dir, q_query_object, temp_dir
+    )
     if not exists(query_output_dir):
         mkdir(query_output_dir)
 
     if increm:
         __increm_queries(
-            q_query_object.algebra, query_output_dir, delta_table_name=delta_table_name
+            q_query_object.algebra, query_output_dir, table_names=table_names
         )
     else:
         __non_increm_queries(
-            q_query_object.algebra, query_output_dir, og_table_name=og_table_name
+            q_query_object.algebra, query_output_dir, table_names=table_names
         )
 
     # setup_tables(q_query_object.algebra, query_output_dir)

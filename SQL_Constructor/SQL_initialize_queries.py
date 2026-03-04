@@ -8,6 +8,7 @@ import sqlparse
 from duckdb import DuckDBPyConnection
 
 from SQL_Constructor import base_constructor
+from SQL_Constructor.singular_file_constructor import TableNames
 import SQL_Constructor.table_constructor
 import SQL_Constructor.hash_writer
 from SQL_Constructor.operation_constructor import (
@@ -62,9 +63,9 @@ def write_query_to_output_dir(
 def build_increm_queries(
     part: CompValue,
     output_dir: str,
+    table_names: TableNames,
     schemas1: list[set[str]] | None = None,
     schemas2: list[set[str]] | None = None,
-    delta_table_name: str = "G",
 ) -> list[set[str]]:
     """Builds the incremental queries
 
@@ -84,16 +85,16 @@ def build_increm_queries(
 
     if "p" in part:
         schemas1 = build_increm_queries(
-            part.p, output_dir, schemas1, schemas2, delta_table_name
+            part.p, output_dir, table_names, schemas1, schemas2
         )
     elif "p1" in part and "p2" in part:
         schemas1 = build_increm_queries(
-            part.p1, output_dir, schemas1, schemas2, delta_table_name
+            part.p1, output_dir, table_names, schemas1, schemas2
         )
         schemas2 = build_increm_queries(
             part.p2,
             output_dir,
-            delta_table_name=delta_table_name,
+            table_names,
         )
     part_schemas: Union[list[set[str]], None] = None
     # Construct the SQL query
@@ -102,7 +103,7 @@ def build_increm_queries(
             (
                 delta_queries,
                 delta_join_queries,
-            ) = SQL_bgp.delta_bgp_queries(part, delta_table_name)
+            ) = SQL_bgp.delta_bgp_queries(part, table_names)
             write_query_to_output_dir(
                 output_dir,
                 delta_queries,

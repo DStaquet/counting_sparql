@@ -8,6 +8,7 @@ from SQL_Constructor.base_constructor import (
     make_group_by,
     make_join,
 )
+from SQL_Constructor.singular_file_constructor import TableNames
 
 
 def _bgp_table_query_select_clause(
@@ -128,7 +129,7 @@ def _bgp_table_query_where_clause(
     return where_clause
 
 
-def bgp_table_query(part: CompValue, table_name: str = "G") -> tuple[str, set[str]]:
+def bgp_table_query(part: CompValue, table_name: str) -> tuple[str, set[str]]:
     """Creates three different parts to simulate an SQL query to get the data from a BGP given the triple patterns in the BGP part of the query.
 
     Args:
@@ -260,8 +261,50 @@ def _bgp_delta_table_query_where_clause(
     return where_clause
 
 
+def _bgp_delta_from_clause(
+    part: CompValue,
+    delta_index: int,
+    table_names: TableNames,
+    g_per_triple: dict[tuple[str, str, str], str],
+) -> str:
+    """Constructs the from clause for the BGP delta table query."""
+    from_clause: str = " FROM "
+    """ count = 1
+    for triple in part.triples:
+        if count > 1:
+            from_clause += ", "
+        delta_tables = ""
+        if count == delta_index:
+            delta_tables = "delta_"
+        elif count < delta_index:
+            delta_tables = "nu_"
+        g_per_triple[triple] = "G" + str(count)
+        count += 1
+        from_clause += (
+            delta_tables + table_names.og_table_name + " " + g_per_triple[triple]
+        ) """
+    for triple_index, triple in enumerate(part.triples):
+        delta_tables: str | None = None
+        if triple_index != 0:
+            from_clause += ", "
+        if triple_index + 1 > delta_index:
+            delta_tables = table_names.og_table_name
+        if triple_index + 1 == delta_index:
+            delta_tables = table_names.delta_table_name
+        elif triple_index + 1 < delta_index:
+            delta_tables = table_names.nu_table_name
+        g_per_triple[triple] = "G" + str(triple_index + 1)
+        if delta_tables is None:
+            raise ValueError("Tables not given correctly for the delta query")
+        from_clause += delta_tables + " " + g_per_triple[triple]
+
+    return from_clause
+
+
 def bgp_delta_table_query(
-    part: CompValue, triple_count: int, table_name: str = "G"
+    part: CompValue,
+    delta_index: int,
+    table_names: TableNames,
 ) -> tuple[str, set[str]]:
     """Constructs the BGP delta table query for the given part of the query.
 
@@ -272,25 +315,13 @@ def bgp_delta_table_query(
     Returns:
         tuple[str, set[str]]: Tuple with the SQL query and the known variables in the BGP
     """
-    g_per_triple: dict[tuple[str, str, str], str] = dict()
+    g_per_triple: dict[tuple[str, str, str], str] = {}
 
     # FROM clause
-    from_clause: str = " FROM "
-    count = 1
-    for triple in part.triples:
-        if count > 1:
-            from_clause += ", "
-        delta_tables = ""
-        if count == triple_count:
-            delta_tables = "delta_"
-        elif count < triple_count:
-            delta_tables = "nu_"
-        g_per_triple[triple] = "G" + str(count)
-        count += 1
-        from_clause += delta_tables + table_name + " " + g_per_triple[triple]
+    from_clause = _bgp_delta_from_clause(part, delta_index, table_names, g_per_triple)
 
     bgp_select_clause, known_vars = _bgp_delta_table_query_select_clause(
-        part, g_per_triple, triple_count
+        part, g_per_triple, delta_index
     )
 
     where_clause = _bgp_delta_table_query_where_clause(part, g_per_triple)
@@ -303,7 +334,7 @@ def bgp_delta_table_query(
 
 def delta_bgp_queries(
     part: CompValue,
-    delta_table_name: str = "G",
+    table_names: TableNames,
 ) -> tuple[str, str]:
     """Builds up the different delta BGP queries for the incremental query.
 
@@ -322,18 +353,16 @@ def delta_bgp_queries(
     for triple_index in range(len(part.triples)):
         if bgp_name not in dict_with_bgps:
             dict_with_bgps[bgp_name] = [
-                bgp_delta_table_query(part, triple_index + 1, delta_table_name)[0]
-                + ";\n"
+                bgp_delta_table_query(part, triple_index + 1, table_names)[0] + ";\n"
             ]
         else:
             dict_with_bgps[bgp_name].append(
-                bgp_delta_table_query(part, triple_index + 1, delta_table_name)[0]
-                + ";\n"
+                bgp_delta_table_query(part, triple_index + 1, table_names)[0] + ";\n"
             )
 
-    delta_join_queries = make_join(dict_with_bgps, [part.get("_vars")], True)
+    delta_join_queries = make_join(dict_with_bgps, [part.get("_vars")], True)  # type: ignore
 
-    delta_queries = make_group_by(dict_with_bgps, [part.get("_vars")], True)
+    delta_queries = make_group_by(dict_with_bgps, [part.get("_vars")], True)  # type: ignore
 
     return (
         delta_queries,
