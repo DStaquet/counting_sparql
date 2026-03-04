@@ -13,7 +13,6 @@ from SQL_Constructor.singular_file_constructor import entire_run_query, TableNam
 from SQL_Constructor.cleanup_constructor import recur_query_join_base_and_delta_tables
 from setup_queries import (
     setup_queries,
-    setup_tables,
     get_query_output_dir,
 )
 from build_data import (
@@ -32,15 +31,20 @@ def _delete_temp_dir(query_dir: str, q_query_object: Query) -> None:
         os.rmdir(temp_dir)
 
 
-def _setup_tables(query: str, output_dir: str) -> None:
-    q_query_object: Query = get_query_object(readQueryFile(query))
+def _setup_schema(queries: str, schema: str) -> str:
+    """Adds the schema to each table generated in the queries."""
+    if not schema:
+        return queries
+    temp_queries = queries.replace("CREATE TEMP TABLE ", f"CREATE TEMP TABLE {schema}.")
+    temp_queries2 = temp_queries.replace(
+        "CREATE OR REPLACE TABLE ", f"CREATE OR REPLACE TABLE {schema}."
+    )
+    return temp_queries2.replace("CREATE TABLE ", f"CREATE TABLE {schema}.")
 
-    query_output_dir = get_query_output_dir(output_dir, q_query_object, temp_dir=True)
 
-    setup_tables(q_query_object.algebra, query_output_dir)
-
-
-def _setup_one_file(query: str, query_dir: str, table_names: TableNames) -> None:
+def _setup_one_file(
+    query: str, query_dir: str, table_names: TableNames, schema: str
+) -> None:
 
     q_query_object: Query = get_query_object(readQueryFile(query))
 
@@ -59,17 +63,20 @@ def _setup_one_file(query: str, query_dir: str, table_names: TableNames) -> None
     # Constructs the cleanup query to put the nu tables into the base tables for the next iteration
     cleanup_queries = recur_query_join_base_and_delta_tables(q_query_object.algebra)
 
-    entire_query = entire_run_query(q_query_object.algebra, sql_queries)
+    entire_query = _setup_schema(
+        entire_run_query(q_query_object.algebra, sql_queries), schema
+    )
     with open(
         join(query_output_dir, "base_query.sql"),
         "w",
         encoding="utf-8",
     ) as handle:
         handle.write(entire_query)
-    entire_increm_query = (
+    entire_increm_query = _setup_schema(
         table_names.join_query
         + entire_run_query(q_query_object.algebra, sql_delta_queries)
-        + cleanup_queries
+        + cleanup_queries,
+        schema,
     )
     with open(
         join(query_output_dir, "increm_query.sql"),
@@ -98,7 +105,7 @@ def _main(arguments: Namespace) -> None:
         temp_dir=True,
     )
     # _setup_tables(arguments.query, arguments.dir)
-    _setup_one_file(arguments.query, arguments.dir, table_names)
+    _setup_one_file(arguments.query, arguments.dir, table_names, arguments.schema)
     _delete_temp_dir(arguments.dir, get_query_object(query))
 
 
@@ -130,6 +137,11 @@ if __name__ == "__main__":
         "--delta_table_name",
         help="The name of the delta table to use in the SQL queries.",
         default="delta_G",
+    )
+    parser.add_argument(
+        "-sch",
+        "--schema",
+        help="The schema to use in the database.",
     )
     args = parser.parse_args()
 
