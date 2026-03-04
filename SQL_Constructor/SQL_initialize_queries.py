@@ -228,6 +228,8 @@ def build_increm_queries(
                 no_format=True,
             )
             part_schemas = schemas1
+        case _:
+            raise NotImplementedError(f"Operation {part.name} not implemented yet.")
     if part_schemas is None:
         part_schemas = schemas1
     if part.name == "SelectQuery":
@@ -401,5 +403,7 @@ def build_queries(part: CompValue, output_dir: str, table_name: str) -> list[set
                 SQL_Constructor.table_constructor.get_table_name(part),
             )
             return SQL_aggregate.aggregate_schemas(part, schemas1)
+        case _:
+            raise NotImplementedError(f"Operation {part.name} not implemented yet.")
 
     return schemas1
