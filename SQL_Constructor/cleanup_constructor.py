@@ -19,7 +19,7 @@ def _join_base_and_delta_tables(table_name: str, nu_table_name: str) -> str:
     return f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM {nu_table_name};"
 
 
-def recur_query_join_base_and_delta_tables(part: CompValue) -> str:
+def recur_query_join_base_and_delta_tables(part: CompValue) -> tuple[str, str]:
     """Recursively joins the base and delta tables for all subqueries.
 
     Args:
@@ -45,17 +45,21 @@ def recur_query_join_base_and_delta_tables(part: CompValue) -> str:
 
     if "p" not in part and "p1" not in part:
         if part.name == "BGP":
-            return curr_query
+            return (curr_query, table_name)
         else:
-            return ""
+            return ("", table_name)
     else:
         if "p" in part:
-            return recur_query_join_base_and_delta_tables(part.p) + curr_query
-        elif "p1" in part and "p2" in part:
             return (
-                recur_query_join_base_and_delta_tables(part.p1)
-                + recur_query_join_base_and_delta_tables(part.p2)
-                + curr_query
+                recur_query_join_base_and_delta_tables(part.p)[0] + curr_query,
+                table_name,
+            )
+        elif "p1" in part and "p2" in part:
+            p1_query, _ = recur_query_join_base_and_delta_tables(part.p1)
+            p2_query, _ = recur_query_join_base_and_delta_tables(part.p2)
+            return (
+                p1_query + p2_query + curr_query,
+                table_name,
             )
         else:
             raise ValueError("Invalid query part")

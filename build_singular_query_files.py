@@ -4,6 +4,7 @@ Builds a singular SQL file to use for the scratch or incremental query.
 
 import os
 import sys
+import json
 from os.path import join, exists
 from argparse import ArgumentParser, Namespace
 
@@ -44,7 +45,7 @@ def _setup_schema(queries: str, schema: str) -> str:
 
 def _setup_one_file(
     query: str, query_dir: str, table_names: TableNames, schema: str
-) -> None:
+) -> dict[str, str]:
 
     q_query_object: Query = get_query_object(readQueryFile(query))
 
@@ -61,7 +62,9 @@ def _setup_one_file(
     )
 
     # Constructs the cleanup query to put the nu tables into the base tables for the next iteration
-    cleanup_queries = recur_query_join_base_and_delta_tables(q_query_object.algebra)
+    cleanup_queries, last_table_name = recur_query_join_base_and_delta_tables(
+        q_query_object.algebra
+    )
 
     entire_query = _setup_schema(
         entire_run_query(q_query_object.algebra, sql_queries), schema
@@ -85,6 +88,12 @@ def _setup_one_file(
     ) as handle:
         handle.write(entire_increm_query)
 
+    return {
+        "output_dir": query_output_dir,
+        "last_table_name": last_table_name,
+        "schema": schema,
+    }
+
 
 def _main(arguments: Namespace) -> None:
     query = readQueryFile(arguments.query)
@@ -105,8 +114,12 @@ def _main(arguments: Namespace) -> None:
         temp_dir=True,
     )
     # _setup_tables(arguments.query, arguments.dir)
-    _setup_one_file(arguments.query, arguments.dir, table_names, arguments.schema)
+    json_to_return = _setup_one_file(
+        arguments.query, arguments.dir, table_names, arguments.schema
+    )
     _delete_temp_dir(arguments.dir, get_query_object(query))
+
+    print(json.dumps(json_to_return))
 
 
 if __name__ == "__main__":
