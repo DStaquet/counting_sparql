@@ -10,6 +10,7 @@ from argparse import ArgumentParser, Namespace
 from rdflib.plugins.sparql.sparql import Query
 
 from SQL_Constructor.singular_file_constructor import entire_run_query, TableNames
+from SQL_Constructor.cleanup_constructor import recur_query_join_base_and_delta_tables
 from setup_queries import (
     setup_queries,
     setup_tables,
@@ -55,6 +56,9 @@ def _setup_one_file(query: str, query_dir: str, table_names: TableNames) -> None
         q_query_object.algebra, query_input_dir, increm=True
     )
 
+    # Constructs the cleanup query to put the nu tables into the base tables for the next iteration
+    cleanup_queries = recur_query_join_base_and_delta_tables(q_query_object.algebra)
+
     entire_query = entire_run_query(q_query_object.algebra, sql_queries)
     with open(
         join(query_output_dir, "base_query.sql"),
@@ -62,8 +66,10 @@ def _setup_one_file(query: str, query_dir: str, table_names: TableNames) -> None
         encoding="utf-8",
     ) as handle:
         handle.write(entire_query)
-    entire_increm_query = table_names.join_query + entire_run_query(
-        q_query_object.algebra, sql_delta_queries
+    entire_increm_query = (
+        table_names.join_query
+        + entire_run_query(q_query_object.algebra, sql_delta_queries)
+        + cleanup_queries
     )
     with open(
         join(query_output_dir, "increm_query.sql"),
@@ -91,7 +97,7 @@ def _main(arguments: Namespace) -> None:
         increm=True,
         temp_dir=True,
     )
-    _setup_tables(arguments.query, arguments.dir)
+    # _setup_tables(arguments.query, arguments.dir)
     _setup_one_file(arguments.query, arguments.dir, table_names)
     _delete_temp_dir(arguments.dir, get_query_object(query))
 

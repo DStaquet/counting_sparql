@@ -143,6 +143,7 @@ def make_join(
     is_select: bool = False,
     select_schema: set[str] | None = None,
     new_table_name: str | None = None,
+    temp_delta_prefix: str = "",
 ) -> str:
     """Generates the join query string.
 
@@ -172,6 +173,7 @@ def make_join(
                 new_table_name,
                 is_delta=is_delta,
                 is_select=is_select,
+                temp_prefix=temp_delta_prefix,
             )
 
     all_queries: str = ""
@@ -223,6 +225,7 @@ def make_join(
                     key,
                     is_delta=is_delta,
                     is_select=is_select,
+                    temp_prefix=temp_delta_prefix,
                 )
             else:
                 last_made_temp_query = key + "_" + str(q_index)
@@ -464,6 +467,7 @@ def final_outer_join_query(
     new_table_name: str,
     is_delta: bool = False,
     is_select: bool = False,
+    temp_prefix: str = "",
 ) -> str:
     """Generates a query that joins the final tables together.
 
@@ -478,7 +482,7 @@ def final_outer_join_query(
     """
     join_query: str = ""
     if not is_select:
-        join_query += "CREATE TABLE " + new_table_name + " AS "
+        join_query += f"CREATE {temp_prefix} TABLE " + new_table_name + " AS "
     join_query += "SELECT "
     if schema:
         join_query += ", ".join(
@@ -766,6 +770,7 @@ def select_query(
     part: CompValue,
     schemas: list[set[str]],
     prefix: str = "",
+    temp_prefix: str = "",
 ) -> str:
     """Select query for the given part of the algebra.
 
@@ -782,7 +787,7 @@ def select_query(
 
     if len(schemas) == 1:
         return (
-            f"CREATE TABLE {select_table_name} AS SELECT "
+            f"CREATE {temp_prefix} TABLE {select_table_name} AS SELECT "
             + ", ".join(var for var in sorted(schemas[0]))
             + f" FROM {table_name};"
         )
@@ -828,7 +833,7 @@ def delta_select_query(
     Returns:
         str: Query string for the delta select query.
     """
-    return select_query(part, schemas, "delta_")
+    return select_query(part, schemas, "delta_", temp_prefix="TEMP")
 
 
 def nu_queries(part: CompValue, schemas: list[set[str]]) -> tuple[str, str]:
@@ -873,6 +878,7 @@ def nu_queries(part: CompValue, schemas: list[set[str]]) -> tuple[str, str]:
         dict_nu_queries,
         schemas,
         new_table_name="nu_" + __encode_table_name(part),
+        temp_delta_prefix=" TEMP ",
     )
 
     nu_query_groupby: str = make_group_by(

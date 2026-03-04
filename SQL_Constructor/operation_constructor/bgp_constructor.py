@@ -360,7 +360,7 @@ def delta_bgp_queries(
                 bgp_delta_table_query(part, triple_index + 1, table_names)[0] + ";\n"
             )
 
-    delta_join_queries = make_join(dict_with_bgps, [part.get("_vars")], True)  # type: ignore
+    delta_join_queries = make_join(dict_with_bgps, [part.get("_vars")], True, temp_delta_prefix=" TEMP ")  # type: ignore
 
     delta_queries = make_group_by(dict_with_bgps, [part.get("_vars")], True)  # type: ignore
 

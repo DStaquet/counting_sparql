@@ -231,7 +231,9 @@ def build_increm_queries(
     if part_schemas is None:
         part_schemas = schemas1
     if part.name == "SelectQuery":
-        nu_query = base_constructor.select_query(part, part_schemas, "nu_")
+        nu_query = base_constructor.select_query(
+            part, part_schemas, "nu_", temp_prefix="TEMP"
+        )
         nu_query_sum = ""
     elif part.name in ["Group", "Extend"]:
         return part_schemas

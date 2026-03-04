@@ -28,7 +28,12 @@ class TableNames:
         return self.join_query, self.nu_table_name
 
     def __str__(self) -> str:
-        return f"TableNames(og_table_name: {self.og_table_name}, delta_table_name: {self.delta_table_name}, join_query: {self.join_query}, nu_table_name: {self.nu_table_name})"
+        return (
+            f"TableNames(og_table_name: {self.og_table_name},"
+            + f" delta_table_name: {self.delta_table_name},"
+            + f" join_query: {self.join_query},"
+            + f" nu_table_name: {self.nu_table_name})"
+        )
 
 
 def entire_run_query(
@@ -78,12 +83,13 @@ def join_base_graph_and_delta_graph(
     Returns:
         str: Query to join the base and delta graphs and nu_table name.
     """
-    create_clause = f"CREATE TABLE nu_{table_name} AS "
+    create_clause = f"CREATE TEMP TABLE nu_{table_name} AS "
     select_clause: str = "SELECT s, p, o, G.k_count + delta_G.k_count AS k_count "
     from_clause: str = (
         f"FROM {table_name} AS G NATURAL JOIN {delta_table_name} AS delta_G;"
     )
     return (
-        sqlparse.format(create_clause + select_clause + from_clause, reindent=True) + "\n\n",  # type: ignore
+        sqlparse.format(create_clause + select_clause + from_clause, reindent=True)  # type: ignore
+        + "\n\n",
         "nu_" + table_name,
     )

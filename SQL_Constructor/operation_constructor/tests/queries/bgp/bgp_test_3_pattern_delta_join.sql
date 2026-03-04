@@ -74,7 +74,7 @@ WHERE G1.p = 'http://example.org/edges/link'
   AND G3.p = 'http://example.org/edges/link';
 
 
-CREATE TABLE delta_BGP_1643608900845163115 AS
+CREATE TEMP TABLE delta_BGP_1643608900845163115 AS
 SELECT (CASE
             WHEN R1.y NOT NULL THEN R1.y
             ELSE R2.y

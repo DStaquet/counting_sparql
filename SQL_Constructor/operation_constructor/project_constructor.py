@@ -14,9 +14,7 @@ from SQL_Constructor.table_constructor import (
 )
 
 
-def project_schemas(
-    part: CompValue, schemas1: list[set[str]]
-) -> list[set[str]]:
+def project_schemas(part: CompValue, schemas1: list[set[str]]) -> list[set[str]]:
     """Generates the schemas for the project part of the query.
 
     Args:
@@ -51,16 +49,9 @@ def double_schemas(
     double_schemas_list = list()
     for schema in schemas1:
         for new_schema in new_schemas:
-            projected_schema = schema.intersection(
-                new_schema
-            )
-            if (
-                projected_schema
-                not in already_seen_projection_schemas
-            ):
-                already_seen_projection_schemas.append(
-                    projected_schema
-                )
+            projected_schema = schema.intersection(new_schema)
+            if projected_schema not in already_seen_projection_schemas:
+                already_seen_projection_schemas.append(projected_schema)
             else:
                 double_schemas_list.append(projected_schema)
     return double_schemas_list
@@ -71,9 +62,7 @@ def __projected_variables(schema: set[str]) -> str:
     return ", ".join(var for var in sorted(schema)) + ", "
 
 
-def _project_pv_to_schema(
-    pv: set[str], schema: set[str]
-) -> set[str]:
+def _project_pv_to_schema(pv: set[str], schema: set[str]) -> set[str]:
     """Projects the PV to the schema."""
     return pv.intersection(schema)
 
@@ -90,32 +79,20 @@ def __construct_project_str_one_schema(
     Returns:
         str: The string for the projection
     """
-    projected_schema = _project_pv_to_schema(
-        set(part.PV), schema
-    )
+    projected_schema = _project_pv_to_schema(set(part.PV), schema)
     if projected_schema:
         project_str: str = (
             "SELECT "
-            + __projected_variables(
-                set(part.PV).intersection(schema)
-            )
+            + __projected_variables(set(part.PV).intersection(schema))
             + " SUM(k_count) AS k_count\nFROM "
             + from_table_name
             + "\nGROUP BY "
-            + ", ".join(
-                var
-                for var in sorted(
-                    set(part.PV).intersection(schema)
-                )
-            )
+            + ", ".join(var for var in sorted(set(part.PV).intersection(schema)))
             + ";"
         )
     else:
         project_str: str = (
-            "SELECT "
-            + " SUM (k_count) AS k_count\nFROM "
-            + from_table_name
-            + ";"
+            "SELECT " + " SUM (k_count) AS k_count\nFROM " + from_table_name + ";"
         )
 
     return project_str
@@ -141,32 +118,24 @@ def _construct_project_str_mult_schema(
     projection_dict: dict[str, list[str]] = dict()
 
     for schema in schemas:
-        projected_schema = _project_pv_to_schema(
-            set(part.PV), schema
-        )
+        projected_schema = _project_pv_to_schema(set(part.PV), schema)
 
         if len(projection_schema) == 1:
             schema_suffix = ""
         else:
-            schema_suffix = "_" + __encode_schema_name(
-                str(sorted(projected_schema))
-            )
+            schema_suffix = "_" + __encode_schema_name(str(sorted(projected_schema)))
 
         # Returns false if set is empty
         if projected_schema:
             project_str: str = (
                 "SELECT "
-                + ", ".join(
-                    var for var in sorted(projected_schema)
-                )
+                + ", ".join(var for var in sorted(projected_schema))
                 + ", SUM(k_count) AS k_count\nFROM "
                 + from_table_name
                 + "_"
                 + __encode_schema_name(str(sorted(schema)))
                 + "\nGROUP BY "
-                + ", ".join(
-                    var for var in sorted(projected_schema)
-                )
+                + ", ".join(var for var in sorted(projected_schema))
                 + ";"
             )
         else:
@@ -211,12 +180,8 @@ def project_query(
         from_part = from_part.p
 
     if is_delta:
-        from_table_name = "delta_" + __encode_table_name(
-            from_part
-        )
-        new_table_name = "delta_" + __encode_table_name(
-            part
-        )
+        from_table_name = "delta_" + __encode_table_name(from_part)
+        new_table_name = "delta_" + __encode_table_name(part)
     else:
         from_table_name = __encode_table_name(from_part)
         new_table_name = __encode_table_name(part)
@@ -224,23 +189,22 @@ def project_query(
     if len(schemas1) == 0:
         raise ValueError("No schemas to project on.")
     elif len(schemas1) == 1:
-        project_str: str = (
-            __construct_project_str_one_schema(
-                part, schemas1[0], from_table_name
-            )
+        project_str: str = __construct_project_str_one_schema(
+            part, schemas1[0], from_table_name
         )
 
-        return create_table_w_select(
-            new_table_name, project_str
-        )
-    else:
-        project_dict: dict[str, list[str]] = (
-            _construct_project_str_mult_schema(
-                part,
-                schemas1,
-                from_table_name,
-                new_table_name,
+        if is_delta:
+            return create_table_w_select(
+                new_table_name, project_str, temp_prefix=" TEMP "
             )
+        else:
+            return create_table_w_select(new_table_name, project_str)
+    else:
+        project_dict: dict[str, list[str]] = _construct_project_str_mult_schema(
+            part,
+            schemas1,
+            from_table_name,
+            new_table_name,
         )
 
         project_strs: str = make_group_by(
@@ -248,9 +212,7 @@ def project_query(
             project_schemas(part, schemas1),
             is_delta=is_delta,
         )
-        project_str_join: str = make_join(
-            project_dict, project_schemas(part, schemas1)
-        )
+        project_str_join: str = make_join(project_dict, project_schemas(part, schemas1))
 
         return project_strs, project_str_join
 
@@ -266,7 +228,5 @@ def delta_project_query(
     Returns:
         str: Query string to get the results of the delta project operation
     """
-    project_str_tuple = project_query(
-        part, schemas1, is_delta=True
-    )
+    project_str_tuple = project_query(part, schemas1, is_delta=True)
     return project_str_tuple
