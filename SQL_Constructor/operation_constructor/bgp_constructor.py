@@ -123,7 +123,7 @@ def _bgp_table_query_where_clause(
                 else:
                     where_clause += "o"
                 where_clause += (
-                    " = '" + str(part.triples[triple_index][var_index]) + "'"
+                    " = '" + part.triples[triple_index][var_index].n3() + "'"
                 )
 
     return where_clause
@@ -150,7 +150,8 @@ def bgp_table_query(part: CompValue, table_name: str) -> tuple[str, set[str]]:
         count += 1
         from_clause += table_name + " " + g_per_triple[triple]
 
-    bgp_select_clause, known_vars = _bgp_table_query_select_clause(part, g_per_triple)
+    bgp_select_clause, known_vars = _bgp_table_query_select_clause(
+        part, g_per_triple)
 
     where_clause = _bgp_table_query_where_clause(part, g_per_triple)
 
@@ -255,7 +256,7 @@ def _bgp_delta_table_query_where_clause(
                 else:
                     where_clause += "o"
                 where_clause += (
-                    " = '" + str(part.triples[triple_index][var_index]) + "'"
+                    " = '" + part.triples[triple_index][var_index].n3() + "'"
                 )
 
     return where_clause
@@ -318,7 +319,8 @@ def bgp_delta_table_query(
     g_per_triple: dict[tuple[str, str, str], str] = {}
 
     # FROM clause
-    from_clause = _bgp_delta_from_clause(part, delta_index, table_names, g_per_triple)
+    from_clause = _bgp_delta_from_clause(
+        part, delta_index, table_names, g_per_triple)
 
     bgp_select_clause, known_vars = _bgp_delta_table_query_select_clause(
         part, g_per_triple, delta_index
@@ -353,16 +355,20 @@ def delta_bgp_queries(
     for triple_index in range(len(part.triples)):
         if bgp_name not in dict_with_bgps:
             dict_with_bgps[bgp_name] = [
-                bgp_delta_table_query(part, triple_index + 1, table_names)[0] + ";\n"
+                bgp_delta_table_query(
+                    part, triple_index + 1, table_names)[0] + ";\n"
             ]
         else:
             dict_with_bgps[bgp_name].append(
-                bgp_delta_table_query(part, triple_index + 1, table_names)[0] + ";\n"
+                bgp_delta_table_query(
+                    part, triple_index + 1, table_names)[0] + ";\n"
             )
 
-    delta_join_queries = make_join(dict_with_bgps, [part.get("_vars")], True, temp_delta_prefix=" TEMP ")  # type: ignore
+    delta_join_queries = make_join(dict_with_bgps, [part.get(
+        "_vars")], True, temp_delta_prefix=" TEMP ")  # type: ignore
 
-    delta_queries = make_group_by(dict_with_bgps, [part.get("_vars")], True)  # type: ignore
+    delta_queries = make_group_by(
+        dict_with_bgps, [part.get("_vars")], True)  # type: ignore
 
     return (
         delta_queries,
