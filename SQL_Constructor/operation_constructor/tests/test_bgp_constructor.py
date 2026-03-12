@@ -137,7 +137,7 @@ def _construct_base_graph(
         "CREATE OR REPLACE TABLE G (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO G (s, p, o, k_count) VALUES ('a', 'http://example.org/r', 'b', 1), ('a', 'http://example.org/r', 'd', 1), ('b', 'http://example.org/r', 'c', 1), ('d', 'http://example.org/r', 'c', 1), ('c', 'http://example.org/r', 'e', 1);"
+        "INSERT INTO G (s, p, o, k_count) VALUES ('a', '<http://example.org/r>', 'b', 1), ('a', '<http://example.org/r>', 'd', 1), ('b', '<http://example.org/r>', 'c', 1), ('d', '<http://example.org/r>', 'c', 1), ('c', '<http://example.org/r>', 'e', 1);"
     )
 
 
@@ -155,14 +155,14 @@ def _construct_delta_base_graph(
         "CREATE OR REPLACE TABLE delta_G (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO Delta_G (s, p, o, k_count) VALUES ('a', 'http://example.org/r', 'b', -1), ('b', 'http://example.org/r', 'd', 1);"
+        "INSERT INTO Delta_G (s, p, o, k_count) VALUES ('a', '<http://example.org/r>', 'b', -1), ('b', '<http://example.org/r>', 'd', 1);"
     )
 
     duckdb_conn.execute(
         "CREATE OR REPLACE TABLE nu_G (s TEXT, p TEXT, o TEXT, k_count INT);"
     )
     duckdb_conn.execute(
-        "INSERT INTO nu_G (s, p, o, k_count) VALUES ('a', 'http://example.org/r', 'd', 1), ('b', 'http://example.org/r', 'c', 1), ('b', 'http://example.org/r', 'd', 1), ('d', 'http://example.org/r', 'c', 1), ('c', 'http://example.org/r', 'e', 1);"
+        "INSERT INTO nu_G (s, p, o, k_count) VALUES ('a', '<http://example.org/r>', 'd', 1), ('b', '<http://example.org/r>', 'c', 1), ('b', '<http://example.org/r>', 'd', 1), ('d', '<http://example.org/r>', 'c', 1), ('c', '<http://example.org/r>', 'e', 1);"
     )
 
 
@@ -181,7 +181,7 @@ def _construct_delta_base_graph(
 )
 def test_bgp_query_output(
     query_file: str,
-    expected_output,
+    expected_output: list[tuple[str, str, str, str, int]],
     database: str,
 ) -> None:
     """Checks if the output of a BGP query is as expected."""

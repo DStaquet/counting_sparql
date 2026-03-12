@@ -5,6 +5,6 @@ SELECT G1.s AS x,
        G1.k_count AS k_count
 FROM G G1,
      G G2
-WHERE G1.p = 'http://example.org/edges/link'
+WHERE G1.p = '<http://example.org/edges/link>'
   AND G1.o = G2.s
-  AND G2.p = 'http://example.org/edges/link';
+  AND G2.p = '<http://example.org/edges/link>';

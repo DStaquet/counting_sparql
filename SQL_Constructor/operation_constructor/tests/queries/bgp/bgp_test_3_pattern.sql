@@ -7,8 +7,8 @@ SELECT G3.o AS w,
 FROM G G1,
      G G2,
      G G3
-WHERE G1.p = 'http://example.org/edges/link'
-  AND G2.p = 'http://example.org/edges/link'
+WHERE G1.p = '<http://example.org/edges/link>'
+  AND G2.p = '<http://example.org/edges/link>'
   AND G1.s = G2.o
   AND G1.o = G3.s
-  AND G3.p = 'http://example.org/edges/link';
+  AND G3.p = '<http://example.org/edges/link>';
