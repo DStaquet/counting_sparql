@@ -84,9 +84,9 @@ def join_base_graph_and_delta_graph(
         str: Query to join the base and delta graphs and nu_table name.
     """
     create_clause = f"CREATE TEMP TABLE nu_{table_name} AS "
-    select_clause: str = "SELECT s, p, o, G.k_count + delta_G.k_count AS k_count "
+    select_clause: str = "SELECT COALESCE(G.s, delta_G.s) AS s, COALESCE(G.p, delta_G.p) AS p, COALESCE(G.o, delta_G.o) AS o, COALESCE(G.k_count, 0) + COALESCE(delta_G.k_count, 0) AS k_count "
     from_clause: str = (
-        f"FROM {table_name} AS G NATURAL JOIN {delta_table_name} AS delta_G;"
+        f"FROM {table_name} AS G FULL OUTER JOIN {delta_table_name} AS delta_G ON G.s = delta_G.s AND G.p = delta_G.p AND G.o = delta_G.o WHERE COALESCE(G.k_count, 0) + COALESCE(delta_G.k_count, 0) > 0;"
     )
     return (
         sqlparse.format(create_clause + select_clause + from_clause, reindent=True)  # type: ignore

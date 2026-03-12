@@ -789,7 +789,7 @@ def select_query(
         return (
             f"CREATE {temp_prefix} TABLE {select_table_name} AS SELECT "
             + ", ".join(var for var in sorted(schemas[0]))
-            + f" FROM {table_name};"
+            + f", k_count FROM {table_name};"
         )
     else:
         final_schema = __final_schema(schemas)

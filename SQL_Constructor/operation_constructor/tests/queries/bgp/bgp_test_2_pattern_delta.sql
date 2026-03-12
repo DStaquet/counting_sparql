@@ -5,9 +5,9 @@ SELECT G1.s AS x,
        G1.k_count
 FROM delta_G G1,
      G G2
-WHERE G1.p = 'http://example.org/edges/link'
+WHERE G1.p = '<http://example.org/edges/link>'
   AND G1.o = G2.s
-  AND G2.p = 'http://example.org/edges/link';
+  AND G2.p = '<http://example.org/edges/link>';
 
 
 INSERT INTO prep_delta_BGP_7479567498023511432 (x, y, z, k_count)
@@ -17,9 +17,9 @@ SELECT G1.s AS x,
        G2.k_count
 FROM nu_G G1,
      delta_G G2
-WHERE G1.p = 'http://example.org/edges/link'
+WHERE G1.p = '<http://example.org/edges/link>'
   AND G1.o = G2.s
-  AND G2.p = 'http://example.org/edges/link';
+  AND G2.p = '<http://example.org/edges/link>';
 
 
 CREATE TABLE delta_BGP_7479567498023511432 AS
