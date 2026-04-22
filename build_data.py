@@ -38,10 +38,7 @@ def get_query_input(
 ) -> str:
     query_input_dir: str = join(
         query_file_dir,
-        "query_"
-        + table_constructor.get_table_name(
-            q_query_object.algebra
-        ),
+        "query_" + table_constructor.get_table_name(q_query_object.algebra),
     )
     if temp_dir:
         return join(query_input_dir, "temp_tables")
@@ -79,14 +76,10 @@ def build_data(
     if csv:
 
         if data_file is None:
-            raise ValueError(
-                "Data file must be provided when using CSV"
-            )
+            raise ValueError("Data file must be provided when using CSV")
         load_table_in_graph(data_file, duckdb_conn)
         if delta_file is not None and nu_file is not None:
-            load_delta_table_in_graph(
-                delta_file, duckdb_conn, nu_file
-            )
+            load_delta_table_in_graph(delta_file, duckdb_conn, nu_file)
 
         return
 
@@ -149,26 +142,25 @@ def setup_query_files(
         setup_tables,
     )
     from rdflib.plugins.sparql import algebra
+    from SQL_Constructor.singular_file_constructor import TableNames
 
-    q_query_object: Query = get_query_object(
-        readQueryFile(query_str)
-    )
+    q_query_object: Query = get_query_object(readQueryFile(query_str))
     # algebra.pprintAlgebra(q_query_object)
 
     # Output directory
     if not exists(output_dir):
         makedirs(output_dir)
-    query_output_dir: str = get_query_output_dir(
-        output_dir, q_query_object
-    )
+    query_output_dir: str = get_query_output_dir(output_dir, q_query_object)
 
     SQLiq.build_queries(
         q_query_object.algebra,
         query_output_dir,
+        "G",
     )
     SQLiq.build_increm_queries(
         q_query_object.algebra,
         query_output_dir,
+        TableNames("G", "delta_G"),
     )
 
     setup_tables(
@@ -179,9 +171,7 @@ def setup_query_files(
     return query_output_dir
 
 
-def __findDropableTables(
-    part_name: str, query_output_dir: str
-) -> set[str]:
+def __findDropableTables(part_name: str, query_output_dir: str) -> set[str]:
     """Finds all the tables to drop from build files.
 
     Args:
@@ -194,12 +184,8 @@ def __findDropableTables(
     final_set: set[str] = set()
 
     normal_file = join(query_output_dir, part_name + ".sql")
-    join_file = join(
-        query_output_dir, part_name + "_join.sql"
-    )
-    outer_join_file = join(
-        query_output_dir, part_name + "_outer_join.sql"
-    )
+    join_file = join(query_output_dir, part_name + "_join.sql")
+    outer_join_file = join(query_output_dir, part_name + "_outer_join.sql")
 
     # Normal file tables to drop
     def __splitTables(file_name: str) -> set[str]:
@@ -253,15 +239,10 @@ def drop_all_tables_str(
         if len(schemas) == 1:
             schema_suffix = ""
         else:
-            schema_suffix = "_" + __encode_schema_name(
-                str(sorted(sch))
-            )
+            schema_suffix = "_" + __encode_schema_name(str(sorted(sch)))
 
         drop_query: str = (
-            "DROP TABLE IF EXISTS "
-            + __encode_table_name(part)
-            + schema_suffix
-            + ";"
+            "DROP TABLE IF EXISTS " + __encode_table_name(part) + schema_suffix + ";"
         )
         if part.name == "Project":
             drop_query += (
@@ -271,11 +252,7 @@ def drop_all_tables_str(
                 + ";"
             )
         if part.name == "SelectQuery":
-            drop_query = (
-                "DROP TABLE IF EXISTS "
-                + __encode_table_name(part)
-                + ";"
-            )
+            drop_query = "DROP TABLE IF EXISTS " + __encode_table_name(part) + ";"
             for i, _ in enumerate(select_schemas):
                 drop_query += (
                     "DROP TABLE IF EXISTS "
@@ -297,15 +274,10 @@ def drop_all_tables_str(
         )
         drop_delta_query: str = ""
         for table in delta_set:
-            drop_delta_query += (
-                "DROP TABLE IF EXISTS " + table + ";"
-            )
+            drop_delta_query += "DROP TABLE IF EXISTS " + table + ";"
 
         drop_nu_query: str = (
-            "DROP TABLE IF EXISTS nu_"
-            + __encode_table_name(part)
-            + schema_suffix
-            + ";"
+            "DROP TABLE IF EXISTS nu_" + __encode_table_name(part) + schema_suffix + ";"
         )
         for nu_i in range(2):
             drop_nu_query += (
@@ -364,20 +336,16 @@ def dropTablesRec(
     if part is None:
         return prev_query, prev_delta_query, []
     if "p" in part or part.name == "BGP":
-        prev_query, prev_delta_query, schemas1 = (
-            dropTablesRec(part.p, query_input_dir)
-        )
+        prev_query, prev_delta_query, schemas1 = dropTablesRec(part.p, query_input_dir)
     elif "p1" in part and "p2" in part:
-        prev_query1, prev_delta_query1, schemas1 = (
-            dropTablesRec(part.p1, query_input_dir)
+        prev_query1, prev_delta_query1, schemas1 = dropTablesRec(
+            part.p1, query_input_dir
         )
-        prev_query2, prev_delta_query2, schemas2 = (
-            dropTablesRec(part.p2, query_input_dir)
+        prev_query2, prev_delta_query2, schemas2 = dropTablesRec(
+            part.p2, query_input_dir
         )
         prev_query = prev_query1 + "\n" + prev_query2
-        prev_delta_query = (
-            prev_delta_query1 + "\n" + prev_delta_query2
-        )
+        prev_delta_query = prev_delta_query1 + "\n" + prev_delta_query2
 
     # Return with right schemas
     match part.name:
@@ -386,23 +354,15 @@ def dropTablesRec(
         case "Filter":
             curr_schemas = schemas1
         case "Project":
-            curr_schemas = SQL_project.project_schemas(
-                part, schemas1
-            )
+            curr_schemas = SQL_project.project_schemas(part, schemas1)
         case "Join":
-            curr_schemas: list[set[str]] = (
-                SQL_join.join_schemas(schemas1, schemas2)
-            )
+            curr_schemas: list[set[str]] = SQL_join.join_schemas(schemas1, schemas2)
         case "LeftJoin":
-            curr_schemas: list[set[str]] = (
-                SQL_leftjoin.leftjoin_schemas(
-                    schemas1, schemas2
-                )
+            curr_schemas: list[set[str]] = SQL_leftjoin.leftjoin_schemas(
+                schemas1, schemas2
             )
         case "Union":
-            curr_schemas: list[set[str]] = (
-                SQL_union.union_schemas(schemas1, schemas2)
-            )
+            curr_schemas: list[set[str]] = SQL_union.union_schemas(schemas1, schemas2)
         case "Minus":
             curr_schemas: list[set[str]] = schemas1
         case "SelectQuery":
@@ -425,18 +385,14 @@ def dropTablesRec(
             # TODO: check schemas
             curr_schemas = schemas1
         case _:
-            raise NotImplementedError(
-                f"Drop tables for {part.name} not implemented"
-            )
+            raise NotImplementedError(f"Drop tables for {part.name} not implemented")
 
     # Construct the drop query for the current part
-    curr_drop_query, curr_drop_delta_query = (
-        drop_all_tables(part, curr_schemas, query_input_dir)
+    curr_drop_query, curr_drop_delta_query = drop_all_tables(
+        part, curr_schemas, query_input_dir
     )
     drop_query = prev_query + "\n" + curr_drop_query
-    drop_delta_query = (
-        prev_delta_query + "\n" + curr_drop_delta_query
-    )
+    drop_delta_query = prev_delta_query + "\n" + curr_drop_delta_query
 
     return drop_query, drop_delta_query, curr_schemas
 
@@ -465,9 +421,7 @@ if __name__ == "__main__":
     hashseed = os.getenv("PYTHONHASHSEED")
     if not hashseed:
         os.environ["PYTHONHASHSEED"] = "0"
-        os.execv(
-            sys.executable, [sys.executable] + sys.argv
-        )
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
     # Connection to database
     import duckdb

@@ -278,7 +278,9 @@ def construct_minus_columns(part: CompValue) -> list[str]:
     return minus_columns
 
 
-def build_queries(part: CompValue, output_dir: str, table_name: str) -> list[set[str]]:
+def build_queries(
+    part: CompValue, output_dir: str, mother_resource_table_name: str
+) -> list[set[str]]:
     """Constructs the non_incremental queries
 
     Args:
@@ -286,18 +288,18 @@ def build_queries(part: CompValue, output_dir: str, table_name: str) -> list[set
         output_dir (str): Where to write the SQL queries
     """
     if "p" in part:
-        schemas1 = build_queries(part.p, output_dir, table_name)
+        schemas1 = build_queries(part.p, output_dir, mother_resource_table_name)
         schemas2 = []
     elif "p1" in part and "p2" in part:
-        schemas1 = build_queries(part.p1, output_dir, table_name)
-        schemas2 = build_queries(part.p2, output_dir, table_name)
+        schemas1 = build_queries(part.p1, output_dir, mother_resource_table_name)
+        schemas2 = build_queries(part.p2, output_dir, mother_resource_table_name)
     else:
         schemas1 = []
         schemas2 = []
     # Construct the SQL query
     match part.name:
         case "BGP":
-            bgp_query, _ = SQL_bgp.bgp_table_query(part, table_name)
+            bgp_query, _ = SQL_bgp.bgp_table_query(part, mother_resource_table_name)
             bgp_query: str = SQL_Constructor.table_constructor.create_table_w_select(
                 SQL_Constructor.table_constructor.get_table_name(part),
                 bgp_query,
