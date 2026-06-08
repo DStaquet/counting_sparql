@@ -35,14 +35,10 @@ def sum_join_query(
     )
 
     # Construct FROM clause
-    from_clause = (
-        "\nFROM " + delta_part + get_table_name(part.p.p)
-    )
+    from_clause = "\nFROM " + delta_part + get_table_name(part.p.p)
 
     # Construct GROUP BY clause
-    group_by_clause = (
-        "\nGROUP BY " + aggregate_sample.vars + ";\n\n"
-    )
+    group_by_clause = "\nGROUP BY " + aggregate_sample.vars + ";\n\n"
 
     return select_clause + from_clause + group_by_clause
 
@@ -156,10 +152,7 @@ def _delta_sum_join_query_deletions(
     # Create select clause
     select_clause = (
         f"SELECT Agg.{aggregate_sample.vars}, "
-        + ", ".join(
-            f"Agg.{value.vars}"
-            for value in aggregate_values
-        )
+        + ", ".join(f"Agg.{value.vars}" for value in aggregate_values)
         + ", -Agg.k_count AS k_count"
     )
 
@@ -207,12 +200,10 @@ def delta_sum_join_query(
     )
 
     # Subtractions clause
-    subtractions_clause = (
-        _delta_sum_join_query_subtractions(
-            aggregate_values,
-            aggregate_sample,
-            part,
-        )
+    subtractions_clause = _delta_sum_join_query_subtractions(
+        aggregate_values,
+        aggregate_sample,
+        part,
     )
 
     return (

@@ -1,0 +1,4 @@
+ SELECT y, SUM(CAST (x AS INT) * k_count) AS x, 1 AS k_count
+FROM BGP_7148062387023275411
+GROUP BY y;
+

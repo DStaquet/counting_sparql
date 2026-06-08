@@ -405,6 +405,8 @@ def build_queries(
                 SQL_Constructor.table_constructor.get_table_name(part),
             )
             return SQL_aggregate.aggregate_schemas(part, schemas1)
+        case "Group" | "Extend":
+            return schemas1
         case _:
             raise NotImplementedError(f"Operation {part.name} not implemented yet.")
 
