@@ -228,6 +228,8 @@ def build_increm_queries(
                 no_format=True,
             )
             part_schemas = schemas1
+        case "Group" | "Extend":
+            return schemas1
         case _:
             raise NotImplementedError(f"Operation {part.name} not implemented yet.")
     if part_schemas is None:

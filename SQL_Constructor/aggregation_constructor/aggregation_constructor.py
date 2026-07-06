@@ -10,6 +10,9 @@ from SQL_Constructor.aggregation_constructor.avg_constructor import (
     avg_join_query,
     delta_avg_join_query,
 )
+from SQL_Constructor.aggregation_constructor.count_constructor import (
+    count_join_query,
+)
 
 from SQL_Constructor.table_constructor import (
     create_table_w_select,
@@ -122,6 +125,15 @@ def aggregate_join_query(
                     get_table_name(part), avg_query
                 )
             )
+        case "Aggregate_Count":
+            count_query: str = count_join_query(
+                aggregate_values,
+                aggregate_sample,
+                part,
+            )
+            return create_table_w_select(
+                get_table_name(part), count_query
+            )
         case _:
             raise NotImplementedError(
                 f"Aggregate {aggregate_values[0].name} not implemented"
@@ -178,6 +190,16 @@ def delta_aggregate_join_query(
                     "delta_" + get_table_name(part),
                     avg_delta,
                 )
+            )
+        case "Aggregate_Count":
+            count_query: str = count_join_query(
+                aggregate_values,
+                aggregate_sample,
+                part,
+                delta_part="delta_",
+            )
+            return create_table_w_select(
+                "delta_" + get_table_name(part), count_query
             )
         case _:
             raise NotImplementedError(

@@ -3,39 +3,11 @@
 from rdflib.plugins.sparql.parserutils import CompValue
 
 
+from SQL_Constructor.aggregation_constructor.count_constructor import count_join_query
 from SQL_Constructor.table_constructor import get_table_name
 from SQL_Constructor.aggregation_constructor.sum_constructor import (
     sum_join_query,
 )
-
-
-def _count_join_query(
-    aggregate_values: list[CompValue],
-    aggregate_sample: CompValue,
-    part: CompValue,
-    delta_part: str = "",
-) -> str:
-    # Constructs select clause
-    select_clause = (
-        f"SELECT {aggregate_sample.vars}, "
-        + ", ".join(
-            f"COUNT(CAST ({value.vars} AS INT) * k_count) as {value.vars}"
-            for value in aggregate_values
-        )
-        + ", 1 as k_count"
-    )
-
-    # Construct FROM clause
-    from_clause = (
-        "\nFROM " + delta_part + get_table_name(part.p.p)
-    )
-
-    # Constructs GROUP BY clause
-    group_by_clause = (
-        "\nGROUP BY " + aggregate_sample.vars + ";\n\n"
-    )
-
-    return select_clause + from_clause + group_by_clause
 
 
 def avg_join_query(
@@ -53,7 +25,7 @@ def avg_join_query(
     Returns:
         str: _description_
     """
-    count_query = _count_join_query(
+    count_query = count_join_query(
         aggregate_values, aggregate_sample, part
     )
     sum_query = sum_join_query(
@@ -111,7 +83,7 @@ def delta_avg_join_query(
         tuple[str, str, str]: delta queries for count, sum and avg itself.
     """
     # Create count delta
-    count_delta = _count_join_query(
+    count_delta = count_join_query(
         aggregate_values,
         aggregate_sample,
         part,

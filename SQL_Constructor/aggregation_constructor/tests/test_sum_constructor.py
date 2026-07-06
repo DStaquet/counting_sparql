@@ -3,13 +3,12 @@
 from pytest import mark
 
 from rdflib.plugins.sparql.parserutils import CompValue
-from duckdb import DuckDBPyConnection, connect
+from duckdb import DuckDBPyConnection, connect # type: ignore
 
 # from rdflib.term import Variable
 
 from SQL_Constructor.aggregation_constructor.sum_constructor import (
     sum_join_query,
-    delta_sum_join_query,
 )
 
 from SQL_Constructor.table_constructor import get_table_name
