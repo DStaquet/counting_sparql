@@ -44,10 +44,10 @@ def count_join_query(
     select_clause = (
         f"SELECT {aggregate_sample.vars}, "
         + ", ".join(
-            f"COUNT(CAST ({value.vars} AS INT) * k_count) as {value.vars}"
+            f"COUNT(CAST ({value.vars} AS INT) * k_count) AS {value.vars}"
             for value in aggregate_values
         )
-        + ", 1 as k_count"
+        + ", 1 AS k_count"
     )
 
     # Construct FROM clause
