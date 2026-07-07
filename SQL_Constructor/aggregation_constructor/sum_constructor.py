@@ -170,6 +170,128 @@ def _delta_sum_join_query_deletions(
     return select_clause + from_clause
 
 
+def _delta_sum_join(
+    aggregate_values: list[CompValue],
+    aggregate_sample: CompValue,
+    part: CompValue,
+) -> str:
+    """Constructs the SQL query for a delta SUM aggregation.
+
+    Args:
+        aggregate_values (list[CompValue]): List of CompValue objects representing
+            the SUM aggregations
+        aggregate_sample (CompValue): Sample variable for the aggregation
+        part (CompValue): Current part of the query
+    Returns:
+        str: SQL query for the delta SUM aggregation
+    """
+    delta_query = sum_join_query(
+        aggregate_values,
+        aggregate_sample,
+        part,
+        delta_part="delta_",
+    )
+
+    return delta_query
+
+
+def _no_delta_sum_join(
+    aggregate_values: list[CompValue],
+    aggregate_sample: CompValue,
+    part: CompValue,
+) -> str:
+    """Constructs the SQL query for a SUM aggregation without delta.
+
+    Args:
+        aggregate_values (list[CompValue]): List of CompValue objects representing
+            the SUM aggregations
+        aggregate_sample (CompValue): Sample variable for the aggregation
+        part (CompValue): Current part of the query
+    Returns:
+        str: SQL query for the SUM aggregation without delta
+    """
+    no_delta_query = (
+        "SELECT * FROM "
+        + get_table_name(part)
+        + " AS Agg WHERE Agg."
+        + aggregate_sample.vars
+        + " NOT IN (SELECT "
+        + aggregate_sample.vars
+        + " FROM delta_"
+        + get_table_name(part)
+        + ")"
+    )
+
+    return no_delta_query
+
+
+def _only_delta_sum_join(
+    aggregate_values: list[CompValue],
+    aggregate_sample: CompValue,
+    part: CompValue,
+) -> str:
+    """Constructs the SQL query for a SUM aggregation only on delta.
+
+    Args:
+        aggregate_values (list[CompValue]): List of CompValue objects representing
+            the SUM aggregations
+        aggregate_sample (CompValue): Sample variable for the aggregation
+        part (CompValue): Current part of the query
+    Returns:
+        str: SQL query for the SUM aggregation only on delta
+    """
+    only_delta_query = (
+        "SELECT * FROM delta_"
+        + get_table_name(part)
+        + " AS delta_Agg WHERE delta_Agg."
+        + aggregate_sample.vars
+        + " NOT IN (SELECT "
+        + aggregate_sample.vars
+        + " FROM "
+        + get_table_name(part)
+        + ")"
+    )
+
+    return only_delta_query
+
+
+def _both_delta_sum_join(
+    aggregate_values: list[CompValue],
+    aggregate_sample: CompValue,
+    part: CompValue,
+) -> str:
+    """Constructs the SQL query for a SUM aggregation on both delta and base.
+
+    Args:
+        aggregate_values (list[CompValue]): List of CompValue objects representing
+            the SUM aggregations
+        aggregate_sample (CompValue): Sample variable for the aggregation
+        part (CompValue): Current part of the query
+    Returns:
+        str: SQL query for the SUM aggregation on both delta and base
+    """
+    # Select clause
+    select_clause = (
+        f"SELECT delta_Agg.{aggregate_sample.vars}, "
+        + ", ".join(
+            f"(CAST (delta_Agg.{value.vars} AS INT) "
+            + f"+ CAST (Agg.{value.vars} AS INT)) AS {value.vars}"
+            for value in aggregate_values
+        )
+        + ", 1 AS k_count"
+    )
+
+    # From clause
+    from_clause = f" FROM {get_table_name(part)} AS Agg, delta_{get_table_name(part)} AS delta_Agg"
+
+    # Where clause
+    where_clause = (
+        f" WHERE Agg.{aggregate_sample.vars} = delta_Agg.{aggregate_sample.vars};"
+    )
+
+    return select_clause + from_clause + where_clause
+
+
 def delta_sum_join_query(
     aggregate_values: list[CompValue],
     aggregate_sample: CompValue,
@@ -185,32 +307,62 @@ def delta_sum_join_query(
     Returns:
         str: SQL query for the delta SUM aggregation
     """
-    # Create select clause
-    additions_clause = _delta_sum_join_query_additions(
+    # First delta query, aggregating on the delta table alone
+    first_delta_query = _delta_sum_join(
         aggregate_values,
         aggregate_sample,
         part,
     )
 
-    # Deletions clause
-    deletions_clause = _delta_sum_join_query_deletions(
+    # Second delta part, connecting them together
+    no_delta_query = _no_delta_sum_join(
+        aggregate_values,
+        aggregate_sample,
+        part,
+    )
+    only_delta_query = _only_delta_sum_join(
+        aggregate_values,
+        aggregate_sample,
+        part,
+    )
+    both_delta_query = _both_delta_sum_join(
         aggregate_values,
         aggregate_sample,
         part,
     )
 
-    # Subtractions clause
-    subtractions_clause = _delta_sum_join_query_subtractions(
-        aggregate_values,
-        aggregate_sample,
-        part,
+    second_delta_query = (
+        no_delta_query + " UNION " + only_delta_query + " UNION " + both_delta_query
     )
 
-    return (
-        additions_clause
-        + " UNION "
-        + deletions_clause
-        + " UNION "
-        + subtractions_clause
-        + ";"
-    )
+    return second_delta_query
+
+    # # Create select clause
+    # additions_clause = _delta_sum_join_query_additions(
+    #     aggregate_values,
+    #     aggregate_sample,
+    #     part,
+    # )
+
+    # # Deletions clause
+    # deletions_clause = _delta_sum_join_query_deletions(
+    #     aggregate_values,
+    #     aggregate_sample,
+    #     part,
+    # )
+
+    # # Subtractions clause
+    # subtractions_clause = _delta_sum_join_query_subtractions(
+    #     aggregate_values,
+    #     aggregate_sample,
+    #     part,
+    # )
+
+    # return (
+    #     additions_clause
+    #     + " UNION "
+    #     + deletions_clause
+    #     + " UNION "
+    #     + subtractions_clause
+    #     + ";"
+    # )
