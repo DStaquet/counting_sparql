@@ -112,3 +112,19 @@ def _drop_tables(output_dir: str, aggregator_db: DuckDBPyConnection) -> None:
         encoding="utf-8",
     ) as drop_handle:
         aggregator_db.execute(drop_handle.read())
+
+
+def drop_aggregates_sum_count(aggregate_name: str, conn: DuckDBPyConnection) -> None:
+    """Drops the aggregate sum and count tables from the database.
+
+    Args:
+        aggregate_name (str): The base name of the aggregate tables to drop.
+        conn (DuckDBPyConnection): Connection to the database.
+    """
+    try:
+        conn.execute(f"DROP TABLE IF EXISTS {aggregate_name}_sum;")
+        conn.execute(f"DROP TABLE IF EXISTS {aggregate_name}_count;")
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to drop aggregate tables {aggregate_name}_sum and {aggregate_name}_count: {e}"
+        ) from e

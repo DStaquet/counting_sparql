@@ -25,6 +25,8 @@ from multiviews.pod_handler import (
     handle_pod_connection_we_are,
 )
 
+from time import time
+
 
 def _deltas_per_pod(
     split_g: list[custom_Graph],
@@ -47,11 +49,11 @@ def _deltas_per_pod(
 def _thread_per_pod(
     given_function: Callable[..., None],
     arguments: list[Iterable[Any]],
-    passed_args: Namespace,
+    pods: list[str],
 ) -> None:
     # We will connect to three pods multithreadedly
     threads: list[Thread] = []
-    for i, _ in enumerate(passed_args.pods):
+    for i, _ in enumerate(pods):
         thread = Thread(
             target=given_function,
             args=arguments[i],
@@ -66,7 +68,8 @@ def _thread_per_pod(
 def hops_main(
     given_args: Namespace,
     duckdb_conn: DuckDBPyConnection,
-) -> None:
+    pods: list[str],
+) -> list[float]:
     """Main function for the hop scenario POC.
 
     Args:
@@ -77,7 +80,7 @@ def hops_main(
         given_args.vertices,
         given_args.bottlenecks,
     )
-    split_graphs = split_graph_into_pods(og_graph, len(given_args.pods))
+    split_graphs = split_graph_into_pods(og_graph, len(pods))
     split_deltas = _deltas_per_pod(
         split_graphs,
         given_args.edges_to_delete,
@@ -86,6 +89,7 @@ def hops_main(
     )
     # custom_graph = _read_ttl_data(args.data_file)
 
+    scratch_time_start = time()
     # Put the data for the non IVM part ready
     lock = Lock()
     _thread_per_pod(
@@ -99,9 +103,9 @@ def hops_main(
                 (split_graphs[i], split_deltas[i]),
                 "G",
             )
-            for i, pod in enumerate(given_args.pods)
+            for i, pod in enumerate(pods)
         ],
-        given_args,
+        pods,
     )
     print("Finished putting all the data in the database.")
     query_output_dir = _setup_queries(given_args.query_file, given_args.query_dir)
@@ -113,7 +117,9 @@ def hops_main(
         drop=True,
     )
     print("Run from scratch.")
+    scratch_time = time() - scratch_time_start
 
+    ivm_time_start = time()
     # Get the delta values
     _thread_per_pod(
         handle_delta_pod_connection,
@@ -125,9 +131,9 @@ def hops_main(
                 lock,
                 ("delta_G", "nu_G"),
             )
-            for pod in given_args.pods
+            for pod in pods
         ],
-        given_args,
+        pods,
     )
     # Execute the IVM query
     sql_query(
@@ -136,6 +142,9 @@ def hops_main(
         "incremental_query.sql",
     )
     print("Finished the incremental queries.")
+    ivm_time = time() - ivm_time_start
+
+    return [scratch_time, ivm_time]
 
 
 def _setup_queries(query_file: str, query_dir: str) -> str:
@@ -155,8 +164,10 @@ def we_are_poc_main(
     dates: tuple[date, date],
     duckdb_conn: DuckDBPyConnection,
     delta_amount: int,
+    pods: list[str],
+    verbose: bool,
     reification: bool = False,
-) -> None:
+) -> list[float]:
     """Main function for the We Are POC.
 
     Args:
@@ -166,6 +177,8 @@ def we_are_poc_main(
         rating_interval (tuple[int, int]): Rating interval.
         dates (tuple[date, date]): Dates to choose between.
     """
+    scratch_time_start = time()
+
     # Generate and put all the different data in the pods.
     lock = Lock()
     if not reification:
@@ -183,10 +196,11 @@ def we_are_poc_main(
                     lock,
                     "G",
                     delta_amount,
+                    verbose,
                 )
-                for pod in given_args.pods
+                for pod in pods
             ],
-            given_args,
+            pods,
         )
     else:
         _thread_per_pod(
@@ -203,11 +217,12 @@ def we_are_poc_main(
                     lock,
                     "G",
                     delta_amount,
+                    verbose,
                     True,
                 )
                 for pod in given_args.pods
             ],
-            given_args,
+            pods,
         )
     query_output_dir = _setup_queries(given_args.query_file, given_args.query_dir)
     # Execute the scratch query
@@ -218,7 +233,11 @@ def we_are_poc_main(
         drop=True,
     )
     print("Run from scratch.")
+    scratch_time_end = time()
+    scratch_time = scratch_time_end - scratch_time_start
 
+    ivm_time_start = time()
+    # Get the delta values
     _thread_per_pod(
         handle_delta_pod_connection,
         [
@@ -228,10 +247,11 @@ def we_are_poc_main(
                 given_args.filename,
                 lock,
                 ("delta_G", "nu_G"),
+                verbose,
             )
-            for pod in given_args.pods
+            for pod in pods
         ],
-        given_args,
+        pods,
     )
     # Execute the IVM query
     sql_query(
@@ -240,3 +260,7 @@ def we_are_poc_main(
         "incremental_query.sql",
     )
     print("Finished the incremental queries.")
+    ivm_time_end = time()
+    ivm_time = ivm_time_end - ivm_time_start
+
+    return [scratch_time, ivm_time]

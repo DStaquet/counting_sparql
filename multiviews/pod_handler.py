@@ -18,6 +18,19 @@ from example_constructor.we_are_poc_constructor import (
 from multiviews.rdf_handler import parse_pod_data
 
 
+def construct_pod_urls(base_url: str, ports: list[int]) -> list[str]:
+    """Constructs a list of pod URLs based on the base URL and a list of ports.
+
+    Args:
+        base_url (str): The base URL of the pod.
+        ports (list[int]): A list of ports to construct the full URLs.
+
+    Returns:
+        list[str]: A list of constructed pod URLs.
+    """
+    return [f"{base_url}:{port}/" for port in range(ports[0], ports[1] + 1)]
+
+
 def _put_pod_data_in_database_reif(
     conn: DuckDBPyConnection,
     pod_name: str,
@@ -63,7 +76,7 @@ def _put_pod_data_in_database(
             )
 
 
-def get_pod_data(pod_url: str) -> str:
+def get_pod_data(pod_url: str, verbose: bool) -> str:
     """Fetches data from the specified pod URL.
 
     Args:
@@ -77,13 +90,15 @@ def get_pod_data(pod_url: str) -> str:
     except RequestException:
         return f"Error fetching data from pod {pod_url}"
     finally:
-        print(f"Data fetched from pod {pod_url}.")
+        if verbose:
+            print(f"Data fetched from pod {pod_url}.")
     return response.text
 
 
 def _put_data_in_pod(
     pod_url: str,
     filename: str,
+    verbose: bool,
     data: custom_Graph | None = None,
     turtle_to_insert: str | None = None,
 ) -> None:
@@ -100,7 +115,8 @@ def _put_data_in_pod(
         timeout=10,
     )
 
-    print(f"Put data for hospitals in pod {pod_url} in file {filename}.")
+    if verbose:
+        print(f"Put data for hospitals in pod {pod_url} in file {filename}.")
 
 
 def _put_delta_in_pod(
@@ -108,16 +124,17 @@ def _put_delta_in_pod(
     pod_url: str,
     delta_filenames: tuple[str, str],
     nu_filename: str,
+    verbose: bool,
 ) -> None:
     delta_del, delta_ins, nu_graph = deltas
 
     # Insert the deletions
-    _put_data_in_pod(pod_url, delta_filenames[0], delta_del)
+    _put_data_in_pod(pod_url, delta_filenames[0], verbose, delta_del)
     # Insert the insertions
-    _put_data_in_pod(pod_url, delta_filenames[1], delta_ins)
+    _put_data_in_pod(pod_url, delta_filenames[1], verbose, delta_ins)
 
     # Insert the nu graph
-    _put_data_in_pod(pod_url, nu_filename, nu_graph)
+    _put_data_in_pod(pod_url, nu_filename, verbose, nu_graph)
 
 
 def handle_delta_pod_connection(
@@ -126,6 +143,7 @@ def handle_delta_pod_connection(
     filename: str,
     db_lock: Lock,
     table_names: tuple[str, str],
+    verbose: bool,
 ) -> None:
     """Handles the delta pod connection
 
@@ -137,8 +155,8 @@ def handle_delta_pod_connection(
         table_names (tuple[str, str]): Table names to write in the database.
     """
     # Get the delta data
-    ins_data = get_pod_data(join(pod_url, "delta_ins_" + filename))
-    del_data = get_pod_data(join(pod_url, "delta_del_" + filename))
+    ins_data = get_pod_data(join(pod_url, "delta_ins_" + filename), verbose)
+    del_data = get_pod_data(join(pod_url, "delta_del_" + filename), verbose)
     ins_triples = parse_pod_data(ins_data)
     del_triples = parse_pod_data(del_data)
     _put_pod_data_in_database(conn, pod_url, ins_triples, db_lock, table_names[0])
@@ -151,7 +169,7 @@ def handle_delta_pod_connection(
         -1,
     )
     # Get the nu data
-    nu_data = get_pod_data(join(pod_url, "nu_" + filename))
+    nu_data = get_pod_data(join(pod_url, "nu_" + filename), verbose)
     nu_triples = parse_pod_data(nu_data)
     _put_pod_data_in_database(conn, pod_url, nu_triples, db_lock, table_names[1])
 
@@ -166,6 +184,7 @@ def handle_pod_connection(
         tuple[custom_Graph, custom_Graph, custom_Graph],
     ],
     table_name: str,
+    verbose: bool,
 ) -> None:
     """Handles the connection to a pod and stores its data in the DuckDB database.
 
@@ -174,15 +193,16 @@ def handle_pod_connection(
         pod_url (str): The URL of the pod to connect to.
     """
     data, deltas = graphs_and_deltas
-    _put_data_in_pod(pod_url, filename, data)
+    _put_data_in_pod(pod_url, filename, verbose, data)
     _put_delta_in_pod(
         deltas,
         pod_url,
         ("delta_ins_" + filename, "delta_del_" + filename),
         "nu_" + filename,
+        verbose,
     )
     # Get the normal data
-    pod_data = get_pod_data(join(pod_url, filename))
+    pod_data = get_pod_data(join(pod_url, filename), verbose)
     triples = parse_pod_data(pod_data)
     _put_pod_data_in_database(conn, pod_url, triples, db_lock, table_name)
     print(f"Data from pod {pod_url} stored in database.")
@@ -199,6 +219,7 @@ def handle_pod_connection_we_are(
     lock: Lock,
     table_name: str,
     delta_amount: int,
+    verbose: bool,
     reification: bool = False,
 ) -> None:
     """Handles the we are POC connection cases.
@@ -226,8 +247,8 @@ def handle_pod_connection_we_are(
         delta_amount,
     )
 
-    _put_data_in_pod(pod_url, filename, turtle_to_insert=turtle_to_insert)
-    pod_data = get_pod_data(join(pod_url, filename))
+    _put_data_in_pod(pod_url, filename, verbose, turtle_to_insert=turtle_to_insert)
+    pod_data = get_pod_data(join(pod_url, filename), verbose)
     triples = parse_pod_data(pod_data)
     if not reification:
         _put_pod_data_in_database(duckdb_conn, pod_url, triples, lock, table_name)
@@ -246,11 +267,13 @@ def handle_pod_connection_we_are(
     _put_data_in_pod(
         pod_url,
         "delta_del_" + filename,
+        verbose,
         turtle_to_insert=delete_delta,
     )
     _put_data_in_pod(
         pod_url,
         "delta_ins_" + filename,
+        verbose,
         turtle_to_insert=insert_delta,
     )
 
@@ -258,5 +281,6 @@ def handle_pod_connection_we_are(
     _put_data_in_pod(
         pod_url,
         "nu_" + filename,
+        verbose,
         turtle_to_insert=nu_to_insert,
     )
