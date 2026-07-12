@@ -39,7 +39,7 @@ def _run_queries(
     ivm_time: float | None = None
 
     if args_space.type == "hop":
-        hops_main(args_space, duckdb_conn, pods_list)
+        scratch_time, ivm_time = hops_main(args_space, duckdb_conn, pods_list)
     elif args_space.type == "we_are":
         scratch_time, ivm_time = we_are_poc_main(
             args_space,

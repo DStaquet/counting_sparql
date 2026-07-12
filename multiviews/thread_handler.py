@@ -22,6 +22,7 @@ from multiviews.db_handler import sql_query
 from multiviews.pod_handler import (
     handle_delta_pod_connection,
     handle_pod_connection,
+    handle_pod_connection_get,
     handle_pod_connection_we_are,
     handle_pod_connection_we_are_get,
 )
@@ -90,19 +91,17 @@ def hops_main(
     )
     # custom_graph = _read_ttl_data(args.data_file)
 
-    scratch_time_start = time()
     # Put the data for the non IVM part ready
     lock = Lock()
     _thread_per_pod(
         handle_pod_connection,
         [
             (
-                duckdb_conn,
                 pod,
                 given_args.filename,
-                lock,
                 (split_graphs[i], split_deltas[i]),
-                "G",
+                given_args.percentage,
+                given_args.verbose,
             )
             for i, pod in enumerate(pods)
         ],
@@ -110,7 +109,26 @@ def hops_main(
     )
     print("Finished putting all the data in the database.")
     query_output_dir = _setup_queries(given_args.query_file, given_args.query_dir)
+
+    scratch_time_start = time()
     # Execute the scratch query
+    _thread_per_pod(
+        handle_pod_connection_get,
+        [
+            (
+                duckdb_conn,
+                pod,
+                given_args.filename,
+                lock,
+                "G",
+                given_args.verbose,
+            )
+            for pod in pods
+        ],
+        pods,
+    )
+    if given_args.verbose:
+        print("Finished putting all the data in the database.")
     sql_query(
         query_output_dir,
         duckdb_conn,
@@ -131,6 +149,7 @@ def hops_main(
                 given_args.filename,
                 lock,
                 ("delta_G", "nu_G"),
+                given_args.verbose,
             )
             for pod in pods
         ],

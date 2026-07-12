@@ -182,16 +182,45 @@ def handle_delta_pod_connection(
     _put_pod_data_in_database(conn, pod_url, nu_triples, db_lock, table_names[1])
 
 
-def handle_pod_connection(
+def handle_pod_connection_get(
     conn: DuckDBPyConnection,
     pod_url: str,
     filename: str,
     db_lock: Lock,
+    table_name: str,
+    verbose: bool,
+) -> None:
+    """Handles the pod connection get and puts it in the database.
+
+    Args:
+        conn (DuckDBPyConnection): Connection to the database.
+        pod_url (str): URL to the pod.
+        filename (str): Name of the file where to store it in the pod.
+        db_lock (Lock): Lock for multithreading.
+        table_name (str): Name of table to store in database.
+        verbose (bool): Check to print verbose statements.
+
+    Raises:
+        ValueError: Error of base data is empty.
+    """
+    # Get the normal data
+    pod_data = get_pod_data(join(pod_url, filename), verbose)
+    if pod_data is None:
+        raise ValueError("Pod data base cannot be empty.")
+    triples = parse_pod_data(pod_data)
+    _put_pod_data_in_database(conn, pod_url, triples, db_lock, table_name)
+    if verbose:
+        print(f"Data from pod {pod_url} stored in database.")
+
+
+def handle_pod_connection(
+    pod_url: str,
+    filename: str,
     graphs_and_deltas: tuple[
         custom_Graph,
         tuple[custom_Graph, custom_Graph, custom_Graph],
     ],
-    table_name: str,
+    delta_percentage: float,
     verbose: bool,
 ) -> None:
     """Handles the connection to a pod and stores its data in the DuckDB database.
@@ -202,20 +231,19 @@ def handle_pod_connection(
     """
     data, deltas = graphs_and_deltas
     _put_data_in_pod(pod_url, filename, verbose, data)
-    _put_delta_in_pod(
-        deltas,
-        pod_url,
-        ("delta_ins_" + filename, "delta_del_" + filename),
-        "nu_" + filename,
-        verbose,
-    )
-    # Get the normal data
-    pod_data = get_pod_data(join(pod_url, filename), verbose)
-    if pod_data is None:
-        raise ValueError("Pod data base cannot be empty.")
-    triples = parse_pod_data(pod_data)
-    _put_pod_data_in_database(conn, pod_url, triples, db_lock, table_name)
-    print(f"Data from pod {pod_url} stored in database.")
+
+    if random() < delta_percentage:
+        _put_delta_in_pod(
+            deltas,
+            pod_url,
+            ("delta_ins_" + filename, "delta_del_" + filename),
+            "nu_" + filename,
+            verbose,
+        )
+    else:
+        _put_data_in_pod(pod_url, "nu_" + filename, verbose, data)
+
+        _delete_delta_files(pod_url, filename)
 
 
 def handle_pod_connection_we_are_get(
