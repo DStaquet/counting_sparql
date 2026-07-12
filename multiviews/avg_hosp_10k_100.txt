@@ -1,0 +1,92 @@
+Run 1/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 392.2595 seconds
+IVM time: 28.4190 seconds
+Run 2/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 393.5432 seconds
+IVM time: 25.0985 seconds
+Run 3/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 412.5539 seconds
+IVM time: 32.0461 seconds
+Run 4/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 395.9586 seconds
+IVM time: 36.8800 seconds
+Run 5/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 395.1446 seconds
+IVM time: 24.0700 seconds
+Run 6/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 396.9342 seconds
+IVM time: 30.1611 seconds
+Run 7/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 403.4884 seconds
+IVM time: 39.4245 seconds
+Run 8/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 398.1809 seconds
+IVM time: 47.3985 seconds
+Run 9/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 398.4271 seconds
+IVM time: 47.2072 seconds
+Run 10/10
+Build files!
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/scratch_query.sql
+Writing the entire query to temp_views/query_SelectQuery_924072899839423171/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 396.0553 seconds
+IVM time: 19.6180 seconds
+Average Scratch time over 10 runs: 398.2546 seconds
+Average IVM time over 10 runs: 33.0323 seconds

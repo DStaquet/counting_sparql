@@ -23,6 +23,7 @@ from multiviews.pod_handler import (
     handle_delta_pod_connection,
     handle_pod_connection,
     handle_pod_connection_we_are,
+    handle_pod_connection_we_are_get,
 )
 
 from time import time
@@ -177,7 +178,6 @@ def we_are_poc_main(
         rating_interval (tuple[int, int]): Rating interval.
         dates (tuple[date, date]): Dates to choose between.
     """
-    scratch_time_start = time()
 
     # Generate and put all the different data in the pods.
     lock = Lock()
@@ -192,10 +192,8 @@ def we_are_poc_main(
                     hospital_amount,
                     rating_interval,
                     dates,
-                    duckdb_conn,
-                    lock,
-                    "G",
                     delta_amount,
+                    given_args.percentage,
                     verbose,
                 )
                 for pod in pods
@@ -213,10 +211,8 @@ def we_are_poc_main(
                     hospital_amount,
                     rating_interval,
                     dates,
-                    duckdb_conn,
-                    lock,
-                    "G",
                     delta_amount,
+                    given_args.percentage,
                     verbose,
                     True,
                 )
@@ -225,6 +221,41 @@ def we_are_poc_main(
             pods,
         )
     query_output_dir = _setup_queries(given_args.query_file, given_args.query_dir)
+
+    scratch_time_start = time()
+    if not reification:
+        _thread_per_pod(
+            handle_pod_connection_we_are_get,
+            [
+                (
+                    duckdb_conn,
+                    pod,
+                    given_args.filename,
+                    lock,
+                    "G",
+                    verbose,
+                )
+                for pod in pods
+            ],
+            pods,
+        )
+    else:
+        _thread_per_pod(
+            handle_pod_connection_we_are_get,
+            [
+                (
+                    duckdb_conn,
+                    pod,
+                    given_args.filename,
+                    lock,
+                    "G",
+                    verbose,
+                    reification,
+                )
+                for pod in pods
+            ],
+            pods,
+        )
     # Execute the scratch query
     sql_query(
         query_output_dir,

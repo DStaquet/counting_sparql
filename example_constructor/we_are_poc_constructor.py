@@ -5,9 +5,7 @@ DATE_URI = "<http://www.w3.org/2001/XMLSchema#date>"
 XSD_URI = "http://www.w3.org/2001/XMLSchema#"
 
 
-def _generate_random_date(
-    start_date: date, end_date: date
-) -> date:
+def _generate_random_date(start_date: date, end_date: date) -> date:
     time_between = end_date - start_date
     all_days = time_between.days
 
@@ -23,9 +21,7 @@ def _generate_rating_triples(
 ) -> str:
     return_str = f'{curr_rating}\n\t:date "{generated_date}"^^{DATE_URI} ;\n\t'
     return_str += f':hospital_id "hospital_{random_hospital_id}" ;\n\t'
-    return_str += (
-        f':rating "{random_rating}"^^xsd:integer .\n\n'
-    )
+    return_str += f':rating "{random_rating}"^^xsd:integer .\n\n'
     return return_str
 
 
@@ -36,16 +32,12 @@ def _generate_random_values(
     count: int | None = None,
 ) -> tuple[int, int, str | None, str]:
     random_hospital_id = randint(1, hospital_amount)
-    random_rating = randint(
-        rating_interval[0], rating_interval[1]
-    )
+    random_rating = randint(rating_interval[0], rating_interval[1])
     if count is not None:
         curr_rating = f":rating{count+1}"
     else:
         curr_rating = None
-    generated_date = _generate_random_date(
-        dates[0], dates[1]
-    ).strftime("%Y-%m-%d")
+    generated_date = _generate_random_date(dates[0], dates[1]).strftime("%Y-%m-%d")
     return (
         random_hospital_id,
         random_rating,
@@ -77,10 +69,7 @@ def generate_random_ratings(
             Second: Represents delta_G inserts
             Third: Represents delta_G deletes
     """
-    start_str: str = (
-        f"PREFIX : <{given_uri}>\n"
-        + f"PREFIX xsd: <{XSD_URI}>\n\n"
-    )
+    start_str: str = f"PREFIX : <{given_uri}>\n" + f"PREFIX xsd: <{XSD_URI}>\n\n"
 
     # Build the normal G
     triples_gen: dict[str, tuple[str, int, int]] = {}
@@ -115,9 +104,7 @@ def generate_random_ratings(
         )
 
     # Build the deltas
-    delta_keys = sample(
-        list(triples_gen.keys()), delta_amount // 2
-    )
+    delta_keys = sample(list(triples_gen.keys()), delta_amount // 2)
     delete_str = start_str
     insert_str = start_str
     for key in delta_keys:

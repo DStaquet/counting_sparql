@@ -212,6 +212,13 @@ if __name__ == "__main__":
         help="Prints out more information.",
         action="store_true",
     )
+    arg_parser.add_argument(
+        "-pc",
+        "--percentage",
+        help="Percentage of the pods that get a delta",
+        type=float,
+        default=1,
+    )
     args = arg_parser.parse_args()
 
     # Connect to the DuckDB database

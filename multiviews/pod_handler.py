@@ -2,10 +2,11 @@
 Submodule of multiviews that handles the logic of dealing with the pods.
 """
 
+from random import random
 from datetime import date
 from os.path import join
 from threading import Lock
-from requests import RequestException, get, put
+from requests import RequestException, get, put, delete
 
 from duckdb import DuckDBPyConnection  # pylint: disable=import-error
 
@@ -76,7 +77,7 @@ def _put_pod_data_in_database(
             )
 
 
-def get_pod_data(pod_url: str, verbose: bool) -> str:
+def get_pod_data(pod_url: str, verbose: bool) -> str | None:
     """Fetches data from the specified pod URL.
 
     Args:
@@ -87,6 +88,8 @@ def get_pod_data(pod_url: str, verbose: bool) -> str:
     """
     try:
         response = get(pod_url, timeout=10)
+        if response.status_code == 404:
+            return None
     except RequestException:
         return f"Error fetching data from pod {pod_url}"
     finally:
@@ -157,6 +160,9 @@ def handle_delta_pod_connection(
     # Get the delta data
     ins_data = get_pod_data(join(pod_url, "delta_ins_" + filename), verbose)
     del_data = get_pod_data(join(pod_url, "delta_del_" + filename), verbose)
+    # print(ins_data, del_data, pod_url)
+    if ins_data is None or del_data is None:
+        return
     ins_triples = parse_pod_data(ins_data)
     del_triples = parse_pod_data(del_data)
     _put_pod_data_in_database(conn, pod_url, ins_triples, db_lock, table_names[0])
@@ -170,6 +176,8 @@ def handle_delta_pod_connection(
     )
     # Get the nu data
     nu_data = get_pod_data(join(pod_url, "nu_" + filename), verbose)
+    if nu_data is None:
+        return
     nu_triples = parse_pod_data(nu_data)
     _put_pod_data_in_database(conn, pod_url, nu_triples, db_lock, table_names[1])
 
@@ -203,9 +211,57 @@ def handle_pod_connection(
     )
     # Get the normal data
     pod_data = get_pod_data(join(pod_url, filename), verbose)
+    if pod_data is None:
+        raise ValueError("Pod data base cannot be empty.")
     triples = parse_pod_data(pod_data)
     _put_pod_data_in_database(conn, pod_url, triples, db_lock, table_name)
     print(f"Data from pod {pod_url} stored in database.")
+
+
+def handle_pod_connection_we_are_get(
+    duckdb_conn: DuckDBPyConnection,
+    pod_url: str,
+    filename: str,
+    lock: Lock,
+    table_name: str,
+    verbose: bool,
+    reification: bool = False,
+) -> None:
+    """Puts the data in the pod
+
+    Args:
+        duckdb_conn (DuckDBPyConnection): Connection to the database.
+        pod_url (str): URL of the pod.
+        filename (str): Name where the data is stored.
+        lock (Lock): Lock for multithreading.
+        table_name (str): Table name in the DuckDB connection.
+        verbose (bool): Bool to indicate the description preference.
+        reification (bool, optional): Indicates if reification is chosen. Defaults to False.
+    """
+    pod_data = get_pod_data(join(pod_url, filename), verbose)
+    if pod_data is None:
+        raise ValueError("Base data cannot be None.")
+    triples = parse_pod_data(pod_data)
+    if not reification:
+        _put_pod_data_in_database(duckdb_conn, pod_url, triples, lock, table_name)
+    else:
+        _put_pod_data_in_database_reif(
+            duckdb_conn,
+            pod_url,
+            triples,
+            lock,
+            table_name,
+            "http://example.org/we_are/",
+        )
+        print("Put down data reified.")
+
+
+def _delete_delta_files(pod_url: str, filename: str) -> None:
+    try:
+        delete(join(pod_url, "delta_ins_" + filename), timeout=(3.05, 15))
+        delete(join(pod_url, "delta_del_" + filename), timeout=(3.05, 15))
+    except RequestException as e:
+        print(f"An error occurred during the request: {e}")
 
 
 def handle_pod_connection_we_are(
@@ -215,12 +271,9 @@ def handle_pod_connection_we_are(
     hospital_amount: int,
     rating_interval: tuple[int, int],
     dates: tuple[date, date],
-    duckdb_conn: DuckDBPyConnection,
-    lock: Lock,
-    table_name: str,
     delta_amount: int,
+    delta_percentage: float,
     verbose: bool,
-    reification: bool = False,
 ) -> None:
     """Handles the we are POC connection cases.
 
@@ -248,39 +301,32 @@ def handle_pod_connection_we_are(
     )
 
     _put_data_in_pod(pod_url, filename, verbose, turtle_to_insert=turtle_to_insert)
-    pod_data = get_pod_data(join(pod_url, filename), verbose)
-    triples = parse_pod_data(pod_data)
-    if not reification:
-        _put_pod_data_in_database(duckdb_conn, pod_url, triples, lock, table_name)
-    else:
-        _put_pod_data_in_database_reif(
-            duckdb_conn,
+
+    if random() < delta_percentage:
+        # Put down delta data
+        _put_data_in_pod(
             pod_url,
-            triples,
-            lock,
-            table_name,
-            "http://example.org/we_are/",
+            "delta_del_" + filename,
+            verbose,
+            turtle_to_insert=delete_delta,
         )
-        print("Put down data reified.")
+        _put_data_in_pod(
+            pod_url,
+            "delta_ins_" + filename,
+            verbose,
+            turtle_to_insert=insert_delta,
+        )
 
-    # Put down delta data
-    _put_data_in_pod(
-        pod_url,
-        "delta_del_" + filename,
-        verbose,
-        turtle_to_insert=delete_delta,
-    )
-    _put_data_in_pod(
-        pod_url,
-        "delta_ins_" + filename,
-        verbose,
-        turtle_to_insert=insert_delta,
-    )
+        # Put down the nu graph
+        _put_data_in_pod(
+            pod_url,
+            "nu_" + filename,
+            verbose,
+            turtle_to_insert=nu_to_insert,
+        )
+    else:
+        _put_data_in_pod(
+            pod_url, "nu_" + filename, verbose, turtle_to_insert=turtle_to_insert
+        )
 
-    # Put down the nu graph
-    _put_data_in_pod(
-        pod_url,
-        "nu_" + filename,
-        verbose,
-        turtle_to_insert=nu_to_insert,
-    )
+        _delete_delta_files(pod_url, filename)
