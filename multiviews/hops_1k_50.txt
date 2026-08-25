@@ -1,0 +1,52 @@
+Run 1/5
+Finished putting all the data in the database.
+Build files!
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/scratch_query.sql
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 25.8485 seconds
+IVM time: 1.1640 seconds
+Run 2/5
+Finished putting all the data in the database.
+Build files!
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/scratch_query.sql
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 25.7545 seconds
+IVM time: 1.1585 seconds
+Run 3/5
+Finished putting all the data in the database.
+Build files!
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/scratch_query.sql
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 25.7283 seconds
+IVM time: 1.1157 seconds
+Run 4/5
+Finished putting all the data in the database.
+Build files!
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/scratch_query.sql
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 25.5951 seconds
+IVM time: 1.2418 seconds
+Run 5/5
+Finished putting all the data in the database.
+Build files!
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/scratch_query.sql
+Writing the entire query to multiviews/views/query_SelectQuery_3285844735014958827/incremental_query.sql
+Dropping the tables.
+Run from scratch.
+Finished the incremental queries.
+Scratch time: 25.6398 seconds
+IVM time: 1.1496 seconds
+Average Scratch time over 5 runs: 25.7132 seconds
+Average IVM time over 5 runs: 1.1659 seconds

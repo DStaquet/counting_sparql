@@ -1,8 +1,42 @@
 Running the benchmark from scratch
 Run: 1 of 5
-Time: 12332.792043685913ms
-Average time: 12332.792043685913ms
+Time: 1.409292221069336ms
+Average time: 1.409292221069336ms
 Run: 2 of 5
-Time: 10213.205814361572ms
-Average time: 11272.998929023743ms
+Time: 1.008749008178711ms
+Average time: 1.2090206146240234ms
 Run: 3 of 5
+Time: 1.3365745544433594ms
+Average time: 1.251538594563802ms
+Run: 4 of 5
+Time: 1.0690689086914062ms
+Average time: 1.2059211730957031ms
+Run: 5 of 5
+Time: 1.5480518341064453ms
+Average time: 1.2743473052978516ms
+Preparing the benchmark incrementally
+Running the benchmark incrementally
+Run: 1 of 5
+Time: 5.936622619628906ms
+Average time: 5.936622619628906ms
+Run: 2 of 5
+Time: 5.310297012329102ms
+Average time: 5.623459815979004ms
+Run: 3 of 5
+Time: 3.2968521118164062ms
+Average time: 4.847923914591472ms
+Run: 4 of 5
+Time: 3.404378890991211ms
+Average time: 4.487037658691406ms
+Run: 5 of 5
+Time: 3.2951831817626953ms
+Average time: 4.248666763305664ms
+
+Average time from scratch: 1.2743473052978516ms
+Average time incrementally: 4.248666763305664ms
+Amount of tuples in BGP: 
+Scratch: 0 
+Incremental(Previous + Delta + Nu): 0 Previous: 0 Delta: 0 Nu: 0
+Amount of tuples in end result: 
+Scratch: 0 
+Incremental (Previous + Delta + Nu): 0 Previous: 0 Delta: 0 Nu: 0

@@ -123,7 +123,7 @@ def _bgp_table_query_where_clause(
                 else:
                     where_clause += "o"
                 where_clause += (
-                    " = '" + part.triples[triple_index][var_index].n3() + "'"
+                    " = '" + part.triples[triple_index][var_index] + "'"
                 )
 
     return where_clause
